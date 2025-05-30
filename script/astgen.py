@@ -181,14 +181,17 @@ class ASTGenerator:
     def _node_to_dict(self, node: Any) -> Any:
         if not isinstance(node, c_ast.Node):
             return node
+        # Base of the JSON node
         result: dict[str, Any] = {"_nodetype": node.__class__.__name__}
         for attr in getattr(node, "attr_names", []) or []:
             result[attr] = getattr(node, attr)
-        children_dict = {}
+        children: dict[str, list[Any]] = {}
         for child_name, child in node.children() or []:
-            children_dict.setdefault(child_name, []).append(self._node_to_dict(child))
-        if children_dict:
-            result["children"] = children_dict
+            m = re.match(r"^(.+)\[\d+\]$", child_name)
+            key = m.group(1) if m else child_name
+            children.setdefault(key, []).append(self._node_to_dict(child))
+        if children:
+            result["children"] = children
         return result
 
     def _get_save_path(self, path: str) -> str:
