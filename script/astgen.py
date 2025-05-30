@@ -15,7 +15,7 @@ class ASTGenerator:
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
         self.parser = c_parser.CParser()
-        fake_libc = "/home/keonoh/C-AST-Generator/fake_libc_include"
+        fake_libc = "/home/keonoh/C-AST-Generator/script/fake_libc_include"
         support_dir = "/home/keonoh/C-AST-Generator/data/C/testcasesupport"
         self.fake_paths = {fake_libc, support_dir}
 
