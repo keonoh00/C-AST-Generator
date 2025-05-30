@@ -1,0 +1,39 @@
+{
+  "name": "c-ast-generator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/index.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keonoh00/C-AST-Generator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/keonoh00/C-AST-Generator/issues"
+  },
+  "homepage": "https://github.com/keonoh00/C-AST-Generator#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.27.0",
+    "@tsconfig/node22": "^22.0.2",
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.27",
+    "eslint": "^9.27.0",
+    "eslint-plugin-perfectionist": "^4.13.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.33.0"
+  }
+}
