@@ -1,7 +1,5 @@
-export interface CompoundStatement {
-  block_items: unknown[];
-}
+import { IFactoryBaseNode } from "../BaseNode/BaseNode";
 
-export interface IFactoryCompoundStatement {
+export interface IFactoryCompoundStatement extends IFactoryBaseNode {
   nodeType: "CompoundStatement";
 }
