@@ -11,6 +11,8 @@ export enum RawASTNodeTypes {
   Decl = "Decl",
   Default = "Default",
   DoWhile = "DoWhile",
+  EllipsisParam = "EllipsisParam",
+  EmptyStatement = "EmptyStatement",
   ExprList = "ExprList",
   FileAST = "FileAST",
   For = "For",
@@ -21,7 +23,9 @@ export enum RawASTNodeTypes {
   ID = "ID",
   IdentifierType = "IdentifierType",
   If = "If",
+  InitList = "InitList",
   Label = "Label",
+  ParamList = "ParamList",
   PtrDecl = "PtrDecl",
   Return = "Return",
   Struct = "Struct",
@@ -30,219 +34,385 @@ export enum RawASTNodeTypes {
   TernaryOp = "TernaryOp",
   TypeDecl = "TypeDecl",
   Typedef = "Typedef",
+  Typename = "Typename",
   UnaryOp = "UnaryOp",
   Union = "Union",
   While = "While",
 }
 
-export interface IRawArrayDeclNode extends IRawBaseNode {
+export interface IRawArrayDeclNode {
   _nodetype: RawASTNodeTypes.ArrayDecl;
-  children: {
-    dim: IRawConstantNode[];
-    type: IRawTypeDeclNode[];
+  children?: {
+    dim?: IRawBinaryOpNode | IRawConstantNode | IRawIDNode;
+    type: IRawPtrDeclNode | IRawTypeDeclNode;
   };
-  dim_quals: unknown[];
 }
 
-export interface IRawArrayRefNode extends IRawBaseNode {
+export interface IRawArrayRefNode {
   _nodetype: RawASTNodeTypes.ArrayRef;
-  children: { name: RawASTNodes[]; subscript: RawASTNodes[] };
+  children?: {
+    name: IRawIDNode | IRawStructRefNode;
+    subscript: IRawBinaryOpNode | IRawConstantNode | IRawIDNode;
+  };
 }
 
-export interface IRawAssignmentNode extends IRawBaseNode {
+export interface IRawAssignmentNode {
   _nodetype: RawASTNodeTypes.Assignment;
-  children: { lvalue: RawASTNodes[]; rvalue: RawASTNodes[] };
+  children?: {
+    lvalue: IRawArrayRefNode | IRawIDNode | IRawStructRefNode | IRawUnaryOpNode;
+    rvalue:
+      | IRawArrayRefNode
+      | IRawBinaryOpNode
+      | IRawCastNode
+      | IRawConstantNode
+      | IRawFuncCallNode
+      | IRawIDNode
+      | IRawStructRefNode
+      | IRawUnaryOpNode;
+  };
   op: string;
 }
 
-export interface IRawBaseNode {
-  _nodetype: RawASTNodeTypes;
-  children?: Record<string, RawASTNodes[]>;
-}
-
-export interface IRawBinaryOpNode extends IRawBaseNode {
+export interface IRawBinaryOpNode {
   _nodetype: RawASTNodeTypes.BinaryOp;
-  children: { left: RawASTNodes[]; right: RawASTNodes[] };
+  children?: {
+    left: IRawArrayRefNode | IRawBinaryOpNode | IRawCastNode | IRawConstantNode | IRawFuncCallNode | IRawIDNode | IRawStructRefNode | IRawUnaryOpNode;
+    right: IRawBinaryOpNode | IRawCastNode | IRawConstantNode | IRawFuncCallNode | IRawIDNode | IRawUnaryOpNode;
+  };
   op: string;
 }
 
-export interface IRawBreakNode extends IRawBaseNode {
+export interface IRawBreakNode {
   _nodetype: RawASTNodeTypes.Break;
 }
 
-export interface IRawCaseNode extends IRawBaseNode {
+export interface IRawCaseNode {
   _nodetype: RawASTNodeTypes.Case;
-  children: { expr: IRawConstantNode[]; stmts: RawASTNodes[] };
+  children?: {
+    expr: IRawConstantNode;
+    stmts: (
+      | IRawAssignmentNode
+      | IRawBreakNode
+      | IRawCompoundNode
+      | IRawConstantNode
+      | IRawEmptyStatementNode
+      | IRawForNode
+      | IRawFuncCallNode
+      | IRawIfNode
+    )[];
+  };
 }
 
-export interface IRawCastNode extends IRawBaseNode {
+export interface IRawCastNode {
   _nodetype: RawASTNodeTypes.Cast;
-  children: { expr: RawASTNodes[]; to_type: RawASTNodes[] };
+  children?: {
+    expr:
+      | IRawBinaryOpNode
+      | IRawCastNode
+      | IRawConstantNode
+      | IRawFuncCallNode
+      | IRawIDNode
+      | IRawStructRefNode
+      | IRawTernaryOpNode
+      | IRawUnaryOpNode;
+    to_type: IRawTypenameNode;
+  };
 }
 
-// Statements & expressions
-export interface IRawCompoundNode extends IRawBaseNode {
+export interface IRawCompoundNode {
   _nodetype: RawASTNodeTypes.Compound;
-  children: { block_items: RawASTNodes[] };
+  children?: {
+    block_items?: (
+      | IRawAssignmentNode
+      | IRawBinaryOpNode
+      | IRawBreakNode
+      | IRawCaseNode
+      | IRawCastNode
+      | IRawCompoundNode
+      | IRawConstantNode
+      | IRawDeclNode
+      | IRawDefaultNode
+      | IRawDoWhileNode
+      | IRawEmptyStatementNode
+      | IRawForNode
+      | IRawFuncCallNode
+      | IRawGotoNode
+      | IRawIfNode
+      | IRawLabelNode
+      | IRawReturnNode
+      | IRawSwitchNode
+      | IRawUnaryOpNode
+      | IRawWhileNode
+    )[];
+  };
 }
 
-export interface IRawConstantNode extends IRawBaseNode {
+export interface IRawConstantNode {
   _nodetype: RawASTNodeTypes.Constant;
   type: string;
   value: string;
 }
 
-export interface IRawDeclNode extends IRawBaseNode {
+export interface IRawDeclNode {
   _nodetype: RawASTNodeTypes.Decl;
-  align: unknown[];
-  children: { type: RawASTNodes[] };
-  funcspec: unknown[];
+  children?: {
+    init?:
+      | IRawArrayRefNode
+      | IRawBinaryOpNode
+      | IRawCastNode
+      | IRawConstantNode
+      | IRawFuncCallNode
+      | IRawIDNode
+      | IRawInitListNode
+      | IRawStructRefNode
+      | IRawUnaryOpNode;
+    type: IRawArrayDeclNode | IRawFuncDeclNode | IRawPtrDeclNode | IRawTypeDeclNode;
+  };
   name: string;
-  quals: unknown[];
-  storage: unknown[];
+  quals: string[];
+  storage: string[];
 }
 
-export interface IRawDefaultNode extends IRawBaseNode {
+export interface IRawDefaultNode {
   _nodetype: RawASTNodeTypes.Default;
-  children: { stmts: RawASTNodes[] };
+  children?: {
+    stmts: (IRawAssignmentNode | IRawBreakNode | IRawCompoundNode | IRawEmptyStatementNode | IRawFuncCallNode | IRawIfNode | IRawReturnNode)[];
+  };
 }
 
-export interface IRawDoWhileNode extends IRawBaseNode {
+export interface IRawDoWhileNode {
   _nodetype: RawASTNodeTypes.DoWhile;
-  children: { cond: RawASTNodes[]; stmt: RawASTNodes[] };
+  children?: {
+    cond: IRawBinaryOpNode | IRawConstantNode;
+    stmt: IRawCompoundNode;
+  };
 }
 
-export interface IRawExprListNode extends IRawBaseNode {
+export interface IRawEllipsisParamNode {
+  _nodetype: RawASTNodeTypes.EllipsisParam;
+}
+
+export interface IRawEmptyStatementNode {
+  _nodetype: RawASTNodeTypes.EmptyStatement;
+}
+
+export interface IRawExprListNode {
   _nodetype: RawASTNodeTypes.ExprList;
-  children: { exprs: RawASTNodes[] };
+  children?: {
+    exprs: (
+      | IRawArrayRefNode
+      | IRawBinaryOpNode
+      | IRawCastNode
+      | IRawConstantNode
+      | IRawFuncCallNode
+      | IRawIDNode
+      | IRawStructRefNode
+      | IRawUnaryOpNode
+    )[];
+  };
 }
 
-export interface IRawFileAST extends IRawBaseNode {
+export interface IRawFileASTNode {
   _nodetype: RawASTNodeTypes.FileAST;
-  children: { ext: RawASTNodes[] };
+  children?: {
+    ext?: (IRawDeclNode | IRawFuncDefNode | IRawTypedefNode)[];
+  };
 }
 
-export interface IRawForNode extends IRawBaseNode {
+export interface IRawForNode {
   _nodetype: RawASTNodeTypes.For;
-  children: { cond?: RawASTNodes[]; init?: RawASTNodes[]; next?: RawASTNodes[]; stmt: RawASTNodes[] };
+  children?: {
+    cond?: IRawBinaryOpNode;
+    init?: IRawAssignmentNode;
+    next?: IRawAssignmentNode | IRawUnaryOpNode;
+    stmt: IRawCompoundNode;
+  };
 }
 
-export interface IRawFuncCallNode extends IRawBaseNode {
+export interface IRawFuncCallNode {
   _nodetype: RawASTNodeTypes.FuncCall;
-  children: { args: IRawExprListNode[]; name: RawASTNodes[] };
+  children?: {
+    args?: IRawExprListNode;
+    name: IRawIDNode;
+  };
 }
 
-// Function definitions
-export interface IRawFuncDeclNode extends IRawBaseNode {
+export interface IRawFuncDeclNode {
   _nodetype: RawASTNodeTypes.FuncDecl;
-  children: { args?: RawASTNodes[]; type: RawASTNodes[] };
+  children?: {
+    args?: IRawParamListNode;
+    type: IRawPtrDeclNode | IRawTypeDeclNode;
+  };
 }
 
-export interface IRawFuncDefNode extends IRawBaseNode {
+export interface IRawFuncDefNode {
   _nodetype: RawASTNodeTypes.FuncDef;
-  children: { body: IRawCompoundNode[]; decl: IRawDeclNode[] };
+  children?: {
+    body: IRawCompoundNode;
+    decl: IRawDeclNode;
+  };
 }
 
-export interface IRawGotoNode extends IRawBaseNode {
+export interface IRawGotoNode {
   _nodetype: RawASTNodeTypes.Goto;
-  children: { name: IRawIDNode[] };
+  name: string;
 }
 
-// Type and declaration nodes
-export interface IRawIdentifierTypeNode extends IRawBaseNode {
+export interface IRawIdentifierTypeNode {
   _nodetype: RawASTNodeTypes.IdentifierType;
   names: string[];
 }
 
-// Leaf nodes
-export interface IRawIDNode extends IRawBaseNode {
+export interface IRawIDNode {
   _nodetype: RawASTNodeTypes.ID;
   name: string;
 }
 
-export interface IRawIfNode extends IRawBaseNode {
+export interface IRawIfNode {
   _nodetype: RawASTNodeTypes.If;
-  children: { cond: RawASTNodes[]; iffalse?: RawASTNodes[]; iftrue: RawASTNodes[] };
+  children?: {
+    cond: IRawAssignmentNode | IRawBinaryOpNode | IRawConstantNode | IRawFuncCallNode | IRawIDNode | IRawUnaryOpNode;
+    iffalse?: IRawCompoundNode;
+    iftrue: IRawCompoundNode | IRawEmptyStatementNode | IRawFuncCallNode;
+  };
 }
 
-export interface IRawLabelNode extends IRawBaseNode {
+export interface IRawInitListNode {
+  _nodetype: RawASTNodeTypes.InitList;
+  children?: {
+    exprs: (IRawConstantNode | IRawIDNode | IRawUnaryOpNode)[];
+  };
+}
+
+export interface IRawLabelNode {
   _nodetype: RawASTNodeTypes.Label;
-  children: { name: IRawIDNode[]; stmt: RawASTNodes[] };
-}
-
-export interface IRawPtrDeclNode extends IRawBaseNode {
-  _nodetype: RawASTNodeTypes.PtrDecl;
-  children: { type: IRawTypeDeclNode[] };
-  quals: unknown[];
-}
-
-export interface IRawReturnNode extends IRawBaseNode {
-  _nodetype: RawASTNodeTypes.Return;
-  children: { expr: RawASTNodes[] };
-}
-
-export interface IRawStructNode extends IRawBaseNode {
-  _nodetype: RawASTNodeTypes.Struct;
-  children: { decls: IRawDeclNode[] };
+  children?: {
+    stmt: IRawAssignmentNode | IRawCompoundNode | IRawConstantNode | IRawEmptyStatementNode | IRawForNode | IRawFuncCallNode | IRawIfNode;
+  };
   name: string;
 }
 
-export interface IRawStructRefNode extends IRawBaseNode {
+export interface IRawParamListNode {
+  _nodetype: RawASTNodeTypes.ParamList;
+  children?: {
+    params: (IRawDeclNode | IRawEllipsisParamNode | IRawTypenameNode)[];
+  };
+}
+
+export interface IRawPtrDeclNode {
+  _nodetype: RawASTNodeTypes.PtrDecl;
+  children?: {
+    type: IRawFuncDeclNode | IRawPtrDeclNode | IRawTypeDeclNode;
+  };
+}
+
+export interface IRawReturnNode {
+  _nodetype: RawASTNodeTypes.Return;
+  children?: {
+    expr?: IRawConstantNode | IRawIDNode;
+  };
+}
+
+export interface IRawStructNode {
+  _nodetype: RawASTNodeTypes.Struct;
+  children?: {
+    decls?: IRawDeclNode[];
+  };
+  name: null | string;
+}
+
+export interface IRawStructRefNode {
   _nodetype: RawASTNodeTypes.StructRef;
-  children: { field: RawASTNodes[]; name: RawASTNodes[] };
-  type: "->" | ".";
+  children?: {
+    field: IRawIDNode;
+    name: IRawArrayRefNode | IRawIDNode | IRawStructRefNode;
+  };
+  type: string;
 }
 
-export interface IRawSwitchNode extends IRawBaseNode {
+export interface IRawSwitchNode {
   _nodetype: RawASTNodeTypes.Switch;
-  children: { cond: RawASTNodes[]; stmt: RawASTNodes[] };
+  children?: {
+    cond: IRawConstantNode | IRawIDNode;
+    stmt: IRawCompoundNode;
+  };
 }
 
-export interface IRawTernaryOpNode extends IRawBaseNode {
+export interface IRawTernaryOpNode {
   _nodetype: RawASTNodeTypes.TernaryOp;
-  children: { cond: RawASTNodes[]; iffalse: RawASTNodes[]; iftrue: RawASTNodes[] };
+  children?: {
+    cond: IRawBinaryOpNode;
+    iffalse: IRawBinaryOpNode;
+    iftrue: IRawBinaryOpNode;
+  };
 }
 
-export interface IRawTypeDeclNode extends IRawBaseNode {
+export interface IRawTypeDeclNode {
   _nodetype: RawASTNodeTypes.TypeDecl;
   align: null;
-  children: { type: RawASTNodes[] };
+  children?: {
+    type: IRawIdentifierTypeNode | IRawStructNode | IRawUnionNode;
+  };
   declname: null | string;
-  quals: unknown[];
+  quals: string[];
 }
 
-export interface IRawTypedefNode extends IRawBaseNode {
+export interface IRawTypedefNode {
   _nodetype: RawASTNodeTypes.Typedef;
-  children: { type: IRawTypeDeclNode[] };
+  children?: {
+    type: IRawTypeDeclNode;
+  };
   name: string;
-  quals: unknown[];
   storage: string[];
 }
 
-export interface IRawUnaryOpNode extends IRawBaseNode {
+export interface IRawTypenameNode {
+  _nodetype: RawASTNodeTypes.Typename;
+  align: null;
+  children?: {
+    type: IRawPtrDeclNode | IRawTypeDeclNode;
+  };
+  name: null;
+}
+
+export interface IRawUnaryOpNode {
   _nodetype: RawASTNodeTypes.UnaryOp;
-  children: { expr: RawASTNodes[] };
+  children?: {
+    expr:
+      | IRawArrayRefNode
+      | IRawBinaryOpNode
+      | IRawCastNode
+      | IRawConstantNode
+      | IRawFuncCallNode
+      | IRawIDNode
+      | IRawStructRefNode
+      | IRawTypenameNode
+      | IRawUnaryOpNode;
+  };
   op: string;
 }
 
-export interface IRawUnionNode extends IRawBaseNode {
+export interface IRawUnionNode {
   _nodetype: RawASTNodeTypes.Union;
-  children: { decls: IRawDeclNode[] };
-  name: string;
+  children?: {
+    decls: IRawDeclNode[];
+  };
+  name: null;
 }
 
-export interface IRawWhileNode extends IRawBaseNode {
+export interface IRawWhileNode {
   _nodetype: RawASTNodeTypes.While;
-  children: { cond: RawASTNodes[]; stmt: RawASTNodes[] };
+  children?: {
+    cond: IRawBinaryOpNode | IRawConstantNode;
+    stmt: IRawCompoundNode;
+  };
 }
 
-// Combined union
 export type RawASTNodes =
   | IRawArrayDeclNode
   | IRawArrayRefNode
   | IRawAssignmentNode
   | IRawBinaryOpNode
-  | IRawBreakNode
   | IRawCaseNode
   | IRawCastNode
   | IRawCompoundNode
@@ -251,7 +421,7 @@ export type RawASTNodes =
   | IRawDefaultNode
   | IRawDoWhileNode
   | IRawExprListNode
-  | IRawFileAST
+  | IRawFileASTNode
   | IRawForNode
   | IRawFuncCallNode
   | IRawFuncDeclNode
@@ -260,7 +430,9 @@ export type RawASTNodes =
   | IRawIdentifierTypeNode
   | IRawIDNode
   | IRawIfNode
+  | IRawInitListNode
   | IRawLabelNode
+  | IRawParamListNode
   | IRawPtrDeclNode
   | IRawReturnNode
   | IRawStructNode
@@ -269,6 +441,7 @@ export type RawASTNodes =
   | IRawTernaryOpNode
   | IRawTypeDeclNode
   | IRawTypedefNode
+  | IRawTypenameNode
   | IRawUnaryOpNode
   | IRawUnionNode
   | IRawWhileNode;
