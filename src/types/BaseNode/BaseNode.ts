@@ -19,6 +19,7 @@ export enum ASTNodeTypes {
   IfStatement = "IfStatement",
   IncludeDirective = "IncludeDirective",
   Label = "Label",
+  Literal = "Literal",
   MacroDefinition = "MacroDefinition",
   MemberAccess = "MemberAccess",
   ParameterDeclaration = "ParameterDeclaration",
