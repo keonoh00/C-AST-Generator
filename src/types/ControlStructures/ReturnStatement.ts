@@ -1,5 +1,5 @@
 import { ASTNodeTypes, IBaseNode } from "../BaseNode/BaseNode";
 
-export interface ReturnStatement extends IBaseNode {
+export interface IReturnStatement extends IBaseNode {
   nodeType: ASTNodeTypes.ReturnStatement;
 }
