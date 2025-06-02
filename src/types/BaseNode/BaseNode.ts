@@ -1,3 +1,5 @@
+import { ASTNodes } from "../node";
+
 export enum ASTNodeTypes {
   AddressOfExpression = "AddressOfExpression",
   ArrayDeclaration = "ArrayDeclaration",
@@ -42,6 +44,6 @@ export enum ASTNodeTypes {
 }
 
 export interface IBaseNode {
-  children: unknown[];
+  children: ASTNodes[];
   nodeType: ASTNodeTypes;
 }
