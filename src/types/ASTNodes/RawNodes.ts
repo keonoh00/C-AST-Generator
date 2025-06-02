@@ -34,6 +34,7 @@ export enum RawASTNodeTypes {
   Union = "Union",
   While = "While",
 }
+
 export interface IRawArrayDeclNode extends IRawBaseNode {
   _nodetype: RawASTNodeTypes.ArrayDecl;
   children: {
@@ -240,7 +241,6 @@ export type RawASTNodes =
   | IRawArrayDeclNode
   | IRawArrayRefNode
   | IRawAssignmentNode
-  | IRawBaseNode // fallback for any other nodetypes
   | IRawBinaryOpNode
   | IRawBreakNode
   | IRawCaseNode
