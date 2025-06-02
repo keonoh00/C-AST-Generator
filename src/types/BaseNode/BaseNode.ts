@@ -26,7 +26,7 @@ export enum ASTNodeTypes {
   ReturnStatement = "ReturnStatement",
   // StructRef = "StructRef",
   StructType = "StructType",
-  SwithchStatment = "SwithchStatment",
+  SwitchStatement = "SwitchStatement",
   // TernaryOp = "TernaryOp",
   // TypeDecl = "TypeDecl",
   TypeDefinition = "TypeDefinition",
