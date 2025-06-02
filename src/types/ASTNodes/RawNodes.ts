@@ -1,238 +1,238 @@
-export interface ArrayDeclNode extends BaseNode {
+export interface IRawArrayDeclNode extends IRawBaseNode {
   _nodetype: "ArrayDecl";
   children: {
-    dim: ConstantNode[];
-    type: TypeDeclNode[];
+    dim: IRawConstantNode[];
+    type: IRawTypeDeclNode[];
   };
   dim_quals: unknown[];
 }
 
-export interface ArrayRefNode extends BaseNode {
+export interface IRawArrayRefNode extends IRawBaseNode {
   _nodetype: "ArrayRef";
-  children: { name: ASTNode[]; subscript: ASTNode[] };
+  children: { name: RawASTNodes[]; subscript: RawASTNodes[] };
 }
 
-export interface AssignmentNode extends BaseNode {
+export interface IRawAssignmentNode extends IRawBaseNode {
   _nodetype: "Assignment";
-  children: { lvalue: ASTNode[]; rvalue: ASTNode[] };
+  children: { lvalue: RawASTNodes[]; rvalue: RawASTNodes[] };
   op: string;
 }
 
-// Combined union
-export type ASTNode =
-  | ArrayDeclNode
-  | ArrayRefNode
-  | AssignmentNode
-  | BaseNode // fallback for any other nodetypes
-  | BinaryOpNode
-  | BreakNode
-  | CaseNode
-  | CastNode
-  | CompoundNode
-  | ConstantNode
-  | DeclNode
-  | DefaultNode
-  | DoWhileNode
-  | ExprListNode
-  | FileAST
-  | ForNode
-  | FuncCallNode
-  | FuncDeclNode
-  | FuncDefNode
-  | GotoNode
-  | IdentifierTypeNode
-  | IDNode
-  | IfNode
-  | LabelNode
-  | PtrDeclNode
-  | ReturnNode
-  | StructNode
-  | StructRefNode
-  | SwitchNode
-  | TernaryOpNode
-  | TypeDeclNode
-  | TypedefNode
-  | UnaryOpNode
-  | UnionNode
-  | WhileNode;
-
-export interface BaseNode {
+export interface IRawBaseNode {
   _nodetype: string;
-  children?: Record<string, ASTNode[]>;
+  children?: Record<string, RawASTNodes[]>;
 }
 
-export interface BinaryOpNode extends BaseNode {
+export interface IRawBinaryOpNode extends IRawBaseNode {
   _nodetype: "BinaryOp";
-  children: { left: ASTNode[]; right: ASTNode[] };
+  children: { left: RawASTNodes[]; right: RawASTNodes[] };
   op: string;
 }
 
-export interface BreakNode extends BaseNode {
+export interface IRawBreakNode extends IRawBaseNode {
   _nodetype: "Break";
 }
 
-export interface CaseNode extends BaseNode {
+export interface IRawCaseNode extends IRawBaseNode {
   _nodetype: "Case";
-  children: { expr: ConstantNode[]; stmts: ASTNode[] };
+  children: { expr: IRawConstantNode[]; stmts: RawASTNodes[] };
 }
 
-export interface CastNode extends BaseNode {
+export interface IRawCastNode extends IRawBaseNode {
   _nodetype: "Cast";
-  children: { expr: ASTNode[]; to_type: ASTNode[] };
+  children: { expr: RawASTNodes[]; to_type: RawASTNodes[] };
 }
 
 // Statements & expressions
-export interface CompoundNode extends BaseNode {
+export interface IRawCompoundNode extends IRawBaseNode {
   _nodetype: "Compound";
-  children: { block_items: ASTNode[] };
+  children: { block_items: RawASTNodes[] };
 }
 
-export interface ConstantNode extends BaseNode {
+export interface IRawConstantNode extends IRawBaseNode {
   _nodetype: "Constant";
   type: string;
   value: string;
 }
 
-export interface DeclNode extends BaseNode {
+export interface IRawDeclNode extends IRawBaseNode {
   _nodetype: "Decl";
   align: unknown[];
-  children: { type: ASTNode[] };
+  children: { type: RawASTNodes[] };
   funcspec: unknown[];
   name: string;
   quals: unknown[];
   storage: unknown[];
 }
 
-export interface DefaultNode extends BaseNode {
+export interface IRawDefaultNode extends IRawBaseNode {
   _nodetype: "Default";
-  children: { stmts: ASTNode[] };
+  children: { stmts: RawASTNodes[] };
 }
 
-export interface DoWhileNode extends BaseNode {
+export interface IRawDoWhileNode extends IRawBaseNode {
   _nodetype: "DoWhile";
-  children: { cond: ASTNode[]; stmt: ASTNode[] };
+  children: { cond: RawASTNodes[]; stmt: RawASTNodes[] };
 }
 
-export interface ExprListNode extends BaseNode {
+export interface IRawExprListNode extends IRawBaseNode {
   _nodetype: "ExprList";
-  children: { exprs: ASTNode[] };
+  children: { exprs: RawASTNodes[] };
 }
 
-export interface FileAST extends BaseNode {
+export interface IRawFileAST extends IRawBaseNode {
   _nodetype: "FileAST";
-  children: { ext: ASTNode[] };
+  children: { ext: RawASTNodes[] };
 }
 
-export interface ForNode extends BaseNode {
+export interface IRawForNode extends IRawBaseNode {
   _nodetype: "For";
-  children: { cond?: ASTNode[]; init?: ASTNode[]; next?: ASTNode[]; stmt: ASTNode[] };
+  children: { cond?: RawASTNodes[]; init?: RawASTNodes[]; next?: RawASTNodes[]; stmt: RawASTNodes[] };
 }
 
-export interface FuncCallNode extends BaseNode {
+export interface IRawFuncCallNode extends IRawBaseNode {
   _nodetype: "FuncCall";
-  children: { args: ExprListNode[]; name: ASTNode[] };
+  children: { args: IRawExprListNode[]; name: RawASTNodes[] };
 }
 
 // Function definitions
-export interface FuncDeclNode extends BaseNode {
+export interface IRawFuncDeclNode extends IRawBaseNode {
   _nodetype: "FuncDecl";
-  children: { args?: ASTNode[]; type: ASTNode[] };
+  children: { args?: RawASTNodes[]; type: RawASTNodes[] };
 }
 
-export interface FuncDefNode extends BaseNode {
+export interface IRawFuncDefNode extends IRawBaseNode {
   _nodetype: "FuncDef";
-  children: { body: CompoundNode[]; decl: DeclNode[] };
+  children: { body: IRawCompoundNode[]; decl: IRawDeclNode[] };
 }
 
-export interface GotoNode extends BaseNode {
+export interface IRawGotoNode extends IRawBaseNode {
   _nodetype: "Goto";
-  children: { name: IDNode[] };
+  children: { name: IRawIDNode[] };
 }
 
 // Type and declaration nodes
-export interface IdentifierTypeNode extends BaseNode {
+export interface IRawIdentifierTypeNode extends IRawBaseNode {
   _nodetype: "IdentifierType";
   names: string[];
 }
 
 // Leaf nodes
-export interface IDNode extends BaseNode {
+export interface IRawIDNode extends IRawBaseNode {
   _nodetype: "ID";
   name: string;
 }
 
-export interface IfNode extends BaseNode {
+export interface IRawIfNode extends IRawBaseNode {
   _nodetype: "If";
-  children: { cond: ASTNode[]; iffalse?: ASTNode[]; iftrue: ASTNode[] };
+  children: { cond: RawASTNodes[]; iffalse?: RawASTNodes[]; iftrue: RawASTNodes[] };
 }
 
-export interface LabelNode extends BaseNode {
+export interface IRawLabelNode extends IRawBaseNode {
   _nodetype: "Label";
-  children: { name: IDNode[]; stmt: ASTNode[] };
+  children: { name: IRawIDNode[]; stmt: RawASTNodes[] };
 }
 
-export interface PtrDeclNode extends BaseNode {
+export interface IRawPtrDeclNode extends IRawBaseNode {
   _nodetype: "PtrDecl";
-  children: { type: TypeDeclNode[] };
+  children: { type: IRawTypeDeclNode[] };
   quals: unknown[];
 }
 
-export interface ReturnNode extends BaseNode {
+export interface IRawReturnNode extends IRawBaseNode {
   _nodetype: "Return";
-  children: { expr: ASTNode[] };
+  children: { expr: RawASTNodes[] };
 }
 
-export interface StructNode extends BaseNode {
+export interface IRawStructNode extends IRawBaseNode {
   _nodetype: "Struct";
-  children: { decls: DeclNode[] };
+  children: { decls: IRawDeclNode[] };
   name: string;
 }
 
-export interface StructRefNode extends BaseNode {
+export interface IRawStructRefNode extends IRawBaseNode {
   _nodetype: "StructRef";
-  children: { field: ASTNode[]; name: ASTNode[] };
+  children: { field: RawASTNodes[]; name: RawASTNodes[] };
   type: "->" | ".";
 }
 
-export interface SwitchNode extends BaseNode {
+export interface IRawSwitchNode extends IRawBaseNode {
   _nodetype: "Switch";
-  children: { cond: ASTNode[]; stmt: ASTNode[] };
+  children: { cond: RawASTNodes[]; stmt: RawASTNodes[] };
 }
 
-export interface TernaryOpNode extends BaseNode {
+export interface IRawTernaryOpNode extends IRawBaseNode {
   _nodetype: "TernaryOp";
-  children: { cond: ASTNode[]; iffalse: ASTNode[]; iftrue: ASTNode[] };
+  children: { cond: RawASTNodes[]; iffalse: RawASTNodes[]; iftrue: RawASTNodes[] };
 }
 
-export interface TypeDeclNode extends BaseNode {
+export interface IRawTypeDeclNode extends IRawBaseNode {
   _nodetype: "TypeDecl";
   align: null;
-  children: { type: ASTNode[] };
+  children: { type: RawASTNodes[] };
   declname: null | string;
   quals: unknown[];
 }
 
-export interface TypedefNode extends BaseNode {
+export interface IRawTypedefNode extends IRawBaseNode {
   _nodetype: "Typedef";
-  children: { type: TypeDeclNode[] };
+  children: { type: IRawTypeDeclNode[] };
   name: string;
   quals: unknown[];
   storage: string[];
 }
 
-export interface UnaryOpNode extends BaseNode {
+export interface IRawUnaryOpNode extends IRawBaseNode {
   _nodetype: "UnaryOp";
-  children: { expr: ASTNode[] };
+  children: { expr: RawASTNodes[] };
   op: string;
 }
 
-export interface UnionNode extends BaseNode {
+export interface IRawUnionNode extends IRawBaseNode {
   _nodetype: "Union";
-  children: { decls: DeclNode[] };
+  children: { decls: IRawDeclNode[] };
   name: string;
 }
 
-export interface WhileNode extends BaseNode {
+export interface IRawWhileNode extends IRawBaseNode {
   _nodetype: "While";
-  children: { cond: ASTNode[]; stmt: ASTNode[] };
+  children: { cond: RawASTNodes[]; stmt: RawASTNodes[] };
 }
+
+// Combined union
+export type RawASTNodes =
+  | IRawArrayDeclNode
+  | IRawArrayRefNode
+  | IRawAssignmentNode
+  | IRawBaseNode // fallback for any other nodetypes
+  | IRawBinaryOpNode
+  | IRawBreakNode
+  | IRawCaseNode
+  | IRawCastNode
+  | IRawCompoundNode
+  | IRawConstantNode
+  | IRawDeclNode
+  | IRawDefaultNode
+  | IRawDoWhileNode
+  | IRawExprListNode
+  | IRawFileAST
+  | IRawForNode
+  | IRawFuncCallNode
+  | IRawFuncDeclNode
+  | IRawFuncDefNode
+  | IRawGotoNode
+  | IRawIdentifierTypeNode
+  | IRawIDNode
+  | IRawIfNode
+  | IRawLabelNode
+  | IRawPtrDeclNode
+  | IRawReturnNode
+  | IRawStructNode
+  | IRawStructRefNode
+  | IRawSwitchNode
+  | IRawTernaryOpNode
+  | IRawTypeDeclNode
+  | IRawTypedefNode
+  | IRawUnaryOpNode
+  | IRawUnionNode
+  | IRawWhileNode;

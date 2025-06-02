@@ -1,15 +1,15 @@
 import { promises as fs } from "fs";
 import * as path from "path";
 
-import { ArrayDeclNode, ArrayRefNode, AssignmentNode, ASTNode } from "@/types/ASTNodes/RawNodes";
+import { RawASTNodes } from "@/types/ASTNodes/RawNodes";
 
 /**
  * Recursively reads and validates all JSON files in a directory.
  * @param dirPath Root directory to scan.
  * @returns Array of valid ASTNode objects.
  */
-export async function readJsonFiles(dirPath: string): Promise<ASTNode[]> {
-  let results: ASTNode[] = [];
+export async function readJsonFiles(dirPath: string): Promise<RawASTNodes[]> {
+  let results: RawASTNodes[] = [];
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
   for (const entry of entries) {
@@ -23,7 +23,7 @@ export async function readJsonFiles(dirPath: string): Promise<ASTNode[]> {
         if (isASTNode(raw)) {
           results.push(raw);
         } else {
-          console.error(`Invalid ASTNode in ${fullPath}`, raw);
+          console.error(`Invalid RawASTNodes in ${fullPath}`, raw);
         }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -35,37 +35,9 @@ export async function readJsonFiles(dirPath: string): Promise<ASTNode[]> {
   return results;
 }
 
-// --- Type Guard Functions ---
-function isArrayDeclNode(obj: unknown): obj is ArrayDeclNode {
-  if (!isObject(obj) || obj._nodetype !== "ArrayDecl") return false;
-  const node = obj as unknown as ArrayDeclNode;
-  const { children, dim_quals } = node;
-  return Array.isArray(children.dim) && Array.isArray(children.type) && Array.isArray(dim_quals);
-}
-
-function isArrayRefNode(obj: unknown): obj is ArrayRefNode {
-  if (!isObject(obj) || obj._nodetype !== "ArrayRef") return false;
-  const node = obj as unknown as ArrayRefNode;
-  const { children } = node;
-  return Array.isArray(children.name) && Array.isArray(children.subscript);
-}
-
-function isAssignmentNode(obj: unknown): obj is AssignmentNode {
-  if (!isObject(obj) || obj._nodetype !== "Assignment") return false;
-  const node = obj as unknown as AssignmentNode;
-  const { children, op } = node;
-  return typeof op === "string" && Array.isArray(children.lvalue) && Array.isArray(children.rvalue);
-}
-
-function isASTNode(obj: unknown): obj is ASTNode {
+function isASTNode(obj: unknown): obj is RawASTNodes {
   if (!isObject(obj)) return false;
   switch (obj._nodetype) {
-    case "ArrayDecl":
-      return isArrayDeclNode(obj);
-    case "ArrayRef":
-      return isArrayRefNode(obj);
-    case "Assignment":
-      return isAssignmentNode(obj);
     default:
       return true; // assume other ASTNode types are valid
   }
