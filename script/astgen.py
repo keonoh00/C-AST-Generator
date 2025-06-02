@@ -9,6 +9,51 @@ from typing import Any, Dict, List, Optional, Tuple
 from pycparser import c_ast, c_parser, parse_file
 from tqdm import tqdm
 
+# ─── Top-level factories (for multiprocessing picklability) ───────────────────
+
+
+def _make_prop_set_dict() -> defaultdict:
+    """Factory: node_type → (prop_name → set of type-strings)."""
+    return defaultdict(set)
+
+
+def _make_node_counts_dict() -> defaultdict:
+    """Factory: node_type → how many times this node appeared."""
+    return defaultdict(int)
+
+
+def _make_prop_counts_inner() -> defaultdict:
+    """Factory: prop_name → how many times that prop was present."""
+    return defaultdict(int)
+
+
+def _make_prop_counts_dict() -> defaultdict:
+    """Factory: node_type → (prop_name → count)."""
+    return defaultdict(_make_prop_counts_inner)
+
+
+def _make_list_max_inner() -> defaultdict:
+    """Factory: prop_name → maximum length seen for that list."""
+    return defaultdict(int)
+
+
+def _make_list_max_dict() -> defaultdict:
+    """Factory: node_type → (prop_name → max length int)."""
+    return defaultdict(_make_list_max_inner)
+
+
+def _make_is_list_inner() -> defaultdict:
+    """Factory: prop_name → bool (True if ever seen as a list)."""
+    return defaultdict(bool)
+
+
+def _make_is_list_dict() -> defaultdict:
+    """Factory: node_type → (prop_name → bool)."""
+    return defaultdict(_make_is_list_inner)
+
+
+# ─── ASTGenerator Class ───────────────────────────────────────────────────────
+
 
 class ASTGenerator:
     def __init__(
@@ -22,8 +67,10 @@ class ASTGenerator:
         self.output_dir = output_dir
         self.prune = prune
         self.generate_receipt = generate_receipt
+
         os.makedirs(self.output_dir, exist_ok=True)
         self.parser = c_parser.CParser()
+
         fake_libc = "/home/keonoh/C-AST-Generator/script/fake_libc_include"
         support_dir = "/home/keonoh/C-AST-Generator/data/C/testcasesupport"
         self.fake_paths = {fake_libc, support_dir}
@@ -40,7 +87,23 @@ class ASTGenerator:
     @staticmethod
     def _process_file(
         args: Tuple[str, str, str, str, List[str], bool, bool],
-    ) -> Tuple[Optional[str], Dict[str, List[Tuple[str, ...]]]]:
+    ) -> Tuple[
+        Optional[str],
+        Dict[str, Dict[str, List[str]]],
+        Dict[str, int],
+        Dict[str, Dict[str, int]],
+        Dict[str, Dict[str, int]],
+        Dict[str, Dict[str, bool]],
+    ]:
+        """
+        Returns:
+          - err_msg or None
+          - sample_types: nodeType → (propName → sorted list of type-strings)
+          - node_counts:  nodeType → count of occurrences
+          - prop_counts:  nodeType → (propName → how many nodes had that prop)
+          - list_max:     nodeType → (propName → maximum length seen if it was a list)
+          - is_list:      nodeType → (propName → True if ever seen as a list)
+        """
         infile, input_dir, output_dir, cpp_path, cpp_args, prune, generate_receipt = (
             args
         )
@@ -63,28 +126,99 @@ class ASTGenerator:
         try:
             ast = gen._parse_ast(infile)
         except Exception as e:
-            return f"{infile}: {e}", {}
+            return f"{infile}: {e}", {}, {}, {}, {}, {}
 
         gen._save_ast(ast, ast_file)
         gen.ast_to_json(ast, json_file)
 
-        samples: Dict[str, set] = defaultdict(set)
+        # 1) samples: nodeType → (propName → set of type-strings)
+        samples: Dict[str, Dict[str, set]] = defaultdict(_make_prop_set_dict)
+        # 2) node_counts: nodeType → int
+        node_counts: Dict[str, int] = _make_node_counts_dict()
+        # 3) prop_counts: nodeType → (propName → int)
+        prop_counts: Dict[str, Dict[str, int]] = _make_prop_counts_dict()
+        # 4) list_max: nodeType → (propName → max length of list)
+        list_max: Dict[str, Dict[str, int]] = _make_list_max_dict()
+        # 5) is_list: nodeType → (propName → bool)
+        is_list: Dict[str, Dict[str, bool]] = _make_is_list_dict()
+
         if gen.generate_receipt:
 
             def _traverse(node: Any) -> None:
                 if not isinstance(node, c_ast.Node):
                     return
+
                 nt = node.__class__.__name__
-                attrs = set(getattr(node, "attr_names", []) or [])
-                children = [name for name, _ in node.children() or []]
-                props = tuple(sorted(attrs.union(children)))
-                samples[nt].add(props)
-                for _, child in node.children() or []:
-                    _traverse(child)
+                node_counts[nt] += 1
+
+                # ─── Handle attributes in attr_names ─────────────────────────────
+                for attr_name in getattr(node, "attr_names", []) or []:
+                    value = getattr(node, attr_name)
+                    prop_counts[nt][attr_name] += 1  # presence on this node
+
+                    if isinstance(value, c_ast.Node):
+                        # single child
+                        tname = value.__class__.__name__
+                        samples[nt][attr_name].add(tname)
+
+                    elif isinstance(value, list):
+                        # mark as list
+                        is_list[nt][attr_name] = True
+                        L = len(value)
+                        list_max[nt][attr_name] = max(list_max[nt][attr_name], L)
+
+                        # if empty, record presence but no types
+                        if L == 0:
+                            continue
+                        for element in value:
+                            if isinstance(element, c_ast.Node):
+                                samples[nt][attr_name].add(element.__class__.__name__)
+                            else:
+                                samples[nt][attr_name].add(type(element).__name__)
+
+                    else:
+                        # primitive (str/int/float/bool/NoneType/etc.)
+                        samples[nt][attr_name].add(type(value).__name__)
+
+                # ─── Handle children from node.children() ───────────────────────
+                # First, collect all children under each prop_key:
+                child_bucket: Dict[str, List[c_ast.Node]] = defaultdict(list)
+                for child_name, child_node in node.children() or []:
+                    m = re.match(r"^(.+)\[\d+\]$", child_name)
+                    prop_key = m.group(1) if m else child_name
+                    child_bucket[prop_key].append(child_node)
+
+                # Now process each prop_key once
+                for prop_key, nodes_list in child_bucket.items():
+                    prop_counts[nt][prop_key] += 1  # property present on this node
+                    count = len(nodes_list)
+                    if count > 1:
+                        is_list[nt][prop_key] = True
+                    list_max[nt][prop_key] = max(list_max[nt][prop_key], count)
+
+                    for child_node in nodes_list:
+                        tname = child_node.__class__.__name__
+                        samples[nt][prop_key].add(tname)
+                        _traverse(child_node)
 
             _traverse(ast)
 
-        return None, {nt: list(props_set) for nt, props_set in samples.items()}
+        # Convert each inner set → sorted list
+        final_samples: Dict[str, Dict[str, List[str]]] = {}
+        for nt, prop_map in samples.items():
+            final_samples[nt] = {
+                prop_name: sorted(list(types_set))
+                for prop_name, types_set in prop_map.items()
+            }
+
+        return (
+            None,
+            final_samples,
+            dict(node_counts),
+            {nt: dict(prop_map) for nt, prop_map in prop_counts.items()},
+            {nt: dict(prop_map) for nt, prop_map in list_max.items()},
+            {nt: dict(prop_map) for nt, prop_map in is_list.items()},
+        )
 
     def generate_all(self) -> None:
         tasks: List[Tuple[str, str, str, str, List[str], bool, bool]] = []
@@ -104,10 +238,23 @@ class ASTGenerator:
                         )
                     )
 
-        combined: Dict[str, set] = defaultdict(set)
+        # Combined accumulators across all files
+        combined: Dict[str, Dict[str, set]] = defaultdict(_make_prop_set_dict)
+        combined_node_counts: Dict[str, int] = _make_node_counts_dict()
+        combined_prop_counts: Dict[str, Dict[str, int]] = _make_prop_counts_dict()
+        combined_list_max: Dict[str, Dict[str, int]] = _make_list_max_dict()
+        combined_is_list: Dict[str, Dict[str, bool]] = _make_is_list_dict()
+
         error_log = open(os.path.join(self.output_dir, "error.log"), "w+")
         with Pool(cpu_count()) as pool:
-            for err, sample in tqdm(
+            for (
+                err,
+                sample,
+                node_counts,
+                prop_counts,
+                list_max,
+                is_list,
+            ) in tqdm(
                 pool.imap_unordered(ASTGenerator._process_file, tasks),
                 total=len(tasks),
                 desc="Processing files",
@@ -115,20 +262,108 @@ class ASTGenerator:
             ):
                 if err:
                     error_log.write(err + "\n")
-                for nt, props_list in sample.items():
-                    for props in props_list:
-                        combined[nt].add(props)
+
+                # ─── Merge sample types ────────────────────────────────────────
+                for nt, prop_map in sample.items():
+                    for prop_name, types_list in prop_map.items():
+                        combined[nt][prop_name].update(types_list)
+
+                # ─── Merge node_counts ────────────────────────────────────────
+                for nt, count in node_counts.items():
+                    combined_node_counts[nt] += count
+
+                # ─── Merge prop_counts ────────────────────────────────────────
+                for nt, prop_map in prop_counts.items():
+                    for prop_name, count in prop_map.items():
+                        combined_prop_counts[nt][prop_name] += count
+
+                # ─── Merge list_max ───────────────────────────────────────────
+                for nt, prop_map in list_max.items():
+                    for prop_name, length in prop_map.items():
+                        combined_list_max[nt][prop_name] = max(
+                            combined_list_max[nt].get(prop_name, 0),
+                            length,
+                        )
+
+                # ─── Merge is_list ────────────────────────────────────────────
+                for nt, prop_map in is_list.items():
+                    for prop_name, was_list in prop_map.items():
+                        if was_list:
+                            combined_is_list[nt][prop_name] = True
 
         if self.generate_receipt:
-            receipt_file = os.path.join(self.output_dir, "combined_receipt.json")
-            print("Writing combined receipt...")
-            receipt = {
-                nt: [list(props) for props in prop_sets]
-                for nt, prop_sets in combined.items()
+            # 1) Optional JSON output
+            json_receipt_file = os.path.join(self.output_dir, "combined_receipt.json")
+            receipt_dict: Dict[str, Dict[str, List[str]]] = {
+                nt: {
+                    prop_name: sorted(list(type_set))
+                    for prop_name, type_set in prop_map.items()
+                }
+                for nt, prop_map in combined.items()
             }
-            with open(receipt_file, "w") as f:
-                json.dump(receipt, f, indent=2)
-            print("Combined receipt written to", receipt_file)
+            with open(json_receipt_file, "w") as f:
+                json.dump(receipt_dict, f, indent=2)
+
+            # 2) Generate TypeScript receipt with proper array vs. scalar logic
+            ts_receipt_file = os.path.join(self.output_dir, "combined_receipt.ts")
+            print("Writing TypeScript receipt to", ts_receipt_file)
+
+            def python_to_ts(typename: str) -> str:
+                mapping = {
+                    "str": "string",
+                    "int": "number",
+                    "float": "number",
+                    "bool": "boolean",
+                    "NoneType": "null",
+                    "list": "any[]",
+                }
+                return mapping.get(typename, typename)
+
+            lines: List[str] = []
+            lines.append("/* Auto-generated AST Receipt (TypeScript) */")
+            lines.append("")
+            lines.append("export interface ASTReceipt {")
+            for nt, prop_map in combined.items():
+                lines.append(f"  {nt}: {{")
+                total_nodes = combined_node_counts.get(nt, 0)
+
+                for prop_name, type_set in prop_map.items():
+                    present_count = combined_prop_counts[nt].get(prop_name, 0)
+                    optional_marker = "?" if present_count < total_nodes else ""
+
+                    was_list = combined_is_list[nt].get(prop_name, False)
+                    max_len = combined_list_max[nt].get(prop_name, 0)
+
+                    # Translate Python‐type names → TS types or literals
+                    ts_types = [python_to_ts(t) for t in sorted(type_set)]
+                    ts_literals: List[str] = []
+                    for t in ts_types:
+                        if t in {"string", "number", "boolean", "null", "any[]"}:
+                            ts_literals.append(t)
+                        else:
+                            ts_literals.append(f'"{t}"')
+                    union_inner = " | ".join(ts_literals)
+
+                    if was_list:
+                        if max_len <= 1:
+                            # List always ≤ 1 element → flatten to scalar union
+                            ts_type_expr = union_inner
+                        else:
+                            # Sometimes > 1 → use Array<union>
+                            ts_type_expr = f"Array<{union_inner}>"
+                    else:
+                        # Never a list → scalar union
+                        ts_type_expr = union_inner
+
+                    lines.append(f"    {prop_name}{optional_marker}: {ts_type_expr};")
+                lines.append("  };")
+            lines.append("}")
+            lines.append("")
+
+            with open(ts_receipt_file, "w") as ts_f:
+                ts_f.write("\n".join(lines))
+
+            print("TypeScript receipt written to", ts_receipt_file)
 
     def _parse_ast(self, path: str) -> c_ast.FileAST:
         ast = parse_file(
@@ -181,7 +416,6 @@ class ASTGenerator:
     def _node_to_dict(self, node: Any) -> Any:
         if not isinstance(node, c_ast.Node):
             return node
-        # Base of the JSON node
         result: dict[str, Any] = {"_nodetype": node.__class__.__name__}
         for attr in getattr(node, "attr_names", []) or []:
             result[attr] = getattr(node, attr)
