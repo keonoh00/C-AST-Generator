@@ -1,4 +1,41 @@
-export interface IFactoryBaseNode {
+export enum ASTNodeTypes {
+  ArrayDeclaration = "ArrayDeclaration",
+  ArraySubscriptionExpression = "ArraySubscriptionExpression",
+  AssignmentExpressiong = "AssignmentExpressiong",
+  BinaryExpression = "BinaryExpression",
+  BreakStatement = "BreakStatement",
+  // Case = "Case",
+  CastStatement = "CastStatement",
+  CompoundStatement = "CompoundStatement",
+  // Constant = "Constant",
+  // Decl = "Decl",
+  // Default = "Default",
+  DoWhileStatement = "DoWhileStatement",
+  // ExprList = "ExprList",
+  // FileAST = "FileAST",
+  ForStatement = "ForStatement",
+  FunctionDeclaration = "FunctionDeclaration",
+  // FuncCall = "FuncCall",
+  FunctionDefinition = "FunctionDefinition",
+  GotoStatement = "GotoStatement",
+  // ID = "ID",
+  // IdentifierType = "IdentifierType",
+  IfStatement = "IfStatement",
+  Label = "Label",
+  PointerDeclaration = "PointerDeclaration",
+  ReturnStatement = "ReturnStatement",
+  // StructRef = "StructRef",
+  StructType = "StructType",
+  SwithchStatment = "SwithchStatment",
+  // TernaryOp = "TernaryOp",
+  // TypeDecl = "TypeDecl",
+  TypeDefinition = "TypeDefinition",
+  UnarayExpression = "UnarayExpression",
+  UnionType = "UnionType",
+  WhileStatement = "WhileStatement",
+}
+
+export interface IBaseNode {
   children: unknown[];
-  nodeType: string;
+  nodeType: ASTNodeTypes;
 }

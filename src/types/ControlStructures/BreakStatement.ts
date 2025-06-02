@@ -1,5 +1,5 @@
-import { IFactoryBaseNode } from "../BaseNode/BaseNode";
+import { ASTNodeTypes, IBaseNode } from "../BaseNode/BaseNode";
 
-export interface IFactoryBreakStatement extends IFactoryBaseNode {
-  nodeType: "BreakStatement";
+export interface IBreakStatement extends IBaseNode {
+  nodeType: ASTNodeTypes.BreakStatement;
 }

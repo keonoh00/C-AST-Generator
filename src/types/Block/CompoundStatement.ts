@@ -1,5 +1,5 @@
-import { IFactoryBaseNode } from "../BaseNode/BaseNode";
+import { ASTNodeTypes, IBaseNode } from "../BaseNode/BaseNode";
 
-export interface IFactoryCompoundStatement extends IFactoryBaseNode {
-  nodeType: "CompoundStatement";
+export interface ICompoundStatement extends IBaseNode {
+  nodeType: ASTNodeTypes.CompoundStatement;
 }
