@@ -4,7 +4,7 @@ import re
 import shutil
 from collections import defaultdict
 from multiprocessing import Pool, cpu_count
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pycparser import c_ast, c_parser, parse_file
 from tqdm import tqdm
@@ -238,7 +238,7 @@ class ASTGenerator:
                         )
                     )
 
-        # Combined accumulators across all files
+        # ─── Combined accumulators across all files ─────────────────────────
         combined: Dict[str, Dict[str, set]] = defaultdict(_make_prop_set_dict)
         combined_node_counts: Dict[str, int] = _make_node_counts_dict()
         combined_prop_counts: Dict[str, Dict[str, int]] = _make_prop_counts_dict()
@@ -291,8 +291,9 @@ class ASTGenerator:
                         if was_list:
                             combined_is_list[nt][prop_name] = True
 
+        # ─── After all files are processed, optionally generate receipts ──
         if self.generate_receipt:
-            # 1) Optional JSON output
+            # ─── Phase 1: Write JSON receipt ──────────────────────────────────
             json_receipt_file = os.path.join(self.output_dir, "combined_receipt.json")
             receipt_dict: Dict[str, Dict[str, List[str]]] = {
                 nt: {
@@ -304,60 +305,121 @@ class ASTGenerator:
             with open(json_receipt_file, "w") as f:
                 json.dump(receipt_dict, f, indent=2)
 
-            # 2) Generate TypeScript receipt with proper array vs. scalar logic
-            ts_receipt_file = os.path.join(self.output_dir, "combined_receipt.ts")
-            print("Writing TypeScript receipt to", ts_receipt_file)
+            # ─── Phase 2: Build “schema” per node type ────────────────────────
+            #
+            # For each node type `nt`, collect:
+            #   - primitive_props: prop → [ JSON‐type literals ]
+            #   - child_props:     prop → [ child‐node class names ]
+            #   - total_count:     how many times nodes of type nt appeared
+            #
+            schema: Dict[
+                str,
+                Dict[
+                    str,
+                    Union[
+                        int,
+                        Dict[str, List[str]],  # primitive_props
+                        Dict[str, List[str]],  # child_props
+                    ],
+                ],
+            ] = {}
 
-            def python_to_ts(typename: str) -> str:
+            def python_to_json_ts(typename: str) -> str:
                 mapping = {
                     "str": "string",
                     "int": "number",
                     "float": "number",
                     "bool": "boolean",
                     "NoneType": "null",
-                    "list": "any[]",
                 }
-                return mapping.get(typename, typename)
+                return mapping.get(typename, "unknown")
+
+            for nt, prop_map in combined.items():
+                primitive_props: Dict[str, List[str]] = {}
+                child_props: Dict[str, List[str]] = {}
+                total_count = combined_node_counts.get(nt, 0)
+
+                for prop_name, types_set in prop_map.items():
+                    json_types: List[str] = []
+                    node_types: List[str] = []
+
+                    for t in sorted(types_set):
+                        mapped = python_to_json_ts(t)
+                        if mapped != "unknown":
+                            json_types.append(mapped)
+                        else:
+                            node_types.append(t)
+
+                    if json_types:
+                        primitive_props[prop_name] = sorted(set(json_types))
+                    if node_types:
+                        child_props[prop_name] = sorted(set(node_types))
+
+                schema[nt] = {
+                    "primitive_props": primitive_props,
+                    "child_props": child_props,
+                    "total_count": total_count,
+                }
+
+            # ─── Phase 3: Emit TypeScript ────────────────────────────────────
+            ts_receipt_file = os.path.join(self.output_dir, "combined_receipt.ts")
+            print("Writing TypeScript receipt to", ts_receipt_file)
 
             lines: List[str] = []
-            lines.append("/* Auto-generated AST Receipt (TypeScript) */")
+            lines.append("/* Auto-generated AST Receipt (TypeScript, matching JSON) */")
             lines.append("")
-            lines.append("export interface ASTReceipt {")
-            for nt, prop_map in combined.items():
-                lines.append(f"  {nt}: {{")
-                total_nodes = combined_node_counts.get(nt, 0)
 
-                for prop_name, type_set in prop_map.items():
-                    present_count = combined_prop_counts[nt].get(prop_name, 0)
-                    optional_marker = "?" if present_count < total_nodes else ""
+            for nt, info in schema.items():
+                interface_name = f"{nt}Node"
+                primitive_props: Dict[str, List[str]] = info["primitive_props"]  # type: ignore
+                child_props: Dict[str, List[str]] = info["child_props"]  # type: ignore
+                total_count: int = info["total_count"]  # type: ignore
 
-                    was_list = combined_is_list[nt].get(prop_name, False)
-                    max_len = combined_list_max[nt].get(prop_name, 0)
+                lines.append(f"export interface {interface_name} {{")
+                # 1) Discriminated literal
+                lines.append(f'  _nodetype: "{nt}";')
 
-                    # Translate Python‐type names → TS types or literals
-                    ts_types = [python_to_ts(t) for t in sorted(type_set)]
-                    ts_literals: List[str] = []
-                    for t in ts_types:
-                        if t in {"string", "number", "boolean", "null", "any[]"}:
-                            ts_literals.append(t)
+                # 2) Emit a nested `children` block if there are any child props
+                if child_props:
+                    lines.append(f"  children?: {{")
+                    for prop_name, node_types in child_props.items():
+                        present_count = combined_prop_counts[nt].get(prop_name, 0)
+                        optional_marker = "?" if present_count < total_count else ""
+                        was_list = combined_is_list[nt].get(prop_name, False)
+
+                        # Map each child‐node class name to its interface name
+                        mapped_node_types = [f"{child}Node" for child in node_types]
+                        union_inner = " | ".join(mapped_node_types)
+
+                        if was_list:
+                            ts_type = f"Array<{union_inner}>"
                         else:
-                            ts_literals.append(f'"{t}"')
-                    union_inner = " | ".join(ts_literals)
+                            ts_type = union_inner
+
+                        lines.append(f"    {prop_name}{optional_marker}: {ts_type};")
+                    lines.append(f"  }};")
+
+                # 3) Emit each primitive prop at the top level
+                for prop_name, json_types in primitive_props.items():
+                    present_count = combined_prop_counts[nt].get(prop_name, 0)
+                    optional_marker = "?" if present_count < total_count else ""
+                    was_list = combined_is_list[nt].get(prop_name, False)
 
                     if was_list:
-                        if max_len <= 1:
-                            # List always ≤ 1 element → flatten to scalar union
-                            ts_type_expr = union_inner
-                        else:
-                            # Sometimes > 1 → use Array<union>
-                            ts_type_expr = f"Array<{union_inner}>"
+                        union_inner = " | ".join(json_types)
+                        ts_type = f"Array<{union_inner}>"
                     else:
-                        # Never a list → scalar union
-                        ts_type_expr = union_inner
+                        ts_type = " | ".join(json_types)
 
-                    lines.append(f"    {prop_name}{optional_marker}: {ts_type_expr};")
-                lines.append("  };")
-            lines.append("}")
+                    lines.append(f"  {prop_name}{optional_marker}: {ts_type};")
+
+                lines.append("}")
+                lines.append("")
+
+            # 4) Emit the union of all node interfaces
+            all_interfaces = [f"{nt}Node" for nt in schema.keys()]
+            union_alias = " | ".join(all_interfaces)
+            lines.append(f"export type ASTNodeJSON = {union_alias};")
             lines.append("")
 
             with open(ts_receipt_file, "w") as ts_f:
