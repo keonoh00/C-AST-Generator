@@ -126,17 +126,18 @@ class ASTGenerator:
 
         gen = _cached_gen
 
+        # Always copy the original source file into the output directory
         rel_dir = gen._get_save_path(infile)
         fname = os.path.basename(infile)
         original = os.path.join(rel_dir, fname)
+        shutil.copy2(infile, original)
+
         ast_file = os.path.join(rel_dir, fname + ".ast")
         json_file = os.path.join(rel_dir, fname + ".json")
 
         try:
             ast = gen._parse_ast(infile)
         except Exception as e:
-            # Only copy on failure for debugging
-            shutil.copy2(infile, original)
             return f"{infile}: {e}", {}, {}, {}, {}
 
         # On success, write AST text and JSON
