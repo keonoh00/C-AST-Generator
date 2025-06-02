@@ -1,7 +1,7 @@
 export enum ASTNodeTypes {
   ArrayDeclaration = "ArrayDeclaration",
   ArraySubscriptionExpression = "ArraySubscriptionExpression",
-  AssignmentExpressiong = "AssignmentExpressiong",
+  AssignmentExpression = "AssignmentExpression",
   BinaryExpression = "BinaryExpression",
   BreakStatement = "BreakStatement",
   // Case = "Case",
