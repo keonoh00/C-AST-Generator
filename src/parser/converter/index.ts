@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
@@ -45,8 +46,13 @@ export class CParserNodeConverter {
     };
   }
 
-  private convertArrayRef(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertArrayRef(parserNode: ParserASTNode): IArraySubscriptionExpression | undefined {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    return {
+      children: this.convertCParserNodes(children),
+      nodeType: ASTNodeTypes.ArraySubscriptionExpression,
+    };
   }
 
   private convertAssignment(parserNode: ParserASTNode): IAssignmentExpression | undefined {
