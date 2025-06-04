@@ -37,13 +37,19 @@ export class CParserNodeConverter {
     const rawLength = constNode.value;
     const length: number = typeof rawLength === "string" && /^\d+$/.test(rawLength) ? parseInt(rawLength, 10) : 0;
 
-    return {
-      children: this.convertCParserNodes(children),
+    const base: IArrayDeclaration = {
       elementType,
       length,
       name,
       nodeType: ASTNodeTypes.ArrayDeclaration,
     };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertArrayRef(parserNode: ParserASTNode): IArraySubscriptionExpression | undefined {
