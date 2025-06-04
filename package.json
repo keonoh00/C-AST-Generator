@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "generate": "NODE_OPTIONS='--max-old-space-size=8192' tsx src/nodeFactory/generateSchema.ts ast_output/testcases src/types/ASTNodes/__generated_schema__.d.ts",
+    "generate": "tsx src/nodeFactory/generateSchema.ts",
     "start": "npm run generate && npx tsx src/index.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
