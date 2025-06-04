@@ -96,7 +96,7 @@ ${lines
 const union = `export type ParserASTNode =\n  | ${typeNames.join("\n  | ")};\n`;
 
 // Write to file
-const outputPath = path.resolve(process.cwd(), "src/types/ASTNodes/pycparser.d.ts");
+const outputPath = path.resolve(process.cwd(), "src/types/PyCParser/pycparser.d.ts");
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 fs.writeFileSync(outputPath, header + "\n" + kindEnum + "\n\n" + interfaces.join("\n") + "\n" + union);
 
