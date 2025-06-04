@@ -28,6 +28,7 @@
   "devDependencies": {
     "@eslint/js": "^9.27.0",
     "@tsconfig/node22": "^22.0.2",
+    "@types/cli-progress": "^3.11.6",
     "@types/express": "^5.0.2",
     "@types/node": "^22.15.27",
     "eslint": "^9.27.0",
@@ -36,5 +37,8 @@
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.33.0"
+  },
+  "dependencies": {
+    "cli-progress": "^3.12.0"
   }
 }
