@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
-import { ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
+import { IParserConstantNode, IParserIdentifierTypeNode, IParserTypeDeclNode, ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
 
 export class CParserNodeConverter {
   public convertCParserNodes(parserNodes: ParserASTNode[]): ASTNodes[] {
@@ -18,7 +19,35 @@ export class CParserNodeConverter {
   }
 
   private convertArrayDecl(parserNode: ParserASTNode): IArrayDeclaration | undefined {
-    return undefined;
+    if (parserNode.kind !== ParserKind.ArrayDecl) return undefined;
+
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const typeDecl = children.find((c): c is IParserTypeDeclNode => typeof c === "object" && "kind" in c && c.kind === ParserKind.TypeDecl);
+
+    const constNode = children.find((c): c is IParserConstantNode => typeof c === "object" && "kind" in c && c.kind === ParserKind.Constant);
+
+    if (!typeDecl || !constNode) return undefined;
+
+    const typeDeclChildren = Array.isArray(typeDecl.children) ? (typeDecl.children as ParserASTNode[]) : [];
+
+    const identifierType = typeDeclChildren.find(
+      (c): c is IParserIdentifierTypeNode => typeof c === "object" && "kind" in c && c.kind === ParserKind.IdentifierType
+    );
+
+    const name: string = typeof typeDecl.declname === "string" ? typeDecl.declname : "";
+    const elementType: string = Array.isArray(identifierType?.names) ? identifierType.names.join(" ") : "";
+
+    const rawLength = constNode.value;
+    const length: number = typeof rawLength === "string" && /^\d+$/.test(rawLength) ? parseInt(rawLength, 10) : 0;
+
+    return {
+      children: this.convertCParserNodes(children),
+      elementType,
+      length,
+      name,
+      nodeType: ASTNodeTypes.ArrayDeclaration,
+    };
   }
 
   private convertArrayRef(parserNode: ParserASTNode): ASTNodes | undefined {
