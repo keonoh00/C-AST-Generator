@@ -50,6 +50,16 @@ def _make_prop_counts_dict() -> defaultdict:
     return defaultdict(_make_prop_counts_inner)
 
 
+def _make_list_max_inner() -> defaultdict:
+    """Factory: prop_name → maximum length seen for that list."""
+    return defaultdict(int)
+
+
+def _make_list_max_dict() -> defaultdict:
+    """Factory: node_type → (prop_name → max length int)."""
+    return defaultdict(_make_list_max_inner)
+
+
 def _make_is_list_inner() -> defaultdict:
     """Factory: prop_name → bool (True if ever seen as a list)."""
     return defaultdict(bool)
@@ -75,7 +85,6 @@ class ASTGenerator:
         self.generate_receipt = generate_receipt
 
         os.makedirs(self.output_dir, exist_ok=True)
-        # parser is not used directly because parse_file builds its own
         self.parser = c_parser.CParser()
 
         fake_libc = "/home/keonoh/C-AST-Generator/script/fake_libc_include"
@@ -99,6 +108,7 @@ class ASTGenerator:
         Dict[str, Dict[str, List[str]]],
         Dict[str, int],
         Dict[str, Dict[str, int]],
+        Dict[str, Dict[str, int]],
         Dict[str, Dict[str, bool]],
     ]:
         """
@@ -107,6 +117,7 @@ class ASTGenerator:
           - sample_types: nodeType → (propName → sorted list of type-strings)
           - node_counts:  nodeType → count of occurrences
           - prop_counts:  nodeType → (propName → how many nodes had that prop)
+          - list_max:     nodeType → (propName → max length seen for that list)
           - is_list:      nodeType → (propName → True if ever seen as a list)
         """
         infile, cfg = args
@@ -138,16 +149,15 @@ class ASTGenerator:
         try:
             ast = gen._parse_ast(infile)
         except Exception as e:
-            return f"{infile}: {e}", {}, {}, {}, {}
+            return f"{infile}: {e}", {}, {}, {}, {}, {}
 
-        # On success, write AST text and JSON
         gen._save_ast(ast, ast_file)
         gen.ast_to_json(ast, json_file)
 
-        # Prepare accumulators for receipt generation
         samples: Dict[str, Dict[str, set]] = defaultdict(_make_prop_set_dict)
         node_counts: Dict[str, int] = _make_node_counts_dict()
         prop_counts: Dict[str, Dict[str, int]] = _make_prop_counts_dict()
+        list_max: Dict[str, Dict[str, int]] = _make_list_max_dict()
         is_list: Dict[str, Dict[str, bool]] = defaultdict(_make_is_list_inner)
 
         if cfg.generate_receipt:
@@ -169,11 +179,18 @@ class ASTGenerator:
 
                     elif isinstance(value, list):
                         is_list[nt][attr_name] = True
-                        for element in value:
-                            if isinstance(element, c_ast.Node):
-                                samples[nt][attr_name].add(element.__class__.__name__)
-                            else:
-                                samples[nt][attr_name].add(type(element).__name__)
+                        L = len(value)
+                        list_max[nt][attr_name] = max(list_max[nt][attr_name], L)
+                        if L == 0:
+                            samples[nt][attr_name].add("str")
+                        else:
+                            for element in value:
+                                if isinstance(element, c_ast.Node):
+                                    samples[nt][attr_name].add(
+                                        element.__class__.__name__
+                                    )
+                                else:
+                                    samples[nt][attr_name].add(type(element).__name__)
 
                     else:
                         samples[nt][attr_name].add(type(value).__name__)
@@ -187,8 +204,10 @@ class ASTGenerator:
 
                 for prop_key, nodes_list in child_bucket.items():
                     prop_counts[nt][prop_key] += 1
-                    if len(nodes_list) > 1:
+                    count = len(nodes_list)
+                    if count > 1:
                         is_list[nt][prop_key] = True
+                    list_max[nt][prop_key] = max(list_max[nt][prop_key], count)
 
                     for child_node in nodes_list:
                         samples[nt][prop_key].add(child_node.__class__.__name__)
@@ -196,7 +215,6 @@ class ASTGenerator:
 
             _traverse(ast)
 
-        # Convert each inner set → sorted list
         final_samples: Dict[str, Dict[str, List[str]]] = {
             nt: {prop: sorted(types_set) for prop, types_set in prop_map.items()}
             for nt, prop_map in samples.items()
@@ -207,6 +225,7 @@ class ASTGenerator:
             final_samples,
             dict(node_counts),
             {nt: dict(prop_map) for nt, prop_map in prop_counts.items()},
+            {nt: dict(prop_map) for nt, prop_map in list_max.items()},
             {nt: dict(prop_map) for nt, prop_map in is_list.items()},
         )
 
@@ -233,6 +252,7 @@ class ASTGenerator:
         combined: Dict[str, Dict[str, set]] = defaultdict(_make_prop_set_dict)
         combined_node_counts: Dict[str, int] = _make_node_counts_dict()
         combined_prop_counts: Dict[str, Dict[str, int]] = _make_prop_counts_dict()
+        combined_list_max: Dict[str, Dict[str, int]] = _make_list_max_dict()
         combined_is_list: Dict[str, Dict[str, bool]] = _make_is_list_dict()
 
         error_log = open(os.path.join(self.output_dir, "error.log"), "w+")
@@ -245,9 +265,14 @@ class ASTGenerator:
             with tqdm(total=total_tasks, desc="Processing files", unit="file") as pbar:
 
                 def _merge_result(result_tuple):
-                    err, sample_types, node_counts, prop_counts, is_list_flags = (
-                        result_tuple
-                    )
+                    (
+                        err,
+                        sample_types,
+                        node_counts,
+                        prop_counts,
+                        list_max,
+                        is_list_flags,
+                    ) = result_tuple
 
                     if err:
                         error_log.write(err + "\n")
@@ -266,6 +291,14 @@ class ASTGenerator:
                         for prop_name, count in prop_map.items():
                             combined_prop_counts[nt][prop_name] += count
 
+                    # ─── Merge list_max ───────────────────────────────────
+                    for nt, prop_map in list_max.items():
+                        for prop_name, length in prop_map.items():
+                            combined_list_max[nt][prop_name] = max(
+                                combined_list_max[nt].get(prop_name, 0),
+                                length,
+                            )
+
                     # ─── Merge is_list ───────────────────────────────────
                     for nt, prop_map in is_list_flags.items():
                         for prop_name, was_list in prop_map.items():
@@ -275,10 +308,11 @@ class ASTGenerator:
                     # Advance the progress bar by one file
                     pbar.update()
 
-                # Submit each task to the pool
                 for task in tasks:
                     pool.apply_async(
-                        ASTGenerator._process_file, args=(task,), callback=_merge_result
+                        ASTGenerator._process_file,
+                        args=(task,),
+                        callback=_merge_result,
                     )
 
                 pool.close()
@@ -286,7 +320,6 @@ class ASTGenerator:
 
         # ─── Phase C: Optionally generate receipt JSON and TypeScript  ───
         if self.generate_receipt:
-            # ─── Write combined_receipt.json ────────────────────────────
             json_receipt_file = os.path.join(self.output_dir, "combined_receipt.json")
             receipt_dict: Dict[str, Dict[str, List[str]]] = {
                 nt: {
@@ -298,7 +331,6 @@ class ASTGenerator:
             with open(json_receipt_file, "w") as f:
                 json.dump(receipt_dict, f, indent=2)
 
-            # ─── Build “schema” per node type ────────────────────────────
             schema: Dict[
                 str,
                 Dict[
@@ -321,7 +353,6 @@ class ASTGenerator:
                 }
                 return mapping.get(typename, "unknown")
 
-            # 1) Build initial schema entries for every defined node type
             for nt, prop_map in combined.items():
                 primitive_props: Dict[str, List[str]] = {}
                 child_props: Dict[str, List[str]] = {}
@@ -349,7 +380,6 @@ class ASTGenerator:
                     "total_count": total_count,
                 }
 
-            # 2) Find any referenced child‐node types not in schema (leaf stubs)
             all_defined = set(schema.keys())
             all_referenced: Set[str] = set()
             for info in schema.values():
@@ -359,14 +389,12 @@ class ASTGenerator:
 
             missing = sorted(all_referenced - all_defined)
             for leaf in missing:
-                # Add a stub schema entry with no props (total_count = 0)
                 schema[leaf] = {
                     "primitive_props": {},
                     "child_props": {},
                     "total_count": 0,
                 }
 
-            # ─── Emit combined_receipt.ts ────────────────────────────────
             ts_receipt_file = os.path.join(self.output_dir, "combined_receipt.ts")
             print("Writing TypeScript receipt to", ts_receipt_file)
 
@@ -381,21 +409,21 @@ class ASTGenerator:
                 total_count: int = info["total_count"]  # type: ignore
 
                 lines.append(f"export interface {interface_name} {{")
-                # 1) Discriminated literal
                 lines.append(f'  _nodetype: "{nt}";')
 
-                # 2) Emit a nested `children` block if there are any child props
                 if child_props:
                     lines.append("  children?: {")
                     for prop_name, node_types in child_props.items():
                         present_count = combined_prop_counts[nt].get(prop_name, 0)
                         optional_marker = "?" if present_count < total_count else ""
                         was_list = combined_is_list[nt].get(prop_name, False)
+                        max_len = combined_list_max[nt].get(prop_name, 0)
 
                         mapped_node_types = [f"{child}Node" for child in node_types]
                         union_inner = " | ".join(mapped_node_types)
 
-                        if was_list:
+                        # if was_list but max_len ≤ 1, flatten to scalar union
+                        if was_list and max_len >= 1:
                             ts_type = f"Array<{union_inner}>"
                         else:
                             ts_type = union_inner
@@ -403,13 +431,13 @@ class ASTGenerator:
                         lines.append(f"    {prop_name}{optional_marker}: {ts_type};")
                     lines.append("  };")
 
-                # 3) Emit each primitive prop at the top level
                 for prop_name, json_types in primitive_props.items():
                     present_count = combined_prop_counts[nt].get(prop_name, 0)
                     optional_marker = "?" if present_count < total_count else ""
                     was_list = combined_is_list[nt].get(prop_name, False)
+                    max_len = combined_list_max[nt].get(prop_name, 0)
 
-                    if was_list:
+                    if was_list and max_len > 1:
                         union_inner = " | ".join(json_types)
                         ts_type = f"Array<{union_inner}>"
                     else:
@@ -420,7 +448,6 @@ class ASTGenerator:
                 lines.append("}")
                 lines.append("")
 
-            # 3) Emit the union of all node interfaces (including leaf stubs)
             all_interfaces = [f"{nt}Node" for nt in schema.keys()]
             union_alias = " | ".join(all_interfaces)
             lines.append(f"export type ASTNodeJSON = {union_alias};")
@@ -482,16 +509,44 @@ class ASTGenerator:
     def _node_to_dict(self, node: Any) -> Any:
         if not isinstance(node, c_ast.Node):
             return node
+
         result: dict[str, Any] = {"_nodetype": node.__class__.__name__}
         for attr in getattr(node, "attr_names", []) or []:
             result[attr] = getattr(node, attr)
-        children: dict[str, list[Any]] = {}
+
+        # First, gather all raw child-dicts into a temp map of lists
+        raw_children: Dict[str, List[Any]] = defaultdict(list)
         for child_name, child in node.children() or []:
             m = _CHILD_LIST_REGEX.match(child_name)
             key = m.group(1) if m else child_name
-            children.setdefault(key, []).append(self._node_to_dict(child))
-        if children:
-            result["children"] = children
+
+            child_dict = self._node_to_dict(child)
+
+            # If child_dict has no "_nodetype", lift it to a primitive field instead:
+            if isinstance(child_dict, dict) and "_nodetype" not in child_dict:
+                prim_key = f"{key}__primitive"
+                existing = result.get(prim_key)
+                if existing is None:
+                    result[prim_key] = child_dict
+                else:
+                    if not isinstance(existing, list):
+                        result[prim_key] = [existing]
+                    result[prim_key].append(child_dict)
+                continue
+
+            raw_children[key].append(child_dict)
+
+        if raw_children:
+            # For each key, if there is exactly one element in the list, emit it directly;
+            # otherwise, emit the full list.
+            flattened: Dict[str, Union[Any, List[Any]]] = {}
+            for key, lst in raw_children.items():
+                if len(lst) == 1:
+                    flattened[key] = lst[0]
+                else:
+                    flattened[key] = lst
+            result["children"] = flattened
+
         return result
 
     def _get_save_path(self, path: str) -> str:
@@ -505,7 +560,7 @@ class ASTGenerator:
 
 if __name__ == "__main__":
     gen = ASTGenerator(
-        input_dir="/home/keonoh/C-AST-Generator/data/C/testcases",
+        input_dir="/home/keonoh/C-AST-Generator/data/C/testcases/CWE121_Stack_Based_Buffer_Overflow",
         output_dir="ast_output",
         prune=True,
         generate_receipt=True,
