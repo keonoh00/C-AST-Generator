@@ -56,12 +56,18 @@ export enum ParserKind {
 export interface IParserAlignasNode extends ParserBaseASTNode {
   /** Child AST node */
   alignment: ParserASTNode;
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Alignas;
 }
 
 
 /** AST node for `ArrayDecl` */
 export interface IParserArrayDeclNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Child AST node */
   dim: ParserASTNode;
   /** Literal or attribute */
@@ -73,6 +79,9 @@ export interface IParserArrayDeclNode extends ParserBaseASTNode {
 
 /** AST node for `ArrayRef` */
 export interface IParserArrayRefNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.ArrayRef;
   /** Child AST node */
   name: ParserASTNode;
@@ -82,6 +91,9 @@ export interface IParserArrayRefNode extends ParserBaseASTNode {
 
 /** AST node for `Assignment` */
 export interface IParserAssignmentNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Assignment;
   /** Child AST node */
   lvalue: ParserASTNode;
@@ -93,6 +105,9 @@ export interface IParserAssignmentNode extends ParserBaseASTNode {
 
 /** AST node for `BinaryOp` */
 export interface IParserBinaryOpNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.BinaryOp;
   /** Child AST node */
   left: ParserASTNode;
@@ -104,12 +119,17 @@ export interface IParserBinaryOpNode extends ParserBaseASTNode {
 
 /** AST node for `Break` */
 export interface IParserBreakNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Break;
-
 }
 
 /** AST node for `Case` */
 export interface IParserCaseNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Child AST node */
   expr: ParserASTNode;
   kind: ParserKind.Case;
@@ -119,6 +139,9 @@ export interface IParserCaseNode extends ParserBaseASTNode {
 
 /** AST node for `Cast` */
 export interface IParserCastNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Child AST node */
   expr: ParserASTNode;
   kind: ParserKind.Cast;
@@ -128,6 +151,9 @@ export interface IParserCastNode extends ParserBaseASTNode {
 
 /** AST node for `CompoundLiteral` */
 export interface IParserCompoundLiteralNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Child AST node */
   init: ParserASTNode;
   kind: ParserKind.CompoundLiteral;
@@ -139,11 +165,17 @@ export interface IParserCompoundLiteralNode extends ParserBaseASTNode {
 export interface IParserCompoundNode extends ParserBaseASTNode {
   /** List of child AST nodes */
   block_items: ParserASTNode[];
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Compound;
 }
 
 /** AST node for `Constant` */
 export interface IParserConstantNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Constant;
   /** Literal or attribute */
   type?: boolean | null | number | string;
@@ -153,12 +185,17 @@ export interface IParserConstantNode extends ParserBaseASTNode {
 
 /** AST node for `Continue` */
 export interface IParserContinueNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Continue;
-
 }
 
 /** AST node for `DeclList` */
 export interface IParserDeclListNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** List of child AST nodes */
   decls: ParserASTNode[];
   kind: ParserKind.DeclList;
@@ -170,6 +207,9 @@ export interface IParserDeclNode extends ParserBaseASTNode {
   align?: boolean | null | number | string;
   /** Child AST node */
   bitsize: ParserASTNode;
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Literal or attribute */
   funcspec?: boolean | null | number | string;
   /** Child AST node */
@@ -187,6 +227,9 @@ export interface IParserDeclNode extends ParserBaseASTNode {
 
 /** AST node for `Default` */
 export interface IParserDefaultNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Default;
   /** List of child AST nodes */
   stmts: ParserASTNode[];
@@ -194,8 +237,11 @@ export interface IParserDefaultNode extends ParserBaseASTNode {
 
 /** AST node for `DoWhile` */
 export interface IParserDoWhileNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
   /** Child AST node */
   cond: ParserASTNode;
+  coord: string;
   kind: ParserKind.DoWhile;
   /** Child AST node */
   stmt: ParserASTNode;
@@ -203,18 +249,25 @@ export interface IParserDoWhileNode extends ParserBaseASTNode {
 
 /** AST node for `EllipsisParam` */
 export interface IParserEllipsisParamNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.EllipsisParam;
-
 }
 
 /** AST node for `EmptyStatement` */
 export interface IParserEmptyStatementNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.EmptyStatement;
-
 }
 
 /** AST node for `EnumeratorList` */
 export interface IParserEnumeratorListNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** List of child AST nodes */
   enumerators: ParserASTNode[];
   kind: ParserKind.EnumeratorList;
@@ -222,6 +275,9 @@ export interface IParserEnumeratorListNode extends ParserBaseASTNode {
 
 /** AST node for `Enumerator` */
 export interface IParserEnumeratorNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Enumerator;
   /** Literal or attribute */
   name?: boolean | null | number | string;
@@ -231,6 +287,9 @@ export interface IParserEnumeratorNode extends ParserBaseASTNode {
 
 /** AST node for `Enum` */
 export interface IParserEnumNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Enum;
   /** Literal or attribute */
   name?: boolean | null | number | string;
@@ -240,6 +299,9 @@ export interface IParserEnumNode extends ParserBaseASTNode {
 
 /** AST node for `ExprList` */
 export interface IParserExprListNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** List of child AST nodes */
   exprs: ParserASTNode[];
   kind: ParserKind.ExprList;
@@ -247,6 +309,9 @@ export interface IParserExprListNode extends ParserBaseASTNode {
 
 /** AST node for `FileAST` */
 export interface IParserFileASTNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** List of child AST nodes */
   ext: ParserASTNode[];
   kind: ParserKind.FileAST;
@@ -254,8 +319,11 @@ export interface IParserFileASTNode extends ParserBaseASTNode {
 
 /** AST node for `For` */
 export interface IParserForNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
   /** Child AST node */
   cond: ParserASTNode;
+  coord: string;
   /** Child AST node */
   init: ParserASTNode;
   kind: ParserKind.For;
@@ -269,6 +337,9 @@ export interface IParserForNode extends ParserBaseASTNode {
 export interface IParserFuncCallNode extends ParserBaseASTNode {
   /** Child AST node */
   args: ParserASTNode;
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.FuncCall;
   /** Child AST node */
   name: ParserASTNode;
@@ -278,6 +349,9 @@ export interface IParserFuncCallNode extends ParserBaseASTNode {
 export interface IParserFuncDeclNode extends ParserBaseASTNode {
   /** Child AST node */
   args: ParserASTNode;
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.FuncDecl;
   /** Child AST node */
   type: ParserASTNode;
@@ -287,6 +361,9 @@ export interface IParserFuncDeclNode extends ParserBaseASTNode {
 export interface IParserFuncDefNode extends ParserBaseASTNode {
   /** Child AST node */
   body: ParserASTNode;
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Child AST node */
   decl: ParserASTNode;
   kind: ParserKind.FuncDef;
@@ -296,6 +373,9 @@ export interface IParserFuncDefNode extends ParserBaseASTNode {
 
 /** AST node for `Goto` */
 export interface IParserGotoNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Goto;
   /** Literal or attribute */
   name?: boolean | null | number | string;
@@ -303,6 +383,9 @@ export interface IParserGotoNode extends ParserBaseASTNode {
 
 /** AST node for `IdentifierType` */
 export interface IParserIdentifierTypeNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.IdentifierType;
   /** Literal or attribute */
   names?: boolean | null | number | string;
@@ -310,6 +393,9 @@ export interface IParserIdentifierTypeNode extends ParserBaseASTNode {
 
 /** AST node for `ID` */
 export interface IParserIDNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.ID;
   /** Literal or attribute */
   name?: boolean | null | number | string;
@@ -317,8 +403,11 @@ export interface IParserIDNode extends ParserBaseASTNode {
 
 /** AST node for `If` */
 export interface IParserIfNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
   /** Child AST node */
   cond: ParserASTNode;
+  coord: string;
   /** Child AST node */
   iffalse: ParserASTNode;
   /** Child AST node */
@@ -328,6 +417,9 @@ export interface IParserIfNode extends ParserBaseASTNode {
 
 /** AST node for `InitList` */
 export interface IParserInitListNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** List of child AST nodes */
   exprs: ParserASTNode[];
   kind: ParserKind.InitList;
@@ -335,6 +427,9 @@ export interface IParserInitListNode extends ParserBaseASTNode {
 
 /** AST node for `Label` */
 export interface IParserLabelNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Label;
   /** Literal or attribute */
   name?: boolean | null | number | string;
@@ -344,6 +439,9 @@ export interface IParserLabelNode extends ParserBaseASTNode {
 
 /** AST node for `NamedInitializer` */
 export interface IParserNamedInitializerNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Child AST node */
   expr: ParserASTNode;
   kind: ParserKind.NamedInitializer;
@@ -353,6 +451,9 @@ export interface IParserNamedInitializerNode extends ParserBaseASTNode {
 
 /** AST node for `ParamList` */
 export interface IParserParamListNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.ParamList;
   /** List of child AST nodes */
   params: ParserASTNode[];
@@ -360,6 +461,9 @@ export interface IParserParamListNode extends ParserBaseASTNode {
 
 /** AST node for `Pragma` */
 export interface IParserPragmaNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Pragma;
   /** Literal or attribute */
   string?: boolean | null | number | string;
@@ -367,6 +471,9 @@ export interface IParserPragmaNode extends ParserBaseASTNode {
 
 /** AST node for `PtrDecl` */
 export interface IParserPtrDeclNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.PtrDecl;
   /** Literal or attribute */
   quals?: boolean | null | number | string;
@@ -376,6 +483,9 @@ export interface IParserPtrDeclNode extends ParserBaseASTNode {
 
 /** AST node for `Return` */
 export interface IParserReturnNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Child AST node */
   expr: ParserASTNode;
   kind: ParserKind.Return;
@@ -383,8 +493,11 @@ export interface IParserReturnNode extends ParserBaseASTNode {
 
 /** AST node for `StaticAssert` */
 export interface IParserStaticAssertNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
   /** Child AST node */
   cond: ParserASTNode;
+  coord: string;
   kind: ParserKind.StaticAssert;
   /** Child AST node */
   message: ParserASTNode;
@@ -392,6 +505,9 @@ export interface IParserStaticAssertNode extends ParserBaseASTNode {
 
 /** AST node for `Struct` */
 export interface IParserStructNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** List of child AST nodes */
   decls: ParserASTNode[];
   kind: ParserKind.Struct;
@@ -401,6 +517,9 @@ export interface IParserStructNode extends ParserBaseASTNode {
 
 /** AST node for `StructRef` */
 export interface IParserStructRefNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Child AST node */
   field: ParserASTNode;
   kind: ParserKind.StructRef;
@@ -412,8 +531,11 @@ export interface IParserStructRefNode extends ParserBaseASTNode {
 
 /** AST node for `Switch` */
 export interface IParserSwitchNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
   /** Child AST node */
   cond: ParserASTNode;
+  coord: string;
   kind: ParserKind.Switch;
   /** Child AST node */
   stmt: ParserASTNode;
@@ -421,8 +543,11 @@ export interface IParserSwitchNode extends ParserBaseASTNode {
 
 /** AST node for `TernaryOp` */
 export interface IParserTernaryOpNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
   /** Child AST node */
   cond: ParserASTNode;
+  coord: string;
   /** Child AST node */
   iffalse: ParserASTNode;
   /** Child AST node */
@@ -434,6 +559,9 @@ export interface IParserTernaryOpNode extends ParserBaseASTNode {
 export interface IParserTypeDeclNode extends ParserBaseASTNode {
   /** Literal or attribute */
   align?: boolean | null | number | string;
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Literal or attribute */
   declname?: boolean | null | number | string;
   kind: ParserKind.TypeDecl;
@@ -445,6 +573,9 @@ export interface IParserTypeDeclNode extends ParserBaseASTNode {
 
 /** AST node for `Typedef` */
 export interface IParserTypedefNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Typedef;
   /** Literal or attribute */
   name?: boolean | null | number | string;
@@ -460,6 +591,9 @@ export interface IParserTypedefNode extends ParserBaseASTNode {
 export interface IParserTypenameNode extends ParserBaseASTNode {
   /** Literal or attribute */
   align?: boolean | null | number | string;
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   kind: ParserKind.Typename;
   /** Literal or attribute */
   name?: boolean | null | number | string;
@@ -471,6 +605,9 @@ export interface IParserTypenameNode extends ParserBaseASTNode {
 
 /** AST node for `UnaryOp` */
 export interface IParserUnaryOpNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** Child AST node */
   expr: ParserASTNode;
   kind: ParserKind.UnaryOp;
@@ -480,6 +617,9 @@ export interface IParserUnaryOpNode extends ParserBaseASTNode {
 
 /** AST node for `Union` */
 export interface IParserUnionNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
+  coord: string;
   /** List of child AST nodes */
   decls: ParserASTNode[];
   kind: ParserKind.Union;
@@ -489,8 +629,11 @@ export interface IParserUnionNode extends ParserBaseASTNode {
 
 /** AST node for `While` */
 export interface IParserWhileNode extends ParserBaseASTNode {
+  /** All nested child nodes */
+  children?: ParserASTNode;
   /** Child AST node */
   cond: ParserASTNode;
+  coord: string;
   kind: ParserKind.While;
   /** Child AST node */
   stmt: ParserASTNode;
@@ -546,8 +689,6 @@ export type ParserASTNode =
   | IParserUnaryOpNode
   | IParserUnionNode
   | IParserWhileNode;
-
-export type ParserASTNodeArray = ParserASTNode[];
 
 export interface ParserBaseASTNode {
   [key: string]: boolean | null | number | ParserASTNode | ParserASTNode[] | string | undefined;
