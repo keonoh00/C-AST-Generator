@@ -634,7 +634,7 @@ class ASTGenerator:
 
         # Emit union alias at the end
         interface_names = [f"IRaw{n}Node" for n in ts_schema]
-        lines.append(f"export type RawASTNodeJSON = {' | '.join(interface_names)};")
+        lines.append(f"export type RawASTNodes = {' | '.join(interface_names)};")
         lines.append("")
 
         with open(ts_receipt_file, "w") as ts_f:
