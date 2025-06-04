@@ -1,7 +1,6 @@
-import { ASTNodeJSON, ASTNodeType } from "@/types/ASTNodes/RawNodes";
+import { ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
 
-/** List of all valid `_nodetype` string literals. */
-const KNOWN_NODE_TYPES = new Set<string>(Object.values(ASTNodeType));
+const KNOWN_NODE_TYPES = new Set<string>(Object.values(ParserKind));
 
 interface ValidationError {
   message: string;
@@ -27,7 +26,7 @@ export class ASTValidator {
    * @param obj  The JSON‐parsed object to validate.
    * @returns    `true` if valid, otherwise throws an Error listing all mismatches.
    */
-  public validate(obj: unknown): obj is ASTNodeJSON {
+  public validate(obj: unknown): obj is ParserASTNode {
     this.errors = [];
     this.checkNode(obj, "root");
     if (this.errors.length > 0) {
