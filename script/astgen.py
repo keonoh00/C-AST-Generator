@@ -135,23 +135,15 @@ class ASTGenerator:
             result["coord"] = str(coord)
 
         for attr in getattr(node, "attr_names", []) or []:
-            result[attr] = getattr(node, attr)  # type: ignore
+            result[attr] = getattr(node, attr)
 
-        raw_children: dict[str, list[object]] = {}
-        for child_name, child in node.children() or []:
-            m = _CHILD_LIST_REGEX.match(child_name)
-            key = m.group(1) if m else child_name
+        children_list: list[object] = []
+        for _, child in node.children() or []:
             child_dict = self._node_to_dict(child)
-            raw_children.setdefault(key, []).append(child_dict)
+            children_list.append(child_dict)
 
-        if raw_children:
-            flattened: dict[str, object] = {}
-            for key, lst in raw_children.items():
-                if len(lst) == 1:
-                    flattened[key] = lst[0]
-                else:
-                    flattened[key] = lst
-            result["children"] = flattened  # type: ignore
+        if children_list:
+            result["children"] = children_list
 
         return result
 
