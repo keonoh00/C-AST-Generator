@@ -3,12 +3,15 @@ import * as path from "path";
 
 import { RawASTNodes } from "@/types/ASTNodes/RawNodes";
 
+import { ASTValidator } from "./validator";
+
 /**
  * Recursively reads and validates all JSON files in a directory.
  * @param dirPath Root directory to scan.
  * @returns Array of valid ASTNode objects.
  */
 export async function readJsonFiles(dirPath: string): Promise<RawASTNodes[]> {
+  const validator = new ASTValidator();
   let results: RawASTNodes[] = [];
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
@@ -20,10 +23,14 @@ export async function readJsonFiles(dirPath: string): Promise<RawASTNodes[]> {
     } else if (entry.isFile() && entry.name.endsWith(".json")) {
       try {
         const raw: unknown = JSON.parse(await fs.readFile(fullPath, "utf8"));
-        if (isASTNode(raw)) {
-          results.push(raw);
-        } else {
-          console.error(`Invalid RawASTNodes in ${fullPath}`, raw);
+
+        // 3) Replace the stub with an actual call to `validator.validate(...)`
+        try {
+          validator.validate(raw);
+          // If `validate` doesn’t throw, `raw` is a valid RawASTNodes
+          results.push(raw as RawASTNodes);
+        } catch (validationError) {
+          console.error(`Validation failed for ${fullPath}:\n`, (validationError as Error).message);
         }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -33,17 +40,4 @@ export async function readJsonFiles(dirPath: string): Promise<RawASTNodes[]> {
   }
 
   return results;
-}
-
-function isASTNode(obj: unknown): obj is RawASTNodes {
-  if (!isObject(obj)) return false;
-  switch (obj._nodetype) {
-    default:
-      return true; // assume other ASTNode types are valid
-  }
-}
-
-// Type predicate helper to check for plain objects
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
