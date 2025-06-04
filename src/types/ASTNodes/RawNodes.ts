@@ -413,6 +413,7 @@ export type RawASTNodes =
   | IRawArrayRefNode
   | IRawAssignmentNode
   | IRawBinaryOpNode
+  | IRawBreakNode
   | IRawCaseNode
   | IRawCastNode
   | IRawCompoundNode
