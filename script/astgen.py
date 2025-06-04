@@ -567,7 +567,7 @@ class ASTGenerator:
         lines: List[str] = []
 
         # Emit enum of node types (unsorted, ESLint will reorder)
-        lines.append("export enum ASTNodeType {")
+        lines.append("export enum RawASTNodeTypes {")
         for nt in ts_schema:
             lines.append(f'  {nt} = "{nt}",')
         lines.append("}")
@@ -579,7 +579,7 @@ class ASTGenerator:
             child_props = info.get("child_props", {}) or {}
             total_count = info.get("total_count", 0) or 0
 
-            interface_name = f"{nt}Node"
+            interface_name = f"IRaw{nt}Node"
             lines.append(f"export interface {interface_name} {{")
             lines.append(f'  _nodetype: "{nt}";')
 
@@ -603,7 +603,7 @@ class ASTGenerator:
                         )
                         max_len = schema_list_max.get(nt, {}).get(child_prop, 0) or 0
 
-                        mapped_node_types = [f"{child}Node" for child in node_list]
+                        mapped_node_types = [f"IRaw{child}Node" for child in node_list]
                         union_inner = " | ".join(mapped_node_types)
                         ts_type = (
                             f"{union_inner}[]"
@@ -633,8 +633,8 @@ class ASTGenerator:
             lines.append("")
 
         # Emit union alias at the end
-        interface_names = [f"{n}Node" for n in ts_schema]
-        lines.append(f"export type ASTNodeJSON = {' | '.join(interface_names)};")
+        interface_names = [f"IRaw{n}Node" for n in ts_schema]
+        lines.append(f"export type RawASTNodeJSON = {' | '.join(interface_names)};")
         lines.append("")
 
         with open(ts_receipt_file, "w") as ts_f:
