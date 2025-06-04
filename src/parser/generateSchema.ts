@@ -13,7 +13,7 @@ interface ParsedField {
 
 function parseField(field: string): ParsedField {
   let name = field;
-  let type = "any";
+  let type: string;
   let comment = "";
   let optional = false;
 
@@ -46,6 +46,7 @@ function toInterface(nodeType: string, fields: string[]): string {
       const declLine = `  ${f.name}${f.optional ? "?" : ""}: ${f.type};`;
       return `${docLine}\n${declLine}`;
     })
+    .concat([`  /** All nested child nodes */`, `  children?: ParserASTNode;`, `  coord: string;`])
     .join("\n");
 
   return `${doc}\nexport interface IParser${nodeType}Node extends ParserBaseASTNode {\n${kindField}\n${members}\n}\n`;
