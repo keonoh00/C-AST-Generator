@@ -24,10 +24,8 @@ export async function readJsonFiles(dirPath: string): Promise<RawASTNodes[]> {
       try {
         const raw: unknown = JSON.parse(await fs.readFile(fullPath, "utf8"));
 
-        // 3) Replace the stub with an actual call to `validator.validate(...)`
         try {
           validator.validate(raw);
-          // If `validate` doesn’t throw, `raw` is a valid RawASTNodes
           results.push(raw as RawASTNodes);
         } catch (validationError) {
           console.error(`Validation failed for ${fullPath}:\n`, (validationError as Error).message);
