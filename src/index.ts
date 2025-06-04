@@ -1,5 +1,5 @@
-import { readJsonFiles } from "@/nodeFactory/utils/readJson";
-import { ASTValidator } from "@/nodeFactory/utils/validator";
+import { readJsonFiles } from "@/parser/utils/readJson";
+import { ASTValidator } from "@/parser/utils/validator";
 
 const target = "./ast_output";
 

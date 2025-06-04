@@ -547,6 +547,8 @@ export type ParserASTNode =
   | IParserUnionNode
   | IParserWhileNode;
 
+export type ParserASTNodeArray = ParserASTNode[];
+
 export interface ParserBaseASTNode {
   [key: string]: boolean | null | number | ParserASTNode | ParserASTNode[] | string | undefined;
   coord?: string;

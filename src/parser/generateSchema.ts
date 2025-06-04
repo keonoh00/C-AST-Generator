@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-import { pycparserCfg } from "./utils/pycparser";
+import { pycparserCfg } from "@/parser/schema/pycparser";
 
 interface ParsedField {
   comment: string;

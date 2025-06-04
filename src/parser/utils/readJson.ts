@@ -1,6 +1,5 @@
 import { Presets, SingleBar } from "cli-progress";
 import { promises as fs } from "fs";
-import * as path from "path";
 
 /**
  * Recursively reads all .json files from a directory and parses them,
@@ -8,9 +7,8 @@ import * as path from "path";
  * @param dirPath Root directory to search.
  * @returns Array of parsed JSON objects as unknown[].
  */
-export async function readJsonFiles(dirPath: string): Promise<unknown[]> {
+export async function readJsonFiles(dirPaths: string[]): Promise<unknown[]> {
   // First, collect all JSON file paths
-  const filePaths = await collectJsonFilePaths(dirPath);
   const jsonObjects: unknown[] = [];
 
   // Initialize progress bar
@@ -23,10 +21,10 @@ export async function readJsonFiles(dirPath: string): Promise<unknown[]> {
     },
     Presets.shades_classic
   );
-  bar.start(filePaths.length, 0);
+  bar.start(dirPaths.length, 0);
 
   // Read and parse each file, updating the progress bar
-  for (const fullPath of filePaths) {
+  for (const fullPath of dirPaths) {
     try {
       const content = await fs.readFile(fullPath, "utf8");
       jsonObjects.push(JSON.parse(content));
@@ -39,26 +37,4 @@ export async function readJsonFiles(dirPath: string): Promise<unknown[]> {
 
   bar.stop();
   return jsonObjects;
-}
-
-/**
- * Recursively collects all .json file paths under a directory.
- * @param dirPath Root directory to scan.
- * @returns Array of full file paths to .json files.
- */
-async function collectJsonFilePaths(dirPath: string): Promise<string[]> {
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
-  const paths: string[] = [];
-
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry.name);
-    if (entry.isDirectory()) {
-      const nested = await collectJsonFilePaths(fullPath);
-      paths.push(...nested);
-    } else if (entry.isFile() && entry.name.endsWith(".json")) {
-      paths.push(fullPath);
-    }
-  }
-
-  return paths;
 }

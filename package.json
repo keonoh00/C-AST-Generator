@@ -5,8 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "generate": "tsx src/nodeFactory/generateSchema.ts",
-    "start": "npm run generate && npx tsx src/index.ts",
+    "generate:schema": "tsx src/parser/generateSchema.ts",
+    "convert": "tsx src/parser/convert.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
