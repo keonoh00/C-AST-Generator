@@ -7,7 +7,7 @@ import { readJsonFiles } from "@/parser/utils/readJson";
 import { writeJSONFiles } from "@/parser/utils/writeJson";
 import { ParserASTNode } from "@/types/PyCParser/pycparser";
 
-const targetDir = "./ast_output/CWE121_Stack_Based_Buffer_Overflow";
+const targetDir = "./ast_output";
 
 async function processASTFiles(): Promise<void> {
   try {
