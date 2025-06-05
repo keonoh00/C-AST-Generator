@@ -5,7 +5,7 @@ import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscript
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
-import { IParserArrayDeclNode, ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
+import { IParserArrayDeclNode, IParserAssignmentNode, ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
 
 export class CParserNodeConverter {
   public convertCParserNodes(parserNodes: ParserASTNode[]): ASTNodes[] {
@@ -55,13 +55,19 @@ export class CParserNodeConverter {
   private convertArrayRef(parserNode: ParserASTNode): IArraySubscriptionExpression | undefined {
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
-    return {
-      children: this.convertCParserNodes(children),
+    const base: IArraySubscriptionExpression = {
       nodeType: ASTNodeTypes.ArraySubscriptionExpression,
     };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
-  private convertAssignment(parserNode: ParserASTNode): IAssignmentExpression | undefined {
+  private convertAssignment(parserNode: IParserAssignmentNode): IAssignmentExpression | undefined {
     return undefined;
   }
 
