@@ -7,6 +7,7 @@ import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
+import { ILabel } from "@/types/ControlStructures/Label";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
@@ -35,6 +36,7 @@ import {
   IParserGotoNode,
   IParserIDNode,
   IParserIfNode,
+  IParserLabelNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -419,8 +421,20 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertLabel(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertLabel(parserNode: IParserLabelNode): ILabel {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: ILabel = {
+      name: String(parserNode.name),
+      nodeType: ASTNodeTypes.Label,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertPtrDecl(parserNode: ParserASTNode): ASTNodes | undefined {
