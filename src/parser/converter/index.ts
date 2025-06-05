@@ -3,6 +3,7 @@
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
+import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
@@ -19,6 +20,7 @@ import {
   IParserCastNode,
   IParserCompoundNode,
   IParserDefaultNode,
+  IParserDoWhileNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -222,8 +224,19 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertDoWhile(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertDoWhile(parserNode: IParserDoWhileNode): IDoWhileStatement {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IDoWhileStatement = {
+      nodeType: ASTNodeTypes.DoWhileStatement,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertExprList(parserNode: ParserASTNode): ASTNodes | undefined {
