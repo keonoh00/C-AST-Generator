@@ -77,9 +77,9 @@ export class CParserNodeConverter {
   private convertArrayDecl(parserNode: IParserArrayDeclNode): IArrayDeclaration {
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
-    const typeDecl = children.find((c) => c.kind === ParserKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(parserNode, ParserKind.TypeDecl);
 
-    const constNode = children.find((c) => c.kind === ParserKind.Constant);
+    const constNode = this.findParserNodeWithType(parserNode, ParserKind.Constant);
 
     if (!typeDecl || !constNode) {
       throw new Error(`No typeDecl or constNode in ArrayDecl: ${JSON.stringify(parserNode)}`);
@@ -473,7 +473,7 @@ export class CParserNodeConverter {
   private convertPtrDecl(parserNode: IParserPtrDeclNode): IPointerDeclaration {
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
-    const typeDecl = children.find((c) => c.kind === ParserKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(parserNode, ParserKind.TypeDecl);
 
     if (!typeDecl) {
       throw new Error(`No typeDecl in PtrDecl: ${JSON.stringify(parserNode)}`);
@@ -677,7 +677,7 @@ export class CParserNodeConverter {
   private convertTypedef(parserNode: IParserTypedefNode): ITypeDefinition {
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
-    const typeDecl = children.find((c) => c.kind === ParserKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(parserNode, ParserKind.TypeDecl);
 
     if (!typeDecl) {
       throw new Error(`No typeDecl in Typedef: ${JSON.stringify(parserNode)}`);
@@ -709,7 +709,7 @@ export class CParserNodeConverter {
     let type: string;
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
-    const typeDecl = children.find((c) => c.kind === ParserKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(parserNode, ParserKind.TypeDecl);
 
     if (typeDecl) {
       const typeDeclChildren = Array.isArray(typeDecl.children) ? (typeDecl.children as ParserASTNode[]) : [];
