@@ -19,6 +19,7 @@ import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
 import { IMemberAccess } from "@/types/Expressions/MemberAccess";
+import { IUnarayExpression } from "@/types/Expressions/UnaryExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
@@ -49,6 +50,7 @@ import {
   IParserStructRefNode,
   IParserSwitchNode,
   IParserTypedefNode,
+  IParserUnaryOpNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -698,8 +700,37 @@ export class CParserNodeConverter {
     return undefined;
   }
 
-  private convertUnaryOp(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertUnaryOp(parserNode: IParserUnaryOpNode): IUnarayExpression {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    if (children.length !== 2) {
+      throw new Error(`Invalid Children Number for UnaryOp ${JSON.stringify(parserNode)}`);
+    }
+
+    const typeDecl = children.find((c) => c.kind === ParserKind.TypeDecl);
+
+    if (!typeDecl) {
+      throw new Error(`No typeDecl in UnaryOp: ${JSON.stringify(parserNode)}`);
+    }
+
+    const typeDeclChildren = Array.isArray(typeDecl.children) ? (typeDecl.children as ParserASTNode[]) : [];
+
+    const identifierType = typeDeclChildren.find((c) => c.kind === ParserKind.IdentifierType);
+
+    const type: string = Array.isArray(identifierType?.names) ? identifierType.names.join(" ") : "";
+
+    const base: IUnarayExpression = {
+      nodeType: ASTNodeTypes.UnarayExpression,
+      operator: parserNode.op as string,
+      type,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertUnion(parserNode: ParserASTNode): ASTNodes | undefined {
