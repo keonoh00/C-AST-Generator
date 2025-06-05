@@ -770,11 +770,16 @@ export class CParserNodeConverter {
     return base;
   }
   private findParserNodeWithType<K extends ParserKind>(node: ParserASTNode, kind: K): KindToNodeMap[K] | undefined {
-    if (node.kind === kind) return node as KindToNodeMap[K];
+    if (node.kind === kind) {
+      return node as KindToNodeMap[K];
+    }
 
     if (Array.isArray(node.children)) {
       for (const child of node.children as ParserASTNode[]) {
-        if (this.findParserNodeWithType(child, kind)) return child as KindToNodeMap[K];
+        const found = this.findParserNodeWithType(child, kind);
+        if (found) {
+          return found;
+        }
       }
     }
 
