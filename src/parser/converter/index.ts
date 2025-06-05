@@ -13,6 +13,7 @@ import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
+import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
@@ -51,6 +52,7 @@ import {
   IParserSwitchNode,
   IParserTypedefNode,
   IParserUnaryOpNode,
+  IParserUnionNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -733,8 +735,20 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertUnion(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertUnion(parserNode: IParserUnionNode): IUnionType {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IUnionType = {
+      name: String(parserNode.name),
+      nodeType: ASTNodeTypes.UnionType,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertWhile(parserNode: ParserASTNode): ASTNodes | undefined {
