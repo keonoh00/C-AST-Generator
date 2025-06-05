@@ -6,6 +6,7 @@ import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
+import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import {
@@ -14,6 +15,8 @@ import {
   IParserBinaryOpNode,
   IParserBreakNode,
   IParserCaseNode,
+  IParserCastNode,
+  KindToNodeMap,
   ParserASTNode,
   ParserKind,
 } from "@/types/PyCParser/pycparser";
@@ -150,8 +153,32 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertCast(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertCast(parserNode: IParserCastNode): ICastExpression {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const typeDeclNode = this.findParserNodeWithType(parserNode, ParserKind.TypeDecl);
+
+    if (!typeDeclNode) {
+      throw new Error(`Missing TypeDecl Node in Cast: ${JSON.stringify(parserNode)}`);
+    }
+
+    const typeDeclIdentifier = this.findParserNodeWithType(typeDeclNode, ParserKind.IdentifierType);
+
+    if (!typeDeclIdentifier?.names) {
+      throw new Error(`Invalid TypeDecl's Identifier in Cast ${JSON.stringify(typeDeclNode)}`);
+    }
+
+    const base: ICastExpression = {
+      nodeType: ASTNodeTypes.CastExpression,
+      targetType: String(typeDeclIdentifier.names),
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertCompound(parserNode: ParserASTNode): ASTNodes | undefined {
@@ -380,6 +407,18 @@ export class CParserNodeConverter {
   }
 
   private convertWhile(parserNode: ParserASTNode): ASTNodes | undefined {
+    return undefined;
+  }
+
+  private findParserNodeWithType<K extends ParserKind>(node: ParserASTNode, kind: K): KindToNodeMap[K] | undefined {
+    if (node.kind === kind) return node as KindToNodeMap[K];
+
+    if (Array.isArray(node.children)) {
+      for (const child of node.children as ParserASTNode[]) {
+        if (this.findParserNodeWithType(child, kind)) return child as KindToNodeMap[K];
+      }
+    }
+
     return undefined;
   }
 }
