@@ -639,6 +639,58 @@ export interface IParserWhileNode extends ParserBaseASTNode {
   stmt: ParserASTNode;
 }
 
+export interface KindToNodeMap {
+  [ParserKind.Alignas]: IParserAlignasNode;
+  [ParserKind.ArrayDecl]: IParserArrayDeclNode;
+  [ParserKind.ArrayRef]: IParserArrayRefNode;
+  [ParserKind.Assignment]: IParserAssignmentNode;
+  [ParserKind.BinaryOp]: IParserBinaryOpNode;
+  [ParserKind.Break]: IParserBreakNode;
+  [ParserKind.Case]: IParserCaseNode;
+  [ParserKind.Cast]: IParserCastNode;
+  [ParserKind.Compound]: IParserCompoundNode;
+  [ParserKind.CompoundLiteral]: IParserCompoundLiteralNode;
+  [ParserKind.Constant]: IParserConstantNode;
+  [ParserKind.Continue]: IParserContinueNode;
+  [ParserKind.Decl]: IParserDeclNode;
+  [ParserKind.DeclList]: IParserDeclListNode;
+  [ParserKind.Default]: IParserDefaultNode;
+  [ParserKind.DoWhile]: IParserDoWhileNode;
+  [ParserKind.EllipsisParam]: IParserEllipsisParamNode;
+  [ParserKind.EmptyStatement]: IParserEmptyStatementNode;
+  [ParserKind.Enum]: IParserEnumNode;
+  [ParserKind.Enumerator]: IParserEnumeratorNode;
+  [ParserKind.EnumeratorList]: IParserEnumeratorListNode;
+  [ParserKind.ExprList]: IParserExprListNode;
+  [ParserKind.FileAST]: IParserFileASTNode;
+  [ParserKind.For]: IParserForNode;
+  [ParserKind.FuncCall]: IParserFuncCallNode;
+  [ParserKind.FuncDecl]: IParserFuncDeclNode;
+  [ParserKind.FuncDef]: IParserFuncDefNode;
+  [ParserKind.Goto]: IParserGotoNode;
+  [ParserKind.ID]: IParserIDNode;
+  [ParserKind.IdentifierType]: IParserIdentifierTypeNode;
+  [ParserKind.If]: IParserIfNode;
+  [ParserKind.InitList]: IParserInitListNode;
+  [ParserKind.Label]: IParserLabelNode;
+  [ParserKind.NamedInitializer]: IParserNamedInitializerNode;
+  [ParserKind.ParamList]: IParserParamListNode;
+  [ParserKind.Pragma]: IParserPragmaNode;
+  [ParserKind.PtrDecl]: IParserPtrDeclNode;
+  [ParserKind.Return]: IParserReturnNode;
+  [ParserKind.StaticAssert]: IParserStaticAssertNode;
+  [ParserKind.Struct]: IParserStructNode;
+  [ParserKind.StructRef]: IParserStructRefNode;
+  [ParserKind.Switch]: IParserSwitchNode;
+  [ParserKind.TernaryOp]: IParserTernaryOpNode;
+  [ParserKind.TypeDecl]: IParserTypeDeclNode;
+  [ParserKind.Typedef]: IParserTypedefNode;
+  [ParserKind.Typename]: IParserTypenameNode;
+  [ParserKind.UnaryOp]: IParserUnaryOpNode;
+  [ParserKind.Union]: IParserUnionNode;
+  [ParserKind.While]: IParserWhileNode;
+}
+
 export type ParserASTNode =
   | IParserAlignasNode
   | IParserArrayDeclNode

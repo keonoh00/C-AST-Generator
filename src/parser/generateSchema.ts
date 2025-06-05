@@ -60,10 +60,12 @@ const lines = pycparserCfg
 
 const interfaces: string[] = [];
 const typeNames: string[] = [];
+const kindMapEntries: string[] = [];
 
 // Generate interface definitions
 for (const line of lines) {
   const [nodeType, rawFields] = line.split(":");
+  const name = nodeType.trim();
   const fields = rawFields
     .replace("[", "")
     .replace("]", "")
@@ -71,8 +73,9 @@ for (const line of lines) {
     .map((f) => f.trim())
     .filter(Boolean);
 
-  interfaces.push(toInterface(nodeType.trim(), fields));
-  typeNames.push(`IParser${nodeType.trim()}Node`);
+  interfaces.push(toInterface(name, fields));
+  typeNames.push(`IParser${name}Node`);
+  kindMapEntries.push(`  [ParserKind.${name}]: IParser${name}Node;`);
 }
 
 // Base interface and kind enum
@@ -96,10 +99,14 @@ ${lines
 
 const union = `export type ParserASTNode =\n  | ${typeNames.join("\n  | ")};\n`;
 
-// Write to file
+const kindToNodeMap = `export type KindToNodeMap = {\n${kindMapEntries.join("\n")}\n};\n`;
+
+// Final output
+const fullOutput = [header, kindEnum, "", interfaces.join("\n"), union, kindToNodeMap].join("\n");
+
 const outputPath = path.resolve(process.cwd(), "src/types/PyCParser/pycparser.ts");
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-fs.writeFileSync(outputPath, header + "\n" + kindEnum + "\n\n" + interfaces.join("\n") + "\n" + union);
+fs.writeFileSync(outputPath, fullOutput);
 
 execSync(`eslint --fix ${outputPath}`, { stdio: "inherit" });
 
