@@ -12,6 +12,7 @@ import { IReturnStatement } from "@/types/ControlStructures/ReturnStatement";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
+import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
@@ -47,6 +48,7 @@ import {
   IParserStructNode,
   IParserStructRefNode,
   IParserSwitchNode,
+  IParserTypedefNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -665,8 +667,31 @@ export class CParserNodeConverter {
     return undefined;
   }
 
-  private convertTypedef(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertTypedef(parserNode: IParserTypedefNode): ITypeDefinition {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const typeDecl = children.find((c) => c.kind === ParserKind.TypeDecl);
+
+    if (!typeDecl) {
+      throw new Error(`No typeDecl in Typedef: ${JSON.stringify(parserNode)}`);
+    }
+
+    if (!typeDecl.children) {
+      throw new Error(`No typeDecl children in Typedef: ${JSON.stringify(parserNode)}`);
+    }
+
+    const base: ITypeDefinition = {
+      name: String(parserNode.name),
+      nodeType: ASTNodeTypes.TypeDefinition,
+      underlyingType: typeDecl.children.kind,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertTypename(parserNode: ParserASTNode): ASTNodes | undefined {
