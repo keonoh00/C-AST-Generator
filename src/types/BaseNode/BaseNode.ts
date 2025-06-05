@@ -7,7 +7,6 @@ export enum ASTNodeTypes {
   AssignmentExpression = "AssignmentExpression",
   BinaryExpression = "BinaryExpression",
   BreakStatement = "BreakStatement",
-  CaseExpression = "CaseExpression",
   CastExpression = "CastExpression",
   CompoundStatement = "CompoundStatement",
   ContinueStatement = "ContinueStatement",
