@@ -206,7 +206,7 @@ export class CParserNodeConverter {
     const typeDeclIdentifier = this.findParserNodeWithType(typeDeclNode, ParserKind.IdentifierType);
 
     if (!typeDeclIdentifier?.names) {
-      throw new Error(`Invalid TypeDecl's Identifier in Cast ${JSON.stringify(typeDeclNode)}`);
+      throw new Error(`Invalid TypeDecl's Identifier in Cast ${JSON.stringify(parserNode)}`);
     }
 
     const base: ICastExpression = {
@@ -340,7 +340,7 @@ export class CParserNodeConverter {
     const typeDeclIdentifier = this.findParserNodeWithType(typeDeclNode, ParserKind.IdentifierType);
 
     if (!typeDeclIdentifier?.names) {
-      throw new Error(`Invalid TypeDecl's Identifier in FuncDecl ${JSON.stringify(typeDeclNode)}`);
+      throw new Error(`Invalid TypeDecl's Identifier in FuncDecl ${JSON.stringify(parserNode)}`);
     }
 
     const base: IFunctionDeclaration = {
@@ -368,13 +368,13 @@ export class CParserNodeConverter {
     const funcDeclTypeDeclNode = this.findParserNodeWithType(funcDeclNode, ParserKind.TypeDecl);
 
     if (!funcDeclTypeDeclNode) {
-      throw new Error(`Missing FuncDecl-TypeDecl Node in FuncDef: ${JSON.stringify(funcDeclNode)}`);
+      throw new Error(`Missing FuncDecl-TypeDecl Node in FuncDef: ${JSON.stringify(parserNode)}`);
     }
 
     const typeDeclIdentifier = this.findParserNodeWithType(funcDeclTypeDeclNode, ParserKind.IdentifierType);
 
     if (!typeDeclIdentifier?.names) {
-      throw new Error(`Invalid FuncDecl-TypeDecl-Identifier in FuncDef ${JSON.stringify(typeDeclIdentifier)}`);
+      throw new Error(`Invalid FuncDecl-TypeDecl-Identifier in FuncDef ${JSON.stringify(parserNode)}`);
     }
 
     const base: IFunctionDefinition = {
@@ -419,7 +419,7 @@ export class CParserNodeConverter {
     const typeDeclIdentifier = this.findParserNodeWithType(typeDeclNode, ParserKind.IdentifierType);
 
     if (!typeDeclIdentifier?.names) {
-      throw new Error(`Invalid TypeDecl-Identifier in ID ${JSON.stringify(typeDeclNode)}`);
+      throw new Error(`Invalid TypeDecl-Identifier in ID ${JSON.stringify(parserNode)}`);
     }
 
     const base: IIdentifier = {
