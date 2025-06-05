@@ -4,5 +4,5 @@ export interface IIdentifier extends IBaseNode {
   name: string;
   nodeType: ASTNodeTypes.Identifier;
   size: string;
-  type: string;
+  type?: string;
 }

@@ -411,23 +411,21 @@ export class CParserNodeConverter {
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
     const typeDeclNode = this.findParserNodeWithType(parserNode, ParserKind.TypeDecl);
-
-    if (!typeDeclNode) {
-      throw new Error(`Missing TypeDecl Node in ID: ${JSON.stringify(parserNode)}`);
-    }
-
-    const typeDeclIdentifier = this.findParserNodeWithType(typeDeclNode, ParserKind.IdentifierType);
-
-    if (!typeDeclIdentifier?.names) {
-      throw new Error(`Invalid TypeDecl-Identifier in ID ${JSON.stringify(parserNode)}`);
-    }
-
     const base: IIdentifier = {
       name: String(parserNode.name),
       nodeType: ASTNodeTypes.Identifier,
       size: "undefined", // TODO: Figure out
-      type: String(typeDeclIdentifier.names),
     };
+
+    if (typeDeclNode) {
+      const typeDeclIdentifier = this.findParserNodeWithType(typeDeclNode, ParserKind.IdentifierType);
+
+      if (!typeDeclIdentifier?.names) {
+        throw new Error(`Invalid TypeDecl-Identifier in ID ${JSON.stringify(parserNode)}`);
+      }
+
+      base.type = String(typeDeclIdentifier.names);
+    }
 
     const convertedChildren = this.convertCParserNodes(children);
     if (convertedChildren.length > 0) {
