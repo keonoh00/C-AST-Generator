@@ -706,23 +706,20 @@ export class CParserNodeConverter {
   }
 
   private convertUnaryOp(parserNode: IParserUnaryOpNode): IUnarayExpression {
+    let type: string;
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
-
-    if (children.length !== 2) {
-      throw new Error(`Invalid Children Number for UnaryOp ${JSON.stringify(parserNode)}`);
-    }
 
     const typeDecl = children.find((c) => c.kind === ParserKind.TypeDecl);
 
-    if (!typeDecl) {
-      throw new Error(`No typeDecl in UnaryOp: ${JSON.stringify(parserNode)}`);
+    if (typeDecl) {
+      const typeDeclChildren = Array.isArray(typeDecl.children) ? (typeDecl.children as ParserASTNode[]) : [];
+
+      const identifierType = typeDeclChildren.find((c) => c.kind === ParserKind.IdentifierType);
+
+      type = Array.isArray(identifierType?.names) ? identifierType.names.join(" ") : "";
+    } else {
+      type = String(this.findParserNodeWithType(parserNode, ParserKind.Constant)?.type);
     }
-
-    const typeDeclChildren = Array.isArray(typeDecl.children) ? (typeDecl.children as ParserASTNode[]) : [];
-
-    const identifierType = typeDeclChildren.find((c) => c.kind === ParserKind.IdentifierType);
-
-    const type: string = Array.isArray(identifierType?.names) ? identifierType.names.join(" ") : "";
 
     const base: IUnarayExpression = {
       nodeType: ASTNodeTypes.UnarayExpression,
