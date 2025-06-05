@@ -11,6 +11,7 @@ import { ILabel } from "@/types/ControlStructures/Label";
 import { IReturnStatement } from "@/types/ControlStructures/ReturnStatement";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
+import { IWhileStatement } from "@/types/ControlStructures/WhileStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
@@ -53,6 +54,7 @@ import {
   IParserTypedefNode,
   IParserUnaryOpNode,
   IParserUnionNode,
+  IParserWhileNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -509,13 +511,24 @@ export class CParserNodeConverter {
 
     switch (parserNode.kind) {
       case ParserKind.Alignas:
-        return this.convertWhile(parserNode);
+      case ParserKind.CompoundLiteral:
+      case ParserKind.Continue:
+      case ParserKind.DeclList:
+      case ParserKind.EllipsisParam:
+      case ParserKind.EmptyStatement:
+      case ParserKind.Enum:
+      case ParserKind.Enumerator:
+      case ParserKind.EnumeratorList:
+      case ParserKind.InitList:
+      case ParserKind.NamedInitializer:
+      case ParserKind.ParamList:
+      case ParserKind.Pragma:
+      case ParserKind.StaticAssert:
+        break;
       case ParserKind.ArrayDecl:
         return this.convertArrayDecl(parserNode);
-      case ParserKind.ArrayRef: {
-        this.convertArrayRef(parserNode);
-        return;
-      }
+      case ParserKind.ArrayRef:
+        return this.convertArrayRef(parserNode);
       case ParserKind.Assignment:
         return this.convertAssignment(parserNode);
       case ParserKind.BinaryOp:
@@ -528,30 +541,14 @@ export class CParserNodeConverter {
         return this.convertCast(parserNode);
       case ParserKind.Compound:
         return this.convertCompound(parserNode);
-      case ParserKind.CompoundLiteral:
-        return this.convertWhile(parserNode);
       case ParserKind.Constant:
         return this.convertConstant(parserNode);
-      case ParserKind.Continue:
-        return this.convertWhile(parserNode);
       case ParserKind.Decl:
         return this.convertDecl(parserNode);
-      case ParserKind.DeclList:
-        return this.convertWhile(parserNode);
       case ParserKind.Default:
         return this.convertDefault(parserNode);
       case ParserKind.DoWhile:
         return this.convertDoWhile(parserNode);
-      case ParserKind.EllipsisParam:
-        return this.convertWhile(parserNode);
-      case ParserKind.EmptyStatement:
-        return this.convertWhile(parserNode);
-      case ParserKind.Enum:
-        return this.convertWhile(parserNode);
-      case ParserKind.Enumerator:
-        return this.convertWhile(parserNode);
-      case ParserKind.EnumeratorList:
-        return this.convertWhile(parserNode);
       case ParserKind.ExprList:
         return this.convertExprList(parserNode);
       case ParserKind.FileAST:
@@ -572,22 +569,12 @@ export class CParserNodeConverter {
         return this.convertIdentifierType(parserNode);
       case ParserKind.If:
         return this.convertIf(parserNode);
-      case ParserKind.InitList:
-        return this.convertWhile(parserNode);
       case ParserKind.Label:
         return this.convertLabel(parserNode);
-      case ParserKind.NamedInitializer:
-        return this.convertWhile(parserNode);
-      case ParserKind.ParamList:
-        return this.convertWhile(parserNode);
-      case ParserKind.Pragma:
-        return this.convertWhile(parserNode);
       case ParserKind.PtrDecl:
         return this.convertPtrDecl(parserNode);
       case ParserKind.Return:
         return this.convertReturn(parserNode);
-      case ParserKind.StaticAssert:
-        return this.convertWhile(parserNode);
       case ParserKind.Struct:
         return this.convertStruct(parserNode);
       case ParserKind.StructRef:
@@ -751,8 +738,19 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertWhile(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertWhile(parserNode: IParserWhileNode): IWhileStatement {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IWhileStatement = {
+      nodeType: ASTNodeTypes.WhileStatement,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private findParserNodeWithType<K extends ParserKind>(node: ParserASTNode, kind: K): KindToNodeMap[K] | undefined {
