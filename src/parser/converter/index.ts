@@ -10,6 +10,7 @@ import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { ILabel } from "@/types/ControlStructures/Label";
 import { IReturnStatement } from "@/types/ControlStructures/ReturnStatement";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
+import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
@@ -45,6 +46,7 @@ import {
   IParserReturnNode,
   IParserStructNode,
   IParserStructRefNode,
+  IParserSwitchNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -640,8 +642,19 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertSwitch(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertSwitch(parserNode: IParserSwitchNode): ISwitchStatement {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: ISwitchStatement = {
+      nodeType: ASTNodeTypes.SwitchStatement,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertTernaryOp(parserNode: ParserASTNode): ASTNodes | undefined {
