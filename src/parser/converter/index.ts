@@ -52,7 +52,7 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertArrayRef(parserNode: ParserASTNode): IArraySubscriptionExpression | undefined {
+  private convertArrayRef(parserNode: ParserASTNode): IArraySubscriptionExpression {
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
     const base: IArraySubscriptionExpression = {
@@ -67,7 +67,7 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertAssignment(parserNode: IParserAssignmentNode): IAssignmentExpression | undefined {
+  private convertAssignment(parserNode: IParserAssignmentNode): IAssignmentExpression {
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
     const base: IAssignmentExpression = {
