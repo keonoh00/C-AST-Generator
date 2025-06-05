@@ -11,6 +11,7 @@ import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
+import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import {
   IParserArrayDeclNode,
   IParserAssignmentNode,
@@ -21,6 +22,7 @@ import {
   IParserCompoundNode,
   IParserDefaultNode,
   IParserDoWhileNode,
+  IParserFileASTNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -243,8 +245,19 @@ export class CParserNodeConverter {
     return undefined;
   }
 
-  private convertFileAST(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertFileAST(parserNode: IParserFileASTNode): ITranslationUnit {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: ITranslationUnit = {
+      nodeType: ASTNodeTypes.TranslationUnit,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertFor(parserNode: ParserASTNode): ASTNodes | undefined {
