@@ -3,9 +3,10 @@
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
+import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
-import { IParserArrayDeclNode, IParserAssignmentNode, ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
+import { IParserArrayDeclNode, IParserAssignmentNode, IParserBinaryOpNode, ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
 
 export class CParserNodeConverter {
   public convertCParserNodes(parserNodes: ParserASTNode[]): ASTNodes[] {
@@ -83,8 +84,28 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertBinaryOp(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertBinaryOp(parserNode: IParserBinaryOpNode): IBinaryExpression {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    if (children.length !== 2) {
+      throw new Error(`Invalid Children Number for BinaryOp ${JSON.stringify(parserNode)}`);
+    }
+
+    const typeLeft: string = (children[0].type as string) || children[0].kind;
+    const typeRight: string = (children[1].type as string) || children[1].kind;
+
+    const base: IBinaryExpression = {
+      nodeType: ASTNodeTypes.BinaryExpression,
+      operator: parserNode.op as string,
+      type: typeLeft + "/" + typeRight,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertBreak(parserNode: ParserASTNode): ASTNodes | undefined {
