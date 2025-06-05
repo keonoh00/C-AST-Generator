@@ -16,6 +16,7 @@ import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression"
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
+import { IMemberAccess } from "@/types/Expressions/MemberAccess";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
@@ -43,6 +44,7 @@ import {
   IParserPtrDeclNode,
   IParserReturnNode,
   IParserStructNode,
+  IParserStructRefNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -622,8 +624,20 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertStructRef(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertStructRef(parserNode: IParserStructRefNode): IMemberAccess {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IMemberAccess = {
+      nodeType: ASTNodeTypes.MemberAccess,
+      type: "undefined", // TODO: Figure out
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertSwitch(parserNode: ParserASTNode): ASTNodes | undefined {
