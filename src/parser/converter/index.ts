@@ -392,7 +392,7 @@ export class CParserNodeConverter {
     const base: IIdentifier = {
       name: String(parserNode.name),
       nodeType: ASTNodeTypes.Identifier,
-      size: "undefined",
+      size: "undefined", // TODO: Figure out
       type: String(typeDeclIdentifier.names),
     };
 
@@ -456,10 +456,10 @@ export class CParserNodeConverter {
     const type: string = Array.isArray(identifierType?.names) ? identifierType.names.join(" ") : "";
 
     const base: IPointerDeclaration = {
-      level: 0,
+      level: 0, // TODO: Figure out
       name,
       nodeType: ASTNodeTypes.PointerDeclaration,
-      pointsTo: type,
+      pointsTo: type, // TODO: Figure out
     };
 
     const convertedChildren = this.convertCParserNodes(children);
