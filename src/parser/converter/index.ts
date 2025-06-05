@@ -13,6 +13,7 @@ import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
+import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import {
   IParserArrayDeclNode,
@@ -27,6 +28,7 @@ import {
   IParserFileASTNode,
   IParserForNode,
   IParserFuncDeclNode,
+  IParserFuncDefNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -312,8 +314,38 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertFuncDef(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertFuncDef(parserNode: IParserFuncDefNode): IFunctionDefinition {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+    const funcDeclNode = this.findParserNodeWithType(parserNode, ParserKind.FuncDecl);
+
+    if (!funcDeclNode) {
+      throw new Error(`Missing FuncDecl Node in FuncDef: ${JSON.stringify(parserNode)}`);
+    }
+
+    const funcDeclTypeDeclNode = this.findParserNodeWithType(funcDeclNode, ParserKind.TypeDecl);
+
+    if (!funcDeclTypeDeclNode) {
+      throw new Error(`Missing FuncDecl-TypeDecl Node in FuncDef: ${JSON.stringify(funcDeclNode)}`);
+    }
+
+    const typeDeclIdentifier = this.findParserNodeWithType(funcDeclTypeDeclNode, ParserKind.IdentifierType);
+
+    if (!typeDeclIdentifier?.names) {
+      throw new Error(`Invalid FuncDecl-TypeDecl-Identifier in FuncDef ${JSON.stringify(typeDeclIdentifier)}`);
+    }
+
+    const base: IFunctionDefinition = {
+      name: String(typeDeclIdentifier.declname as string),
+      nodeType: ASTNodeTypes.FunctionDefinition,
+      returnType: String(typeDeclIdentifier.names),
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertGoto(parserNode: ParserASTNode): ASTNodes | undefined {
