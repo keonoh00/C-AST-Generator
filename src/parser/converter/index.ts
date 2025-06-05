@@ -3,6 +3,7 @@
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
+import { IContinueStatement } from "@/types/ControlStructures/ContinueStatement";
 import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
@@ -36,6 +37,7 @@ import {
   IParserCaseNode,
   IParserCastNode,
   IParserCompoundNode,
+  IParserContinueNode,
   IParserDefaultNode,
   IParserDoWhileNode,
   IParserFileASTNode,
@@ -237,6 +239,21 @@ export class CParserNodeConverter {
 
   private convertConstant(parserNode: ParserASTNode): ASTNodes | undefined {
     return undefined;
+  }
+
+  private convertContinue(parserNode: IParserContinueNode): IContinueStatement {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IContinueStatement = {
+      nodeType: ASTNodeTypes.ContinueStatement,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertDecl(parserNode: ParserASTNode): ASTNodes | undefined {
@@ -512,7 +529,6 @@ export class CParserNodeConverter {
     switch (parserNode.kind) {
       case ParserKind.Alignas:
       case ParserKind.CompoundLiteral:
-      case ParserKind.Continue:
       case ParserKind.DeclList:
       case ParserKind.EllipsisParam:
       case ParserKind.EmptyStatement:
@@ -543,6 +559,8 @@ export class CParserNodeConverter {
         return this.convertCompound(parserNode);
       case ParserKind.Constant:
         return this.convertConstant(parserNode);
+      case ParserKind.Continue:
+        return this.convertContinue(parserNode);
       case ParserKind.Decl:
         return this.convertDecl(parserNode);
       case ParserKind.Default:
@@ -737,7 +755,6 @@ export class CParserNodeConverter {
 
     return base;
   }
-
   private convertWhile(parserNode: IParserWhileNode): IWhileStatement {
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
@@ -752,7 +769,6 @@ export class CParserNodeConverter {
 
     return base;
   }
-
   private findParserNodeWithType<K extends ParserKind>(node: ParserASTNode, kind: K): KindToNodeMap[K] | undefined {
     if (node.kind === kind) return node as KindToNodeMap[K];
 
