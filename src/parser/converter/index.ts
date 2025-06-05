@@ -11,6 +11,7 @@ import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscript
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ICastExpression } from "@/types/Expressions/CastExpression";
+import { IIdentifier } from "@/types/Expressions/Identifier";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
@@ -31,6 +32,7 @@ import {
   IParserFuncDeclNode,
   IParserFuncDefNode,
   IParserGotoNode,
+  IParserIDNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -366,8 +368,34 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertID(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertID(parserNode: IParserIDNode): IIdentifier {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const typeDeclNode = this.findParserNodeWithType(parserNode, ParserKind.TypeDecl);
+
+    if (!typeDeclNode) {
+      throw new Error(`Missing TypeDecl Node in ID: ${JSON.stringify(parserNode)}`);
+    }
+
+    const typeDeclIdentifier = this.findParserNodeWithType(typeDeclNode, ParserKind.IdentifierType);
+
+    if (!typeDeclIdentifier?.names) {
+      throw new Error(`Invalid TypeDecl-Identifier in ID ${JSON.stringify(typeDeclNode)}`);
+    }
+
+    const base: IIdentifier = {
+      name: String(parserNode.name),
+      nodeType: ASTNodeTypes.Identifier,
+      size: "undefined",
+      type: String(typeDeclIdentifier.names),
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertIdentifierType(parserNode: ParserASTNode): ASTNodes | undefined {
