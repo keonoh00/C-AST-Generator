@@ -9,7 +9,8 @@ import { readJSONFiles, readLongJSONFiles } from "@/parser/utils/readJson";
 import { writeJSONFiles, writeLongJSONFiles } from "@/parser/utils/writeJson";
 
 const targetDir = "./ast_output";
-const cachePath = "./cache.bin";
+const cacheDir = "./converted";
+const cachePath = path.join(cacheDir, "cache.bin");
 
 async function processASTFiles(): Promise<void> {
   console.log(`[debug] Starting AST processing at ${new Date().toISOString()}`);
@@ -18,6 +19,7 @@ async function processASTFiles(): Promise<void> {
 
   try {
     let rawNodes: ParserASTNode[];
+    fs.mkdirSync(cacheDir, { recursive: true });
 
     if (fs.existsSync(cachePath)) {
       console.log("[debug] Cache file found. Attempting to load binary cache...");
@@ -54,7 +56,6 @@ async function processASTFiles(): Promise<void> {
         console.log(`[debug] Cached ${rawNodes.length.toString()} nodes to ${cachePath}`);
       } catch (e) {
         console.error(`[fatal-error] Failed to write cache at ${cachePath}:`, e);
-        // Not aborting here; we can still proceed without cache.
       }
     }
 
@@ -66,7 +67,6 @@ async function processASTFiles(): Promise<void> {
       console.log(`[debug] Conversion produced ${converted.length.toString()} ASTNodes.`);
     } catch (e) {
       console.error("[fatal-error] Converter threw an error:", e);
-      // Attempt to pinpoint which node caused the error
       for (let i = 0; i < rawNodes.length; i++) {
         try {
           converter.convertCParserNodes([rawNodes[i]]);
@@ -79,18 +79,15 @@ async function processASTFiles(): Promise<void> {
       throw new Error("Aborting due to conversion failure.");
     }
 
-    console.log("[debug] Preparing output file paths for converted ASTs...");
-    const dirPaths = converted.map((_, i) => path.join("./converted", `ast_${i.toString()}.json`));
-    console.log(`[debug] Prepared ${dirPaths.length.toString()} output paths.`);
+    console.log("[debug] Preparing to write converted AST nodes into mirrored subpaths under converted/");
+    const originalFiles = await listJsonFiles(targetDir);
+    const outputPaths = originalFiles.map((inputPath) => {
+      const relPath = path.relative(targetDir, inputPath);
+      return path.join(cacheDir, relPath);
+    });
 
-    console.log("[debug] Writing converted AST nodes to JSON files...");
-    try {
-      writeJSONFiles(converted, dirPaths);
-      console.log("[debug] Successfully wrote converted JSON files.");
-    } catch (e) {
-      console.error("[fatal-error] Failed to write converted JSON files:", e);
-      throw new Error("Aborting due to write failure.");
-    }
+    writeJSONFiles(converted, outputPaths);
+    console.log("[debug] Successfully wrote converted JSON files.");
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[fatal-error] ${msg}`);
