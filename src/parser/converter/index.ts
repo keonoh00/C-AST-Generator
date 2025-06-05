@@ -2,6 +2,7 @@
 
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
+import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
@@ -12,6 +13,7 @@ import {
   IParserAssignmentNode,
   IParserBinaryOpNode,
   IParserBreakNode,
+  IParserCaseNode,
   ParserASTNode,
   ParserKind,
 } from "@/types/PyCParser/pycparser";
@@ -131,8 +133,19 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertCase(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertCase(parserNode: IParserCaseNode): ISwitchCase {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: ISwitchCase = {
+      nodeType: ASTNodeTypes.SwitchCase,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertCast(parserNode: ParserASTNode): ASTNodes | undefined {
