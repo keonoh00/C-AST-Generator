@@ -8,6 +8,7 @@ import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { ILabel } from "@/types/ControlStructures/Label";
+import { IReturnStatement } from "@/types/ControlStructures/ReturnStatement";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
@@ -39,6 +40,7 @@ import {
   IParserIfNode,
   IParserLabelNode,
   IParserPtrDeclNode,
+  IParserReturnNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -470,8 +472,19 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertReturn(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertReturn(parserNode: IParserReturnNode): IReturnStatement {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IReturnStatement = {
+      nodeType: ASTNodeTypes.ReturnStatement,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertSingleNode(parserNode: ParserASTNode): ASTNodes | undefined {
