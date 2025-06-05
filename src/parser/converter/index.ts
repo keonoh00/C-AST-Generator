@@ -1,12 +1,20 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
-import { IParserArrayDeclNode, IParserAssignmentNode, IParserBinaryOpNode, ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
+import {
+  IParserArrayDeclNode,
+  IParserAssignmentNode,
+  IParserBinaryOpNode,
+  IParserBreakNode,
+  ParserASTNode,
+  ParserKind,
+} from "@/types/PyCParser/pycparser";
 
 export class CParserNodeConverter {
   public convertCParserNodes(parserNodes: ParserASTNode[]): ASTNodes[] {
@@ -108,8 +116,19 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertBreak(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertBreak(parserNode: IParserBreakNode): IBreakStatement {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IBreakStatement = {
+      nodeType: ASTNodeTypes.BreakStatement,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertCase(parserNode: ParserASTNode): ASTNodes | undefined {
