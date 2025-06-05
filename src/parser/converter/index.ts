@@ -68,7 +68,19 @@ export class CParserNodeConverter {
   }
 
   private convertAssignment(parserNode: IParserAssignmentNode): IAssignmentExpression | undefined {
-    return undefined;
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IAssignmentExpression = {
+      nodeType: ASTNodeTypes.AssignmentExpression,
+      operator: parserNode.op as string,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertBinaryOp(parserNode: ParserASTNode): ASTNodes | undefined {
