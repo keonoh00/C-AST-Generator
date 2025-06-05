@@ -1,7 +1,7 @@
 import { ASTNodeTypes, IBaseNode } from "../BaseNode/BaseNode";
 
-export interface IUnarayExpression extends IBaseNode {
-  nodeType: ASTNodeTypes.UnarayExpression;
+export interface IUnaryExpression extends IBaseNode {
+  nodeType: ASTNodeTypes.UnaryExpression;
   operator: string;
   type: string;
 }

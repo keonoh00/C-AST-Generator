@@ -1,9 +1,10 @@
+// src/parser/convert.ts
 import fs from "fs";
 import path from "path";
 
 import type { ParserASTNode } from "@/types/PyCParser/pycparser";
 
-import { CParserNodeConverter } from "@/parser/converter";
+import { convertCParserNodes } from "@/parser/converter"; // <-- import the free function
 import { listJsonFiles } from "@/parser/utils/listJson";
 import { readJSONFiles, readLongJSONFiles } from "@/parser/utils/readJson";
 import { writeJSONFiles, writeLongJSONFiles } from "@/parser/utils/writeJson";
@@ -60,16 +61,17 @@ async function processASTFiles(): Promise<void> {
     }
 
     console.log("[debug] Converting parsed AST nodes to internal representation...");
-    const converter = new CParserNodeConverter();
     let converted: unknown[];
     try {
-      converted = converter.convertCParserNodes(rawNodes);
+      // ► CALL THE FREE FUNCTION directly:
+      converted = convertCParserNodes(rawNodes);
       console.log(`[debug] Conversion produced ${converted.length.toString()} ASTNodes.`);
     } catch (e) {
       console.error("[fatal-error] Converter threw an error:", e);
       for (let i = 0; i < rawNodes.length; i++) {
         try {
-          converter.convertCParserNodes([rawNodes[i]]);
+          // isolate the failing node
+          convertCParserNodes([rawNodes[i]]);
         } catch (inner) {
           console.error(`[fatal-error] Conversion failed on node index ${i.toString()}:`, rawNodes[i]);
           console.error(inner);

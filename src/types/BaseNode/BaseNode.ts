@@ -35,7 +35,7 @@ export enum ASTNodeTypes {
   SwitchStatement = "SwitchStatement",
   TranslationUnit = "TranslationUnit",
   TypeDefinition = "TypeDefinition",
-  UnarayExpression = "UnarayExpression",
+  UnaryExpression = "UnaryExpression",
   UnionType = "UnionType",
   UserDefinedCall = "UserDefinedCall",
   VariableDeclaration = "VariableDeclaration",
