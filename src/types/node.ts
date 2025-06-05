@@ -4,6 +4,7 @@ import { IContinueStatement } from "./ControlStructures/ContinueStatement";
 import { IDoWhileStatement } from "./ControlStructures/DoWhileStatement";
 import { IForStatement } from "./ControlStructures/ForStatement";
 import { IGotoStatement } from "./ControlStructures/GotoStatement";
+import { IIfStatement } from "./ControlStructures/IfStatement";
 import { ILabel } from "./ControlStructures/Label";
 import { IReturnStatement } from "./ControlStructures/ReturnStatement";
 import { ISwitchCase } from "./ControlStructures/SwitchCase";
@@ -44,6 +45,7 @@ type ASTControlStructureNodes =
   | IEnumType
   | IForStatement
   | IGotoStatement
+  | IIfStatement
   | ILabel
   | IReturnStatement
   | IStructType
