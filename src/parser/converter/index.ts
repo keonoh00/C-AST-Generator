@@ -30,14 +30,16 @@ export class CParserNodeConverter {
     return converted;
   }
 
-  private convertArrayDecl(parserNode: IParserArrayDeclNode): IArrayDeclaration | undefined {
+  private convertArrayDecl(parserNode: IParserArrayDeclNode): IArrayDeclaration {
     const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
 
     const typeDecl = children.find((c) => c.kind === ParserKind.TypeDecl);
 
     const constNode = children.find((c) => c.kind === ParserKind.Constant);
 
-    if (!typeDecl || !constNode) return undefined;
+    if (!typeDecl || !constNode) {
+      throw new Error(`No typeDecl or constNode in ArrayDecl: ${JSON.stringify(parserNode)}`);
+    }
 
     const typeDeclChildren = Array.isArray(typeDecl.children) ? (typeDecl.children as ParserASTNode[]) : [];
 
