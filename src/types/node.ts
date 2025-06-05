@@ -23,6 +23,7 @@ import { IIdentifier } from "./Expressions/Identifier";
 import { ILiteral } from "./Expressions/Literal";
 import { IMemberAccess } from "./Expressions/MemberAccess";
 import { IPointerDereference } from "./Expressions/PointerDereference";
+import { IUnarayExpression } from "./Expressions/UnaryExpression";
 import { IIncludeDirective } from "./PreprocessorDirectives/IncludeDirective";
 import { IMacroDefinition } from "./PreprocessorDirectives/MacroDefinition";
 import { IArrayDeclaration } from "./ProgramStructures/ArrayDeclaration";
@@ -64,7 +65,8 @@ type ASTExpressionNodes =
   | IIdentifier
   | ILiteral
   | IMemberAccess
-  | IPointerDereference;
+  | IPointerDereference
+  | IUnarayExpression;
 
 type ASTPreprocessorDirectiveNodes = IIncludeDirective | IMacroDefinition;
 
