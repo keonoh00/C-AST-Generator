@@ -18,6 +18,7 @@ import {
   IParserCaseNode,
   IParserCastNode,
   IParserCompoundNode,
+  IParserDefaultNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -206,8 +207,19 @@ export class CParserNodeConverter {
     return undefined;
   }
 
-  private convertDefault(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertDefault(parserNode: IParserDefaultNode): ISwitchCase {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: ISwitchCase = {
+      nodeType: ASTNodeTypes.SwitchCase,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertDoWhile(parserNode: ParserASTNode): ASTNodes | undefined {
