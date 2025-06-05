@@ -18,6 +18,7 @@ import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
 import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
+import { IPointerDeclaration } from "@/types/ProgramStructures/PointerDeclaration";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import {
   IParserArrayDeclNode,
@@ -37,6 +38,7 @@ import {
   IParserIDNode,
   IParserIfNode,
   IParserLabelNode,
+  IParserPtrDeclNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -437,8 +439,35 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertPtrDecl(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertPtrDecl(parserNode: IParserPtrDeclNode): IPointerDeclaration {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const typeDecl = children.find((c) => c.kind === ParserKind.TypeDecl);
+
+    if (!typeDecl) {
+      throw new Error(`No typeDecl in PtrDecl: ${JSON.stringify(parserNode)}`);
+    }
+
+    const typeDeclChildren = Array.isArray(typeDecl.children) ? (typeDecl.children as ParserASTNode[]) : [];
+
+    const identifierType = typeDeclChildren.find((c) => c.kind === ParserKind.IdentifierType);
+
+    const name: string = typeof typeDecl.declname === "string" ? typeDecl.declname : "";
+    const type: string = Array.isArray(identifierType?.names) ? identifierType.names.join(" ") : "";
+
+    const base: IPointerDeclaration = {
+      level: 0,
+      name,
+      nodeType: ASTNodeTypes.PointerDeclaration,
+      pointsTo: type,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertReturn(parserNode: ParserASTNode): ASTNodes | undefined {
