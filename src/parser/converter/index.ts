@@ -5,6 +5,7 @@ import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
 import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
+import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
@@ -29,6 +30,7 @@ import {
   IParserForNode,
   IParserFuncDeclNode,
   IParserFuncDefNode,
+  IParserGotoNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -348,8 +350,20 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertGoto(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertGoto(parserNode: IParserGotoNode): IGotoStatement {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IGotoStatement = {
+      jumpTarget: String(parserNode.name),
+      nodeType: ASTNodeTypes.GotoStatement,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertID(parserNode: ParserASTNode): ASTNodes | undefined {
