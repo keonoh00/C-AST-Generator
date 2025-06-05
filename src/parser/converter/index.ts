@@ -203,15 +203,15 @@ export class CParserNodeConverter {
       throw new Error(`Missing TypeDecl Node in Cast: ${JSON.stringify(parserNode)}`);
     }
 
-    const typeDeclIdentifier = this.findParserNodeWithType(typeDeclNode, ParserKind.IdentifierType);
+    const typeDeclChild = typeDeclNode.children?.[0] as ParserASTNode | undefined;
 
-    if (!typeDeclIdentifier?.names) {
-      throw new Error(`Invalid TypeDecl's Identifier in Cast ${JSON.stringify(parserNode)}`);
+    if (!typeDeclChild?.names && !typeDeclChild?.name) {
+      throw new Error(`Invalid TypeDecl's child in Cast ${JSON.stringify(parserNode)}`);
     }
 
     const base: ICastExpression = {
       nodeType: ASTNodeTypes.CastExpression,
-      targetType: String(typeDeclIdentifier.names),
+      targetType: String((typeDeclChild.names as string[][0]) || (typeDeclChild.name as string)),
     };
 
     const convertedChildren = this.convertCParserNodes(children);
