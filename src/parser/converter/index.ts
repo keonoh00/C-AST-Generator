@@ -12,6 +12,7 @@ import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
+import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import {
   IParserArrayDeclNode,
@@ -25,6 +26,7 @@ import {
   IParserDoWhileNode,
   IParserFileASTNode,
   IParserForNode,
+  IParserFuncDeclNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -281,8 +283,33 @@ export class CParserNodeConverter {
     return undefined;
   }
 
-  private convertFuncDecl(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertFuncDecl(parserNode: IParserFuncDeclNode): IFunctionDeclaration {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const typeDeclNode = this.findParserNodeWithType(parserNode, ParserKind.TypeDecl);
+
+    if (!typeDeclNode) {
+      throw new Error(`Missing TypeDecl Node in FuncDecl: ${JSON.stringify(parserNode)}`);
+    }
+
+    const typeDeclIdentifier = this.findParserNodeWithType(typeDeclNode, ParserKind.IdentifierType);
+
+    if (!typeDeclIdentifier?.names) {
+      throw new Error(`Invalid TypeDecl's Identifier in FuncDecl ${JSON.stringify(typeDeclNode)}`);
+    }
+
+    const base: IFunctionDeclaration = {
+      name: String(typeDeclNode.declname),
+      nodeType: ASTNodeTypes.FunctionDeclaration,
+      returnType: String(typeDeclIdentifier.names),
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertFuncDef(parserNode: ParserASTNode): ASTNodes | undefined {
