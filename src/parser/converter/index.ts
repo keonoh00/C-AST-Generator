@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
@@ -16,6 +17,7 @@ import {
   IParserBreakNode,
   IParserCaseNode,
   IParserCastNode,
+  IParserCompoundNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -181,8 +183,19 @@ export class CParserNodeConverter {
     return base;
   }
 
-  private convertCompound(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertCompound(parserNode: IParserCompoundNode): ICompoundStatement {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: ICompoundStatement = {
+      nodeType: ASTNodeTypes.CompoundStatement,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertConstant(parserNode: ParserASTNode): ASTNodes | undefined {
