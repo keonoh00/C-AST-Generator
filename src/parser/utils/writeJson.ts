@@ -1,37 +1,52 @@
-import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import v8 from "v8";
 
 /**
- * Writes each item in `dataArray` as a separate JSON file into the corresponding directory in `dirPaths`.
- * If a directory path is missing or empty, a unique random directory will be generated for that file.
+ * Writes each item in `dataArray` as a JSON file to the corresponding path in `filePaths`.
+ * Uses only JSON.stringify (no fallback to binary). If an item cannot be stringified,
+ * this function will throw.
  *
  * @param dataArray Array of JSON-serializable values.
- * @param dirPaths Array of directory paths (same length as `dataArray`).
- * @returns An array of full file paths written.
+ * @param filePaths Array of full file paths (same length as `dataArray`).
+ * @returns        An array of full file paths that were written.
  */
-export function writeJSONFiles(dataArray: unknown[], dirPaths: (string | undefined)[]): string[] {
-  if (dataArray.length !== dirPaths.length) {
-    throw new Error("Length of dataArray and dirPaths must match.");
+export function writeJSONFiles(dataArray: unknown[], filePaths: string[]): string[] {
+  if (dataArray.length !== filePaths.length) {
+    throw new Error("Length of dataArray and filePaths must match.");
   }
 
   const outputPaths: string[] = [];
 
-  const padLength = dataArray.length.toString().length;
-
   dataArray.forEach((item, index) => {
-    const rawDir = dirPaths[index];
-    const resolvedDir = rawDir?.trim() ?? path.resolve(process.cwd(), crypto.randomBytes(8).toString("hex"));
+    const targetPath = filePaths[index].trim();
+    const dir = path.dirname(targetPath);
 
-    fs.mkdirSync(resolvedDir, { recursive: true });
+    fs.mkdirSync(dir, { recursive: true });
 
-    const filename = `${String(index).padStart(padLength, "0")}.json`;
-    const filePath = path.join(resolvedDir, filename);
-
-    fs.writeFileSync(filePath, JSON.stringify(item, null, 2), "utf-8");
-
-    outputPaths.push(filePath);
+    const jsonString = JSON.stringify(item);
+    fs.writeFileSync(targetPath, jsonString, "utf-8");
+    outputPaths.push(targetPath);
   });
 
   return outputPaths;
+}
+
+/**
+ * Serializes `data` (arbitrary JavaScript value) using V8’s binary format
+ * and writes it to `filePath`. Creates directories as needed.
+ *
+ * @param data     Any JavaScript value (object, array, etc.).
+ * @param filePath Full path (including filename) where the binary blob will be written.
+ * @returns        The same `filePath` string, for convenience.
+ */
+export function writeLongJSONFiles(data: unknown, filePath: string): string {
+  // Ensure the target directory exists
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+
+  // Serialize with V8 → Buffer
+  const buffer = v8.serialize(data);
+  fs.writeFileSync(filePath, buffer);
+  return filePath;
 }
