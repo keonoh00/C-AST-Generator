@@ -10,6 +10,7 @@ import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { ILabel } from "@/types/ControlStructures/Label";
 import { IReturnStatement } from "@/types/ControlStructures/ReturnStatement";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
+import { IStructType } from "@/types/DataTypes/StructType";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
@@ -41,6 +42,7 @@ import {
   IParserLabelNode,
   IParserPtrDeclNode,
   IParserReturnNode,
+  IParserStructNode,
   KindToNodeMap,
   ParserASTNode,
   ParserKind,
@@ -604,8 +606,20 @@ export class CParserNodeConverter {
     }
   }
 
-  private convertStruct(parserNode: ParserASTNode): ASTNodes | undefined {
-    return undefined;
+  private convertStruct(parserNode: IParserStructNode): IStructType {
+    const children = Array.isArray(parserNode.children) ? (parserNode.children as ParserASTNode[]) : [];
+
+    const base: IStructType = {
+      name: String(parserNode.name),
+      nodeType: ASTNodeTypes.StructType,
+    };
+
+    const convertedChildren = this.convertCParserNodes(children);
+    if (convertedChildren.length > 0) {
+      base.children = convertedChildren;
+    }
+
+    return base;
   }
 
   private convertStructRef(parserNode: ParserASTNode): ASTNodes | undefined {
