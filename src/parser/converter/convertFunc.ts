@@ -19,6 +19,7 @@ import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression"
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
+import { ILiteral } from "@/types/Expressions/Literal";
 import { IMemberAccess } from "@/types/Expressions/MemberAccess";
 import { IUnaryExpression } from "@/types/Expressions/UnaryExpression";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
@@ -30,6 +31,7 @@ import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclarat
 import {
   IParserAssignmentNode,
   IParserBinaryOpNode,
+  IParserConstantNode,
   IParserDeclNode,
   IParserGotoNode,
   IParserIDNode,
@@ -127,6 +129,17 @@ export function convertCast(node: ParserNode): ICastExpression {
 /** Compound → ICompoundStatement */
 export function convertCompound(node: ParserNode): ICompoundStatement {
   const base = createNodeBase(ASTNodeTypes.CompoundStatement);
+  return wrapChildren(base, node, convertCParserNodes);
+}
+
+/** Constant → ILiteral */
+export function convertConstant(node: ParserNode): ILiteral {
+  const value = (node as IParserConstantNode).value;
+  const type = (node as IParserConstantNode).type;
+  const base = createNodeBase(ASTNodeTypes.Literal, {
+    type,
+    value,
+  });
   return wrapChildren(base, node, convertCParserNodes);
 }
 
