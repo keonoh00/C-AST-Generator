@@ -21,7 +21,9 @@ import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
 import { ILiteral } from "@/types/Expressions/Literal";
 import { IMemberAccess } from "@/types/Expressions/MemberAccess";
+import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
 import { IUnaryExpression } from "@/types/Expressions/UnaryExpression";
+import { IUserDefinedCall } from "@/types/Expressions/UserDefinedCall";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
 import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
@@ -180,6 +182,20 @@ export function convertFileAST(node: ParserNode): ITranslationUnit {
 /** For → IForStatement */
 export function convertFor(node: ParserNode): IForStatement {
   const base = createNodeBase(ASTNodeTypes.ForStatement);
+  return wrapChildren(base, node, convertCParserNodes);
+}
+
+/** FuncCall → IUserDefinedCall or IStandardLibCall */
+export function convertFuncCall(node: ParserNode): IStandardLibCall | IUserDefinedCall {
+  const identifierNode = findParserNodeWithType(node, ParserNodeKind.ID);
+  if (!identifierNode) {
+    throw new Error("Missing Identifier in FuncCall: " + JSON.stringify(node));
+  }
+
+  const name = identifierNode.name;
+  const base = createNodeBase((ASTNodeTypes.StandardLibCall + "/" + ASTNodeTypes.UserDefinedCall) as ASTNodeTypes.UserDefinedCall, {
+    name,
+  });
   return wrapChildren(base, node, convertCParserNodes);
 }
 
