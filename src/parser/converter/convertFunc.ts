@@ -140,7 +140,7 @@ export function convertContinue(node: ParserNode): IContinueStatement {
 export function convertDecl(node: ParserNode): IVariableDeclaration {
   const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
   if (!typeDecl) {
-    throw new Error("Missing TypeDecl in FuncDecl: " + JSON.stringify(node));
+    throw new Error("Missing TypeDecl in Decl: " + JSON.stringify(node));
   }
 
   const name = (node as IParserDeclNode).name;
