@@ -333,12 +333,12 @@ export class CParserNodeConverter {
 
     const name = typeDecl.declname ?? "";
 
-    const pointsTo = findTypeFromTypeDecl(typeDecl);
+    const pointingType = findTypeFromTypeDecl(typeDecl);
 
     const base = createNodeBase(ASTNodeTypes.PointerDeclaration, {
       level: 0,
       name,
-      pointsTo,
+      pointingType,
     });
     return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }

@@ -4,5 +4,5 @@ export interface IPointerDeclaration extends IBaseNode {
   level: number;
   name: string;
   nodeType: ASTNodeTypes.PointerDeclaration;
-  pointsTo: string;
+  pointingType: string;
 }
