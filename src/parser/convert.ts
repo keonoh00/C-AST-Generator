@@ -1,3 +1,4 @@
+import { Presets, SingleBar } from "cli-progress";
 import fs from "fs";
 import path from "path";
 
@@ -56,13 +57,33 @@ async function processASTFiles(): Promise<void> {
   try {
     rawNodes = await loadRawNodes();
     if (!rawNodes.length) return;
-
     console.log("[debug] Converting AST nodes...");
-    const converted = convertCParserNodes(rawNodes);
-    rawNodes = [];
+
+    const bar = new SingleBar(
+      {
+        barCompleteChar: "\u2588",
+        barIncompleteChar: "\u2591",
+        format: "Converting AST to K-SIGN Template |{bar}| {percentage}% || {value}/{total} files",
+        hideCursor: true,
+      },
+      Presets.shades_classic
+    );
+
+    bar.start(rawNodes.length, 0);
+
+    const converted = [];
+
+    for (let i = 1; i < rawNodes.length; i++) {
+      const rawNode = rawNodes[i];
+      converted.push(convertCParserNodes([rawNode])[0]);
+      bar.increment();
+      rawNodes[i] = {} as ParserNode;
+    }
+    bar.stop();
+
     console.log(`[debug] Conversion produced ${converted.length.toString()} nodes.`);
 
-    await writeConverted(converted);
+    await writeConvertedWithChunkSize(converted, 3);
   } catch (error) {
     console.error("[fatal-error] Processing failed:", error);
   } finally {
@@ -70,15 +91,46 @@ async function processASTFiles(): Promise<void> {
   }
 }
 
-async function writeConverted(nodes: unknown[]): Promise<void> {
-  const files = await listJsonFiles(targetDir);
-  const outputPaths = files.map((input) => {
+async function writeConvertedWithChunkSize(nodes: unknown[], chunkSize: number): Promise<void> {
+  const inputFiles = await listJsonFiles(targetDir);
+  const outputPaths = inputFiles.map((input) => {
     const rel = path.relative(targetDir, input);
     return path.join(cacheDir, rel);
   });
 
-  writeJSONFiles(nodes, outputPaths);
-  console.log("[debug] Converted files written successfully.");
+  const total = nodes.length;
+  const bar = new SingleBar(
+    {
+      barCompleteChar: "\u2588",
+      barIncompleteChar: "\u2591",
+      format: "Writing Converted Chunks |{bar}| {percentage}% || {value}/{total} nodes",
+      hideCursor: true,
+    },
+    Presets.shades_classic
+  );
+
+  bar.start(total, 0);
+
+  for (let start = 0; start < total; start += chunkSize) {
+    const end = Math.min(start + chunkSize, total);
+    const chunkNodes = nodes.slice(start, end);
+    const chunkPaths = outputPaths.slice(start, end);
+
+    // Ensure directories exist
+    chunkPaths.forEach((p) => {
+      fs.mkdirSync(path.dirname(p), { recursive: true });
+    });
+
+    try {
+      writeJSONFiles(chunkNodes, chunkPaths);
+      bar.increment(chunkNodes.length);
+    } catch {
+      bar.increment(chunkNodes.length);
+    }
+  }
+
+  bar.stop();
+  console.log("[debug] All chunks written successfully.");
 }
 
 void processASTFiles();
