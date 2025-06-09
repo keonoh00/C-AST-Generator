@@ -4,7 +4,7 @@ import path from "path";
 
 import type { ParserNode } from "@/types/pycparser";
 
-import { convertCParserNodes } from "@/parser/converter";
+import { CParserNodeConverter } from "@/parser/converter";
 import { listJsonFiles } from "@/parser/utils/listJson";
 import { readJSONFiles, readLongJSONFiles } from "@/parser/utils/readJson";
 import { writeJSONFiles, writeLongJSONFiles } from "@/parser/utils/writeJson";
@@ -52,6 +52,8 @@ async function processASTFiles(): Promise<void> {
   console.log(`[debug] Starting AST processing at ${new Date().toISOString()}`);
   fs.mkdirSync(cacheDir, { recursive: true });
 
+  const converter = new CParserNodeConverter();
+
   let rawNodes;
 
   try {
@@ -75,7 +77,7 @@ async function processASTFiles(): Promise<void> {
 
     for (let i = 1; i < rawNodes.length; i++) {
       const rawNode = rawNodes[i];
-      converted.push(convertCParserNodes([rawNode])[0]);
+      converted.push(converter.convertCParserNodes([rawNode])[0]);
       bar.increment();
       rawNodes[i] = {} as ParserNode;
     }
@@ -88,6 +90,7 @@ async function processASTFiles(): Promise<void> {
     console.error("[fatal-error] Processing failed:", error);
   } finally {
     console.log(`[debug] processASTFiles completed at ${new Date().toISOString()}`);
+    writeJSONFiles([converter.getConversionCounts()], ["counts.json"]);
   }
 }
 

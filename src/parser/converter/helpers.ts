@@ -3,6 +3,13 @@ import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ASTNodes } from "@/types/node";
 import { IParserTypeDeclNode, KindToNodeMap, ParserNode, ParserNodeKind } from "@/types/pycparser";
 
+/**
+ * Helper to ensure exhaustive switch cases
+ */
+export function assertNever(x: never): never {
+  throw new Error(`Unhandled parser node kind: ${x as string}`);
+}
+
 /** Build a minimal “base” object { nodeType, ...extras } */
 export function createNodeBase<T extends ASTNodeTypes, U extends object = Record<string, unknown>>(nodeType: T, extras?: U): U & { nodeType: T } {
   return { nodeType, ...(extras ?? ({} as U)) };
