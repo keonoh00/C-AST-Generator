@@ -12,7 +12,8 @@ import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclarat
 import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
 import { IPointerDeclaration } from "@/types/ProgramStructures/PointerDeclaration";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
-import { IParserAssignmentNode, IParserBinaryOpNode, IParserIDNode, ParserNode, ParserNodeKind } from "@/types/pycparser";
+import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
+import { IParserAssignmentNode, IParserBinaryOpNode, IParserDeclNode, IParserIDNode, ParserNode, ParserNodeKind } from "@/types/pycparser";
 
 import { createNodeBase, findParserNodeWithType, findTypeFromTypeDecl, wrapChildren } from "./helpers";
 import { convertCParserNodes } from "./index";
@@ -81,6 +82,21 @@ export function convertCast(node: ParserNode): ICastExpression {
 
   const targetType = findTypeFromTypeDecl(typeDecl);
   const base = createNodeBase(ASTNodeTypes.CastExpression, { targetType });
+  return wrapChildren(base, node, convertCParserNodes);
+}
+
+export function convertDecl(node: ParserNode): IVariableDeclaration {
+  const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+  if (!typeDecl) {
+    throw new Error("Missing TypeDecl in FuncDecl: " + JSON.stringify(node));
+  }
+
+  const name = (node as IParserDeclNode).name;
+  const type = findTypeFromTypeDecl(typeDecl);
+  const base = createNodeBase(ASTNodeTypes.VariableDeclaration, {
+    name,
+    type,
+  });
   return wrapChildren(base, node, convertCParserNodes);
 }
 
