@@ -3,7 +3,8 @@
 import { ASTNodes } from "@/types/node";
 import { ParserNode, ParserNodeKind } from "@/types/pycparser";
 
-import {convertArrayDecl,
+import {
+  convertArrayDecl,
   convertArrayRef,
   convertAssignment,
   convertBinaryOp,

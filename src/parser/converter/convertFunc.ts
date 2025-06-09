@@ -136,6 +136,7 @@ export function convertContinue(node: ParserNode): IContinueStatement {
   return wrapChildren(base, node, convertCParserNodes);
 }
 
+/** Decl → IVariableDeclaration */
 export function convertDecl(node: ParserNode): IVariableDeclaration {
   const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
   if (!typeDecl) {
