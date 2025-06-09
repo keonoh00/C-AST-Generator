@@ -74,7 +74,7 @@ async function processASTFiles(): Promise<void> {
 
     const converted = [];
 
-    for (let i = 1; i < rawNodes.length; i++) {
+    for (let i = 0; i < rawNodes.length; i++) {
       const rawNode = rawNodes[i];
       converted.push(converter.convertCParserNodes([rawNode])[0]);
       bar.increment();
