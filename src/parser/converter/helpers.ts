@@ -1,7 +1,7 @@
 // src/parser/converter/helpers.ts
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ASTNodes } from "@/types/node";
-import { KindToNodeMap, ParserNode, ParserNodeKind } from "@/types/pycparser";
+import { IParserTypeDeclNode, KindToNodeMap, ParserNode, ParserNodeKind } from "@/types/pycparser";
 
 /** Build a minimal “base” object { nodeType, ...extras } */
 export function createNodeBase<T extends ASTNodeTypes, U extends object = Record<string, unknown>>(nodeType: T, extras?: U): U & { nodeType: T } {
@@ -21,6 +21,14 @@ export function findParserNodeWithType<K extends ParserNodeKind>(node: ParserNod
     if (found) return found;
   }
   return undefined;
+}
+
+export function findTypeFromTypeDecl(typeDeclNode: IParserTypeDeclNode | undefined): string {
+  const typeDeclAttrType = typeDeclNode?.type ? findParserNodeWithType(typeDeclNode.type, ParserNodeKind.IdentifierType) : undefined;
+
+  const typeDeclIdentifier = typeDeclNode ? findParserNodeWithType(typeDeclNode, ParserNodeKind.IdentifierType) : undefined;
+
+  return typeDeclAttrType?.names.join(" ") ?? typeDeclIdentifier?.names.join(" ") ?? "undefined";
 }
 
 /**

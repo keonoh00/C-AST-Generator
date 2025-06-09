@@ -14,30 +14,20 @@ import { IPointerDeclaration } from "@/types/ProgramStructures/PointerDeclaratio
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IParserAssignmentNode, IParserBinaryOpNode, IParserIDNode, ParserNode, ParserNodeKind } from "@/types/pycparser";
 
-import { createNodeBase, findParserNodeWithType, wrapChildren } from "./helpers";
+import { createNodeBase, findParserNodeWithType, findTypeFromTypeDecl, wrapChildren } from "./helpers";
 import { convertCParserNodes } from "./index";
 
 /** ArrayDecl → IArrayDeclaration */
 export function convertArrayDecl(node: ParserNode): IArrayDeclaration {
   const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
   const constNode = findParserNodeWithType(node, ParserNodeKind.Constant);
-  if (!typeDecl || !constNode) {
+  if (!typeDecl) {
     throw new Error("Missing TypeDecl or Constant in ArrayDecl: " + JSON.stringify(node));
   }
-
-  const idType = (typeDecl.children ?? []).find((c) => c.kind === ParserNodeKind.IdentifierType);
-
-  const name = typeof typeDecl.declname === "string" ? typeDecl.declname : "";
-
-  let elementType = "";
-  if (idType && Array.isArray(idType.names)) {
-    elementType = idType.names.join(" ");
-  }
-
-  // rawLength.value is always present on Constant
-  const rawLength = constNode.value;
-  const length = typeof rawLength === "string" && /^\d+$/.test(rawLength) ? parseInt(rawLength, 10) : 0;
-
+  const name = typeDecl.declname ?? "";
+  const elementType = findTypeFromTypeDecl(typeDecl);
+  const rawLength = constNode?.value;
+  const length = rawLength && /^\d+$/.test(rawLength) ? parseInt(rawLength, 10) : 0;
   const base = createNodeBase(ASTNodeTypes.ArrayDeclaration, {
     elementType,
     length,
@@ -69,10 +59,11 @@ export function convertBinaryOp(node: ParserNode): IBinaryExpression {
     throw new Error("BinaryOp expects 2 children, got " + kids.length.toString());
   }
 
-  const left = kids[0] as ParserNode & { type?: string };
-  const right = kids[1] as ParserNode & { type?: string };
-  const typeLeft = typeof left.type === "string" ? left.type : left.kind;
-  const typeRight = typeof right.type === "string" ? right.type : right.kind;
+  const typeDeclLeft = findParserNodeWithType(kids[0], ParserNodeKind.TypeDecl);
+  const typeDeclRight = findParserNodeWithType(kids[1], ParserNodeKind.TypeDecl);
+
+  const typeLeft = findTypeFromTypeDecl(typeDeclLeft);
+  const typeRight = findTypeFromTypeDecl(typeDeclRight);
 
   const base = createNodeBase(ASTNodeTypes.BinaryExpression, {
     operator: bin.op,
@@ -88,12 +79,7 @@ export function convertCast(node: ParserNode): ICastExpression {
     throw new Error("Missing TypeDecl in Cast: " + JSON.stringify(node));
   }
 
-  const idType = findParserNodeWithType(typeDecl, ParserNodeKind.IdentifierType);
-  if (!idType || !Array.isArray(idType.names)) {
-    throw new Error("Invalid IdentifierType under TypeDecl in Cast: " + JSON.stringify(node));
-  }
-
-  const targetType = idType.names.join(" ");
+  const targetType = findTypeFromTypeDecl(typeDecl);
   const base = createNodeBase(ASTNodeTypes.CastExpression, { targetType });
   return wrapChildren(base, node, convertCParserNodes);
 }
@@ -111,13 +97,8 @@ export function convertFuncDecl(node: ParserNode): IFunctionDeclaration {
     throw new Error("Missing TypeDecl in FuncDecl: " + JSON.stringify(node));
   }
 
-  const idType = findParserNodeWithType(typeDecl, ParserNodeKind.IdentifierType);
-  if (!idType || !Array.isArray(idType.names)) {
-    throw new Error("Invalid IdentifierType under TypeDecl in FuncDecl: " + JSON.stringify(node));
-  }
-
-  const name = typeof typeDecl.declname === "string" ? typeDecl.declname : "";
-  const returnType = idType.names.join(" ");
+  const name = typeDecl.declname ?? "";
+  const returnType = findTypeFromTypeDecl(typeDecl);
   const base = createNodeBase(ASTNodeTypes.FunctionDeclaration, {
     name,
     returnType,
@@ -132,16 +113,9 @@ export function convertFuncDef(node: ParserNode): IFunctionDefinition {
     throw new Error("Missing FuncDecl in FuncDef: " + JSON.stringify(node));
   }
   const typeDecl = findParserNodeWithType(funcDecl, ParserNodeKind.TypeDecl);
-  if (!typeDecl) {
-    throw new Error("Missing TypeDecl under FuncDecl in FuncDef: " + JSON.stringify(node));
-  }
-  const idType = findParserNodeWithType(typeDecl, ParserNodeKind.IdentifierType);
-  if (!idType || !Array.isArray(idType.names)) {
-    throw new Error("Invalid IdentifierType under TypeDecl in FuncDef: " + JSON.stringify(node));
-  }
+  const returnType = findTypeFromTypeDecl(typeDecl);
 
-  const functionName = typeof typeDecl.declname === "string" ? typeDecl.declname : "";
-  const returnType = idType.names.join(" ");
+  const functionName = typeDecl?.declname ?? "";
   const base = createNodeBase(ASTNodeTypes.FunctionDefinition, {
     name: functionName,
     returnType,
@@ -152,20 +126,15 @@ export function convertFuncDef(node: ParserNode): IFunctionDefinition {
 /** ID → IIdentifier */
 export function convertID(node: ParserNode): IIdentifier {
   const { name } = node as IParserIDNode;
-  const safeName = typeof name === "string" ? name : "";
+  const safeName = name ? name : "";
+  const typeDeclNode = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+
+  const type = findTypeFromTypeDecl(typeDeclNode);
   const base = createNodeBase(ASTNodeTypes.Identifier, {
     name: safeName,
     size: "undefined",
-    type: "undefined",
+    type,
   });
-
-  const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
-  if (typeDecl) {
-    const idType = findParserNodeWithType(typeDecl, ParserNodeKind.IdentifierType);
-    if (idType && Array.isArray(idType.names)) {
-      base.type = idType.names.join(" ");
-    }
-  }
 
   return wrapChildren(base, node, convertCParserNodes);
 }
@@ -177,14 +146,9 @@ export function convertPtrDecl(node: ParserNode): IPointerDeclaration {
     throw new Error("Missing TypeDecl in PtrDecl: " + JSON.stringify(node));
   }
 
-  const idType = (typeDecl.children ?? []).find((c) => c.kind === ParserNodeKind.IdentifierType);
+  const name = typeDecl.declname ?? "";
 
-  const name = typeof typeDecl.declname === "string" ? typeDecl.declname : "";
-
-  let pointsTo = "";
-  if (idType && Array.isArray(idType.names)) {
-    pointsTo = idType.names.join(" ");
-  }
+  const pointsTo = findTypeFromTypeDecl(typeDecl);
 
   const base = createNodeBase(ASTNodeTypes.PointerDeclaration, {
     level: 0,
