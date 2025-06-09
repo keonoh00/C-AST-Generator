@@ -30,6 +30,8 @@ import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
 import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
+import { IParameterDeclaration } from "@/types/ProgramStructures/ParameterDeclaration";
+import { IParameterList } from "@/types/ProgramStructures/ParameterList";
 import { IPointerDeclaration } from "@/types/ProgramStructures/PointerDeclaration";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
@@ -64,8 +66,8 @@ export class CParserNodeConverter {
   /**
    * Convert an array of ParserNodes, filtering out undefined results
    */
-  public convertCParserNodes(nodes: ParserNode[]): ASTNodes[] {
-    const converted = nodes.map((n) => this.convertSingleNode(n));
+  public convertCParserNodes(nodes: ParserNode[], fromParam?: boolean): ASTNodes[] {
+    const converted = nodes.map((n) => this.convertSingleNode(n, fromParam));
     const filtered = converted.filter((n): n is ASTNodes => n !== undefined);
     return filtered;
   }
@@ -195,6 +197,22 @@ export class CParserNodeConverter {
     return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
+  /** Decl → IParameterDeclaration */
+  private convertDeclFromParam(node: ParserNode): IParameterDeclaration {
+    const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    if (!typeDecl) {
+      throw new Error("Missing TypeDecl in Decl: " + JSON.stringify(node));
+    }
+
+    const name = (node as IParserDeclNode).name;
+    const type = findTypeFromTypeDecl(typeDecl);
+    const base = createNodeBase(ASTNodeTypes.ParameterDeclaration, {
+      name,
+      type,
+    });
+    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+  }
+
   /** DoWhile → IDoWhileStatement */
   private convertDoWhile(node: ParserNode): IDoWhileStatement {
     const base = createNodeBase(ASTNodeTypes.DoWhileStatement);
@@ -298,6 +316,12 @@ export class CParserNodeConverter {
     return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
+  /** ParamList → IParameterList */
+  private convertParamList(node: ParserNode): IParameterList {
+    const base = createNodeBase(ASTNodeTypes.ParameterList);
+    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes, true));
+  }
+
   /** PtrDecl → IPointerDeclaration */
   private convertPtrDecl(node: ParserNode): IPointerDeclaration {
     const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
@@ -326,7 +350,7 @@ export class CParserNodeConverter {
   /**
    * Convert a single ParserNode via switch, increment counter
    */
-  private convertSingleNode(node: ParserNode): ASTNodes | undefined {
+  private convertSingleNode(node: ParserNode, fromParam?: boolean): ASTNodes | undefined {
     const kind = node.kind as ParserNodeKind;
     this.counter[kind]++;
 
@@ -343,7 +367,6 @@ export class CParserNodeConverter {
       case ParserNodeKind.IdentifierType:
       case ParserNodeKind.InitList:
       case ParserNodeKind.NamedInitializer:
-      case ParserNodeKind.ParamList:
       case ParserNodeKind.Pragma:
       case ParserNodeKind.StaticAssert:
       case ParserNodeKind.TernaryOp:
@@ -372,7 +395,7 @@ export class CParserNodeConverter {
       case ParserNodeKind.Continue:
         return this.convertContinue(node);
       case ParserNodeKind.Decl:
-        return this.convertDecl(node);
+        return fromParam ? this.convertDeclFromParam(node) : this.convertDecl(node);
       case ParserNodeKind.DoWhile:
         return this.convertDoWhile(node);
       case ParserNodeKind.FileAST:
@@ -393,6 +416,8 @@ export class CParserNodeConverter {
         return this.convertIf(node);
       case ParserNodeKind.Label:
         return this.convertLabel(node);
+      case ParserNodeKind.ParamList:
+        return this.convertParamList(node);
       case ParserNodeKind.PtrDecl:
         return this.convertPtrDecl(node);
       case ParserNodeKind.Return:
