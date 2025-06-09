@@ -16,6 +16,7 @@ import { IWhileStatement } from "@/types/ControlStructures/WhileStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
+import { IAddressOfExpression } from "@/types/Expressions/AddressOfExpression";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
@@ -479,9 +480,17 @@ export class CParserNodeConverter {
     return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
-  /** UnaryOp → IUnaryExpression */
-  private convertUnaryOp(node: ParserNode): IUnaryExpression {
+  /** UnaryOp → IUnaryExpression | IAddressOfExpression*/
+  private convertUnaryOp(node: ParserNode): IAddressOfExpression | IUnaryExpression {
     const uop = node as IParserUnaryOpNode;
+    if (uop.op == "&") {
+      return this.convertUnaryOpToAddressOfExpression(uop);
+    } else {
+      return this.convertUnaryOpConventional(uop);
+    }
+  }
+
+  private convertUnaryOpConventional(node: IParserUnaryOpNode): IUnaryExpression {
     let type: string;
     const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (typeDecl) {
@@ -498,8 +507,21 @@ export class CParserNodeConverter {
       }
     }
     const base = createNodeBase(ASTNodeTypes.UnaryExpression, {
-      operator: uop.op,
+      operator: node.op,
       type,
+    });
+    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+  }
+  /** UnaryOp → IAddressOfExpression */
+  private convertUnaryOpToAddressOfExpression(node: IParserUnaryOpNode): IAddressOfExpression {
+    const idNode = findParserNodeWithType(node, ParserNodeKind.ID);
+    if (!idNode) {
+      throw new Error("Missing idNode in UnaryOp for AddressOfExpression: " + JSON.stringify(node));
+    }
+
+    const base = createNodeBase(ASTNodeTypes.AddressOfExpression, {
+      operator: node.op,
+      rhs: idNode.name,
     });
     return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
