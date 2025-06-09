@@ -2,7 +2,7 @@
 import fs from "fs";
 import path from "path";
 
-import type { ParserASTNode } from "@/types/PyCParser/pycparser";
+import type { ParserNode } from "@/types/pycparser";
 
 import { convertCParserNodes } from "@/parser/converter"; // <-- import the free function
 import { listJsonFiles } from "@/parser/utils/listJson";
@@ -19,14 +19,14 @@ async function processASTFiles(): Promise<void> {
   console.log(`[debug] Cache path: ${cachePath}`);
 
   try {
-    let rawNodes: ParserASTNode[];
+    let rawNodes: ParserNode[];
     fs.mkdirSync(cacheDir, { recursive: true });
 
     if (fs.existsSync(cachePath)) {
       console.log("[debug] Cache file found. Attempting to load binary cache...");
       try {
         const loaded = readLongJSONFiles(cachePath);
-        rawNodes = loaded as ParserASTNode[];
+        rawNodes = loaded as ParserNode[];
         console.log(`[debug] Loaded ${rawNodes.length.toString()} nodes from cache.`);
       } catch (e) {
         console.error(`[fatal-error] Failed to load cache at ${cachePath}:`, e);
@@ -45,7 +45,7 @@ async function processASTFiles(): Promise<void> {
       try {
         const parsed = await readJSONFiles(files);
         console.log(`[debug] Successfully parsed ${parsed.length.toString()} JSON objects.`);
-        rawNodes = parsed as ParserASTNode[];
+        rawNodes = parsed as ParserNode[];
       } catch (e) {
         console.error("[fatal-error] Error while reading JSON files:", e);
         throw new Error("Aborting due to JSON read failure.");

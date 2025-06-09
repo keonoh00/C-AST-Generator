@@ -1,7 +1,7 @@
 // src/parser/converter/index.ts
 /* eslint-disable @typescript-eslint/no-extraneous-class */
 import { ASTNodes } from "@/types/node";
-import { ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
+import { ParserNode, ParserNodeKind } from "@/types/pycparser";
 
 import {
   convertArrayDecl,
@@ -35,72 +35,72 @@ import {
   convertWhile,
 } from "./statementConverter";
 
-type ConverterFn = (node: ParserASTNode) => ASTNodes | undefined;
+type ConverterFn = (node: ParserNode) => ASTNodes | undefined;
 
 export class CParserNodeConverter {
-  private static readonly converters: Record<ParserKind, ConverterFn> = {
-    [ParserKind.Alignas]: () => undefined,
-    [ParserKind.ArrayDecl]: (n) => convertArrayDecl(n),
-    [ParserKind.ArrayRef]: (n) => convertArrayRef(n),
-    [ParserKind.Assignment]: (n) => convertAssignment(n),
-    [ParserKind.BinaryOp]: (n) => convertBinaryOp(n),
-    [ParserKind.Break]: (n) => convertBreak(n),
-    [ParserKind.Case]: (n) => convertCase(n),
-    [ParserKind.Cast]: (n) => convertCast(n),
-    [ParserKind.Compound]: (n) => convertCompound(n),
-    [ParserKind.CompoundLiteral]: () => undefined,
-    [ParserKind.Constant]: () => undefined,
-    [ParserKind.Continue]: (n) => convertContinue(n),
-    [ParserKind.Decl]: () => undefined,
-    [ParserKind.DeclList]: () => undefined,
-    [ParserKind.Default]: (n) => convertCase(n),
-    [ParserKind.DoWhile]: (n) => convertDoWhile(n),
-    [ParserKind.EllipsisParam]: () => undefined,
-    [ParserKind.EmptyStatement]: () => undefined,
-    [ParserKind.Enum]: () => undefined,
-    [ParserKind.Enumerator]: () => undefined,
-    [ParserKind.EnumeratorList]: () => undefined,
-    [ParserKind.ExprList]: () => undefined,
-    [ParserKind.FileAST]: (n) => convertFileAST(n),
-    [ParserKind.For]: (n) => convertFor(n),
-    [ParserKind.FuncCall]: () => undefined,
-    [ParserKind.FuncDecl]: (n) => convertFuncDecl(n),
-    [ParserKind.FuncDef]: (n) => convertFuncDef(n),
-    [ParserKind.Goto]: (n) => convertGoto(n),
-    [ParserKind.ID]: (n) => convertID(n),
-    [ParserKind.IdentifierType]: () => undefined,
-    [ParserKind.If]: (n) => convertIf(n),
-    [ParserKind.InitList]: () => undefined,
-    [ParserKind.Label]: (n) => convertLabel(n),
-    [ParserKind.NamedInitializer]: () => undefined,
-    [ParserKind.ParamList]: () => undefined,
-    [ParserKind.Pragma]: () => undefined,
-    [ParserKind.PtrDecl]: (n) => convertPtrDecl(n),
-    [ParserKind.Return]: (n) => convertReturn(n),
-    [ParserKind.StaticAssert]: () => undefined,
-    [ParserKind.Struct]: (n) => convertStruct(n),
-    [ParserKind.StructRef]: (n) => convertStructRef(n),
-    [ParserKind.Switch]: (n) => convertSwitch(n),
-    [ParserKind.TernaryOp]: () => undefined,
-    [ParserKind.TypeDecl]: () => undefined,
-    [ParserKind.Typedef]: (n) => convertTypedef(n),
-    [ParserKind.Typename]: () => undefined,
-    [ParserKind.UnaryOp]: (n) => convertUnaryOp(n),
-    [ParserKind.Union]: (n) => convertUnion(n),
-    [ParserKind.While]: (n) => convertWhile(n),
+  private static readonly converters: Record<ParserNodeKind, ConverterFn> = {
+    [ParserNodeKind.Alignas]: () => undefined,
+    [ParserNodeKind.ArrayDecl]: (n) => convertArrayDecl(n),
+    [ParserNodeKind.ArrayRef]: (n) => convertArrayRef(n),
+    [ParserNodeKind.Assignment]: (n) => convertAssignment(n),
+    [ParserNodeKind.BinaryOp]: (n) => convertBinaryOp(n),
+    [ParserNodeKind.Break]: (n) => convertBreak(n),
+    [ParserNodeKind.Case]: (n) => convertCase(n),
+    [ParserNodeKind.Cast]: (n) => convertCast(n),
+    [ParserNodeKind.Compound]: (n) => convertCompound(n),
+    [ParserNodeKind.CompoundLiteral]: () => undefined,
+    [ParserNodeKind.Constant]: () => undefined,
+    [ParserNodeKind.Continue]: (n) => convertContinue(n),
+    [ParserNodeKind.Decl]: () => undefined,
+    [ParserNodeKind.DeclList]: () => undefined,
+    [ParserNodeKind.Default]: (n) => convertCase(n),
+    [ParserNodeKind.DoWhile]: (n) => convertDoWhile(n),
+    [ParserNodeKind.EllipsisParam]: () => undefined,
+    [ParserNodeKind.EmptyStatement]: () => undefined,
+    [ParserNodeKind.Enum]: () => undefined,
+    [ParserNodeKind.Enumerator]: () => undefined,
+    [ParserNodeKind.EnumeratorList]: () => undefined,
+    [ParserNodeKind.ExprList]: () => undefined,
+    [ParserNodeKind.FileAST]: (n) => convertFileAST(n),
+    [ParserNodeKind.For]: (n) => convertFor(n),
+    [ParserNodeKind.FuncCall]: () => undefined,
+    [ParserNodeKind.FuncDecl]: (n) => convertFuncDecl(n),
+    [ParserNodeKind.FuncDef]: (n) => convertFuncDef(n),
+    [ParserNodeKind.Goto]: (n) => convertGoto(n),
+    [ParserNodeKind.ID]: (n) => convertID(n),
+    [ParserNodeKind.IdentifierType]: () => undefined,
+    [ParserNodeKind.If]: (n) => convertIf(n),
+    [ParserNodeKind.InitList]: () => undefined,
+    [ParserNodeKind.Label]: (n) => convertLabel(n),
+    [ParserNodeKind.NamedInitializer]: () => undefined,
+    [ParserNodeKind.ParamList]: () => undefined,
+    [ParserNodeKind.Pragma]: () => undefined,
+    [ParserNodeKind.PtrDecl]: (n) => convertPtrDecl(n),
+    [ParserNodeKind.Return]: (n) => convertReturn(n),
+    [ParserNodeKind.StaticAssert]: () => undefined,
+    [ParserNodeKind.Struct]: (n) => convertStruct(n),
+    [ParserNodeKind.StructRef]: (n) => convertStructRef(n),
+    [ParserNodeKind.Switch]: (n) => convertSwitch(n),
+    [ParserNodeKind.TernaryOp]: () => undefined,
+    [ParserNodeKind.TypeDecl]: () => undefined,
+    [ParserNodeKind.Typedef]: (n) => convertTypedef(n),
+    [ParserNodeKind.Typename]: () => undefined,
+    [ParserNodeKind.UnaryOp]: (n) => convertUnaryOp(n),
+    [ParserNodeKind.Union]: (n) => convertUnion(n),
+    [ParserNodeKind.While]: (n) => convertWhile(n),
   };
 
-  /** Dispatch a single ParserASTNode → ASTNodes | undefined */
-  public static convertSingleNode(parserNode: ParserASTNode): ASTNodes | undefined {
-    const kind = parserNode.kind as ParserKind;
+  /** Dispatch a single ParserNode → ASTNodes | undefined */
+  public static convertSingleNode(parserNode: ParserNode): ASTNodes | undefined {
+    const kind = parserNode.kind as ParserNodeKind;
     return CParserNodeConverter.converters[kind](parserNode);
   }
 }
 
 /**
- * Given an array of ParserASTNode, convert each via the correct converter,
+ * Given an array of ParserNode, convert each via the correct converter,
  * and filter out `undefined`.
  */
-export function convertCParserNodes(parserNodes: ParserASTNode[]): ASTNodes[] {
+export function convertCParserNodes(parserNodes: ParserNode[]): ASTNodes[] {
   return parserNodes.map((n) => CParserNodeConverter.convertSingleNode(n)).filter((n): n is ASTNodes => !!n);
 }

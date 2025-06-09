@@ -24,51 +24,51 @@ import {
   IParserTypedefNode,
   IParserUnaryOpNode,
   IParserUnionNode,
-  ParserASTNode,
-  ParserKind,
-} from "@/types/PyCParser/pycparser";
+  ParserNode,
+  ParserNodeKind,
+} from "@/types/pycparser";
 
 import { createNodeBase, findParserNodeWithType, wrapChildren } from "./helpers";
 import { convertCParserNodes } from "./index";
 
 /** Break → IBreakStatement */
-export function convertBreak(node: ParserASTNode): IBreakStatement {
+export function convertBreak(node: ParserNode): IBreakStatement {
   const base = createNodeBase(ASTNodeTypes.BreakStatement);
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** Case → ISwitchCase */
-export function convertCase(node: ParserASTNode): ISwitchCase {
+export function convertCase(node: ParserNode): ISwitchCase {
   const base = createNodeBase(ASTNodeTypes.SwitchCase);
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** Compound → ICompoundStatement */
-export function convertCompound(node: ParserASTNode): ICompoundStatement {
+export function convertCompound(node: ParserNode): ICompoundStatement {
   const base = createNodeBase(ASTNodeTypes.CompoundStatement);
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** Continue → IContinueStatement */
-export function convertContinue(node: ParserASTNode): IContinueStatement {
+export function convertContinue(node: ParserNode): IContinueStatement {
   const base = createNodeBase(ASTNodeTypes.ContinueStatement);
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** DoWhile → IDoWhileStatement */
-export function convertDoWhile(node: ParserASTNode): IDoWhileStatement {
+export function convertDoWhile(node: ParserNode): IDoWhileStatement {
   const base = createNodeBase(ASTNodeTypes.DoWhileStatement);
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** For → IForStatement */
-export function convertFor(node: ParserASTNode): IForStatement {
+export function convertFor(node: ParserNode): IForStatement {
   const base = createNodeBase(ASTNodeTypes.ForStatement);
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** Goto → IGotoStatement */
-export function convertGoto(node: ParserASTNode): IGotoStatement {
+export function convertGoto(node: ParserNode): IGotoStatement {
   const { name } = node as IParserGotoNode;
   const jumpTarget = typeof name === "string" ? name : "";
   const base = createNodeBase(ASTNodeTypes.GotoStatement, { jumpTarget });
@@ -76,13 +76,13 @@ export function convertGoto(node: ParserASTNode): IGotoStatement {
 }
 
 /** If → IIfStatement */
-export function convertIf(node: ParserASTNode): IIfStatement {
+export function convertIf(node: ParserNode): IIfStatement {
   const base = createNodeBase(ASTNodeTypes.IfStatement);
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** Label → ILabel */
-export function convertLabel(node: ParserASTNode): ILabel {
+export function convertLabel(node: ParserNode): ILabel {
   const { name } = node as IParserLabelNode;
   const safeName = typeof name === "string" ? name : "";
   const base = createNodeBase(ASTNodeTypes.Label, { name: safeName });
@@ -90,13 +90,13 @@ export function convertLabel(node: ParserASTNode): ILabel {
 }
 
 /** Return → IReturnStatement */
-export function convertReturn(node: ParserASTNode): IReturnStatement {
+export function convertReturn(node: ParserNode): IReturnStatement {
   const base = createNodeBase(ASTNodeTypes.ReturnStatement);
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** Struct → IStructType */
-export function convertStruct(node: ParserASTNode): IStructType {
+export function convertStruct(node: ParserNode): IStructType {
   const { name } = node as IParserStructNode;
   const safeName = typeof name === "string" ? name : "";
   const base = createNodeBase(ASTNodeTypes.StructType, { name: safeName });
@@ -104,14 +104,14 @@ export function convertStruct(node: ParserASTNode): IStructType {
 }
 
 /** Switch → ISwitchStatement */
-export function convertSwitch(node: ParserASTNode): ISwitchStatement {
+export function convertSwitch(node: ParserNode): ISwitchStatement {
   const base = createNodeBase(ASTNodeTypes.SwitchStatement);
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** Typedef → ITypeDefinition */
-export function convertTypedef(node: ParserASTNode): ITypeDefinition {
-  const typeDecl = findParserNodeWithType(node, ParserKind.TypeDecl);
+export function convertTypedef(node: ParserNode): ITypeDefinition {
+  const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
   if (!typeDecl) {
     throw new Error(`Missing TypeDecl in Typedef: ${JSON.stringify(node)}`);
   }
@@ -126,15 +126,15 @@ export function convertTypedef(node: ParserASTNode): ITypeDefinition {
 }
 
 /** UnaryOp → IUnaryExpression */
-export function convertUnaryOp(node: ParserASTNode): IUnaryExpression {
+export function convertUnaryOp(node: ParserNode): IUnaryExpression {
   const uop = node as IParserUnaryOpNode;
   let type: string;
-  const typeDecl = findParserNodeWithType(node, ParserKind.TypeDecl);
+  const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
   if (typeDecl) {
-    const idType = findParserNodeWithType(typeDecl, ParserKind.IdentifierType);
+    const idType = findParserNodeWithType(typeDecl, ParserNodeKind.IdentifierType);
     type = Array.isArray(idType?.names) ? idType.names.join(" ") : "";
   } else {
-    const constNode = findParserNodeWithType(node, ParserKind.Constant) as (ParserASTNode & { type?: unknown }) | undefined;
+    const constNode = findParserNodeWithType(node, ParserNodeKind.Constant);
     if (typeof constNode?.type === "string") {
       type = constNode.type;
     } else if (typeof constNode?.type === "number") {
@@ -144,14 +144,14 @@ export function convertUnaryOp(node: ParserASTNode): IUnaryExpression {
     }
   }
   const base = createNodeBase(ASTNodeTypes.UnaryExpression, {
-    operator: uop.op as string,
+    operator: uop.op,
     type,
   });
   return wrapChildren(base, node, convertCParserNodes);
 }
 
 /** Union → IUnionType */
-export function convertUnion(node: ParserASTNode): IUnionType {
+export function convertUnion(node: ParserNode): IUnionType {
   const { name } = node as IParserUnionNode;
   const safeName = typeof name === "string" ? name : "";
   const base = createNodeBase(ASTNodeTypes.UnionType, { name: safeName });
@@ -159,7 +159,7 @@ export function convertUnion(node: ParserASTNode): IUnionType {
 }
 
 /** While → IWhileStatement */
-export function convertWhile(node: ParserASTNode): IWhileStatement {
+export function convertWhile(node: ParserNode): IWhileStatement {
   const base = createNodeBase(ASTNodeTypes.WhileStatement);
   return wrapChildren(base, node, convertCParserNodes);
 }

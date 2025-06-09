@@ -5,7 +5,6 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "generate:schema": "tsx src/parser/generateSchema.ts",
     "convert": "tsx src/parser/convert.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",

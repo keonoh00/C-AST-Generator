@@ -1,7 +1,7 @@
 // src/parser/converter/helpers.ts
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ASTNodes } from "@/types/node";
-import { KindToNodeMap, ParserASTNode, ParserKind } from "@/types/PyCParser/pycparser";
+import { KindToNodeMap, ParserNode, ParserNodeKind } from "@/types/pycparser";
 
 /** Build a minimal “base” object { nodeType, ...extras } */
 export function createNodeBase<T extends ASTNodeTypes, U extends object = Record<string, unknown>>(nodeType: T, extras?: U): U & { nodeType: T } {
@@ -9,7 +9,7 @@ export function createNodeBase<T extends ASTNodeTypes, U extends object = Record
 }
 
 /** Recursively find the first descendant whose .kind === kind */
-export function findParserNodeWithType<K extends ParserKind>(node: ParserASTNode, kind: K): KindToNodeMap[K] | undefined {
+export function findParserNodeWithType<K extends ParserNodeKind>(node: ParserNode, kind: K): KindToNodeMap[K] | undefined {
   if (node.kind === kind) {
     return node as KindToNodeMap[K];
   }
@@ -29,8 +29,8 @@ export function findParserNodeWithType<K extends ParserKind>(node: ParserASTNode
  */
 export function wrapChildren<T extends { nodeType: ASTNodeTypes }>(
   base: T,
-  parserNode: ParserASTNode,
-  convertFn: (nodes: ParserASTNode[]) => ASTNodes[]
+  parserNode: ParserNode,
+  convertFn: (nodes: ParserNode[]) => ASTNodes[]
 ): T & { children?: ASTNodes[] } {
   const rawKids = Array.isArray(parserNode.children) ? parserNode.children : [];
   const convertedKids = convertFn(rawKids);
