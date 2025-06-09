@@ -55,21 +55,20 @@ async function processASTFiles(): Promise<void> {
   const converter = new CParserNodeConverter();
 
   let rawNodes;
+  const bar = new SingleBar(
+    {
+      barCompleteChar: "\u2588",
+      barIncompleteChar: "\u2591",
+      format: "Converting AST to K-SIGN Template |{bar}| {percentage}% || {value}/{total} files",
+      hideCursor: true,
+    },
+    Presets.shades_classic
+  );
 
   try {
     rawNodes = await loadRawNodes();
     if (!rawNodes.length) return;
     console.log("[debug] Converting AST nodes...");
-
-    const bar = new SingleBar(
-      {
-        barCompleteChar: "\u2588",
-        barIncompleteChar: "\u2591",
-        format: "Converting AST to K-SIGN Template |{bar}| {percentage}% || {value}/{total} files",
-        hideCursor: true,
-      },
-      Presets.shades_classic
-    );
 
     bar.start(rawNodes.length, 0);
 
@@ -87,6 +86,7 @@ async function processASTFiles(): Promise<void> {
 
     await writeConvertedWithChunkSize(converted, 3);
   } catch (error) {
+    bar.stop();
     console.error("[fatal-error] Processing failed:", error);
   } finally {
     console.log(`[debug] processASTFiles completed at ${new Date().toISOString()}`);
