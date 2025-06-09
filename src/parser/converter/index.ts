@@ -3,38 +3,35 @@
 import { ASTNodes } from "@/types/node";
 import { ParserNode, ParserNodeKind } from "@/types/pycparser";
 
-import {
-  convertArrayDecl,
+import {convertArrayDecl,
   convertArrayRef,
   convertAssignment,
   convertBinaryOp,
-  convertCast,
-  convertDecl,
-  convertFileAST,
-  convertFuncDecl,
-  convertFuncDef,
-  convertID,
-  convertPtrDecl,
-  convertStructRef,
-} from "./expressionConverter";
-import {
   convertBreak,
   convertCase,
+  convertCast,
   convertCompound,
   convertContinue,
+  convertDecl,
   convertDoWhile,
+  convertFileAST,
   convertFor,
+  convertFuncDecl,
+  convertFuncDef,
   convertGoto,
+  convertID,
   convertIf,
   convertLabel,
+  convertPtrDecl,
   convertReturn,
   convertStruct,
+  convertStructRef,
   convertSwitch,
   convertTypedef,
   convertUnaryOp,
   convertUnion,
   convertWhile,
-} from "./statementConverter";
+} from "./convertFunc";
 
 type ConverterFn = (node: ParserNode) => ASTNodes | undefined;
 
