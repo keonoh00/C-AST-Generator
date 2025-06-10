@@ -5,13 +5,43 @@ import path from "path";
 import type { ParserNode } from "@/types/pycparser";
 
 import { CParserNodeConverter } from "@/parser/converter";
+import { ASTFilter } from "@/parser/filter";
 import { listJsonFiles } from "@/parser/utils/listJson";
 import { readJSONFiles, readLongJSONFiles } from "@/parser/utils/readJson";
-import { writeJSONFiles, writeLongJSONFiles } from "@/parser/utils/writeJson";
+import { writeJSONFiles, writeJSONWithChunkSize, writeLongJSONFiles } from "@/parser/utils/writeJson";
+import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+import { ASTNodes } from "@/types/node";
 
 const targetDir = "./ast_output";
 const cacheDir = "./converted";
 const cachePath = path.join(cacheDir, "cache.bin");
+
+function convertParserToTemplate(nodes: ASTNodes[]): ASTNodes[] {
+  const WHITELIST = [
+    ASTNodeTypes.VariableDeclaration,
+    ASTNodeTypes.ArrayDeclaration,
+    ASTNodeTypes.PointerDeclaration,
+    ASTNodeTypes.ParameterDeclaration,
+    ASTNodeTypes.AssignmentExpression,
+    ASTNodeTypes.FunctionDefinition,
+    ASTNodeTypes.StandardLibCall,
+    ASTNodeTypes.UserDefinedCall,
+    ASTNodeTypes.CastExpression,
+    ASTNodeTypes.MemberAccess,
+    ASTNodeTypes.PointerDereference,
+    ASTNodeTypes.AddressOfExpression,
+    ASTNodeTypes.ArraySubscriptionExpression,
+    ASTNodeTypes.BinaryExpression,
+    ASTNodeTypes.UnaryExpression,
+    ASTNodeTypes.SizeOfExpression,
+    ASTNodeTypes.Identifier,
+    ASTNodeTypes.Literal,
+    ASTNodeTypes.ReturnStatement,
+  ];
+  const BLACKLIST = Object.values(ASTNodeTypes).filter((val) => !WHITELIST.includes(val));
+  const filter = new ASTFilter(BLACKLIST);
+  return filter.filterNodes(nodes);
+}
 
 async function loadRawNodes(): Promise<ParserNode[]> {
   if (fs.existsSync(cachePath)) {
@@ -84,7 +114,28 @@ async function processASTFiles(): Promise<void> {
 
     console.log(`[debug] Conversion produced ${converted.length.toString()} nodes.`);
 
-    await writeConvertedWithChunkSize(converted, 3);
+    const filtered = convertParserToTemplate(converted);
+
+    // build the list of input files
+    const inputFiles = await listJsonFiles(targetDir);
+
+    // map each input → its converted output path
+    const convertedPaths = inputFiles.map((input) => {
+      const rel = path.relative(targetDir, input);
+      const parsed = path.parse(path.join(cacheDir, rel));
+      return path.join(parsed.dir, `${parsed.name}_converted${parsed.ext}`);
+    });
+
+    // map each input → its filtered output path
+    const filteredPaths = inputFiles.map((input) => {
+      const rel = path.relative(targetDir, input);
+      const parsed = path.parse(path.join(cacheDir, rel));
+      return path.join(parsed.dir, `${parsed.name}_filtered${parsed.ext}`);
+    });
+
+    // write both arrays in parallel, using your shared utility
+    writeJSONWithChunkSize(converted, convertedPaths, 3);
+    writeJSONWithChunkSize(filtered, filteredPaths, 3);
   } catch (error) {
     bar.stop();
     console.error("[fatal-error] Processing failed:", error);
@@ -92,48 +143,6 @@ async function processASTFiles(): Promise<void> {
     console.log(`[debug] processASTFiles completed at ${new Date().toISOString()}`);
     writeJSONFiles([converter.getConversionCounts()], ["counts.json"]);
   }
-}
-
-async function writeConvertedWithChunkSize(nodes: unknown[], chunkSize: number): Promise<void> {
-  const inputFiles = await listJsonFiles(targetDir);
-  const outputPaths = inputFiles.map((input) => {
-    const rel = path.relative(targetDir, input);
-    return path.join(cacheDir, rel);
-  });
-
-  const total = nodes.length;
-  const bar = new SingleBar(
-    {
-      barCompleteChar: "\u2588",
-      barIncompleteChar: "\u2591",
-      format: "Writing Converted Chunks |{bar}| {percentage}% || {value}/{total} nodes",
-      hideCursor: true,
-    },
-    Presets.shades_classic
-  );
-
-  bar.start(total, 0);
-
-  for (let start = 0; start < total; start += chunkSize) {
-    const end = Math.min(start + chunkSize, total);
-    const chunkNodes = nodes.slice(start, end);
-    const chunkPaths = outputPaths.slice(start, end);
-
-    // Ensure directories exist
-    chunkPaths.forEach((p) => {
-      fs.mkdirSync(path.dirname(p), { recursive: true });
-    });
-
-    try {
-      writeJSONFiles(chunkNodes, chunkPaths);
-      bar.increment(chunkNodes.length);
-    } catch {
-      bar.increment(chunkNodes.length);
-    }
-  }
-
-  bar.stop();
-  console.log("[debug] All chunks written successfully.");
 }
 
 void processASTFiles();
