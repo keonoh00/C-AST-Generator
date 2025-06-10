@@ -1,3 +1,4 @@
+import { Presets, SingleBar } from "cli-progress";
 import fs from "fs";
 import path from "path";
 import v8 from "v8";
@@ -30,6 +31,46 @@ export function writeJSONFiles(dataArray: unknown[], filePaths: string[]): strin
   });
 
   return outputPaths;
+}
+
+export function writeJSONWithChunkSize(nodes: unknown[], outputPaths: string[], chunkSize: number): void {
+  if (nodes.length !== outputPaths.length) {
+    console.error(`[fatal-error] Mismatched nodes and outputPaths lengths.`);
+    return;
+  }
+
+  const bar = new SingleBar(
+    {
+      barCompleteChar: "\u2588",
+      barIncompleteChar: "\u2591",
+      format: "Writing JSON Files |{bar}| {percentage}% || {value}/{total}",
+      hideCursor: true,
+    },
+    Presets.shades_classic
+  );
+
+  bar.start(nodes.length, 0);
+
+  for (let start = 0; start < nodes.length; start += chunkSize) {
+    const end = Math.min(start + chunkSize, nodes.length);
+    const chunkNodes = nodes.slice(start, end);
+    const chunkPaths = outputPaths.slice(start, end);
+
+    chunkPaths.forEach((p) => {
+      fs.mkdirSync(path.dirname(p), { recursive: true });
+    });
+
+    try {
+      writeJSONFiles(chunkNodes, chunkPaths);
+    } catch (e) {
+      console.warn("[warn] Failed to write chunk:", e);
+    }
+
+    bar.increment(end - start);
+  }
+
+  bar.stop();
+  console.log("[debug] All files written.");
 }
 
 /**
