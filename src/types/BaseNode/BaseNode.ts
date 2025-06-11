@@ -44,5 +44,6 @@ export enum ASTNodeTypes {
 
 export interface IBaseNode {
   children?: ASTNodes[];
+  id: number;
   nodeType: ASTNodeTypes;
 }

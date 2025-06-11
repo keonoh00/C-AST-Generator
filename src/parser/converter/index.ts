@@ -46,20 +46,21 @@ import {
   IParserIDNode,
   IParserLabelNode,
   IParserStructNode,
+  IParserTypeDeclNode,
   IParserTypedefNode,
   IParserUnaryOpNode,
   IParserUnionNode,
+  KindToNodeMap,
   ParserNode,
   ParserNodeKind,
 } from "@/types/pycparser";
-
-import { assertNever, createNodeBase, findParserNodeWithType, findTypeFromTypeDecl, wrapChildren } from "./helpers";
 
 /**
  * Converts C parser nodes to AST nodes using a switch-case for exhaustiveness
  */
 export class CParserNodeConverter {
   private counter: Record<ParserNodeKind, number>;
+  private nodeIdCounter = 0;
 
   constructor() {
     this.counter = Object.values(ParserNodeKind).reduce((acc, kind) => ({ ...acc, [kind]: 0 }), {} as Record<ParserNodeKind, number>);
@@ -71,7 +72,14 @@ export class CParserNodeConverter {
   public convertCParserNodes(nodes: ParserNode[], fromParam?: boolean): ASTNodes[] {
     const converted = nodes.map((n) => this.convertSingleNode(n, fromParam));
     const filtered = converted.filter((n): n is ASTNodes => n !== undefined);
-    return filtered;
+    // reset your per-batch counter
+    this.nodeIdCounter = 0;
+
+    // assign a unique id to each converted node
+    return filtered.map((n) => ({
+      ...n,
+      id: this.nodeIdCounter++,
+    }));
   }
 
   /**
@@ -81,38 +89,42 @@ export class CParserNodeConverter {
     return { ...this.counter };
   }
 
+  private assertNever(x: never): never {
+    throw new Error(`Unhandled parser node kind: ${x as string}`);
+  }
+
   /** ArrayDecl → IArrayDeclaration */
   private convertArrayDecl(node: ParserNode): IArrayDeclaration {
-    const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
-    const constNode = findParserNodeWithType(node, ParserNodeKind.Constant);
+    const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    const constNode = this.findParserNodeWithType(node, ParserNodeKind.Constant);
     if (!typeDecl) {
       throw new Error("Missing TypeDecl or Constant in ArrayDecl: " + JSON.stringify(node));
     }
     const name = typeDecl.declname ?? "";
-    const elementType = findTypeFromTypeDecl(typeDecl);
+    const elementType = this.findTypeFromTypeDecl(typeDecl);
     const rawLength = constNode?.value;
     const length = rawLength && /^\d+$/.test(rawLength) ? parseInt(rawLength, 10) : 0;
-    const base = createNodeBase(ASTNodeTypes.ArrayDeclaration, {
+    const base = this.createNodeBase(ASTNodeTypes.ArrayDeclaration, {
       elementType,
       length,
       name,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** ArrayRef → IArraySubscriptionExpression */
   private convertArrayRef(node: ParserNode): IArraySubscriptionExpression {
-    const base = createNodeBase(ASTNodeTypes.ArraySubscriptionExpression);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.ArraySubscriptionExpression);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Assignment → IAssignmentExpression */
   private convertAssignment(node: ParserNode): IAssignmentExpression {
     const { op } = node as IParserAssignmentNode;
-    const base = createNodeBase(ASTNodeTypes.AssignmentExpression, {
+    const base = this.createNodeBase(ASTNodeTypes.AssignmentExpression, {
       operator: op,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** BinaryOp → IBinaryExpression */
@@ -123,230 +135,230 @@ export class CParserNodeConverter {
       throw new Error("BinaryOp expects 2 children, got " + kids.length.toString());
     }
 
-    const typeDeclLeft = findParserNodeWithType(kids[0], ParserNodeKind.TypeDecl);
-    const typeDeclRight = findParserNodeWithType(kids[1], ParserNodeKind.TypeDecl);
+    const typeDeclLeft = this.findParserNodeWithType(kids[0], ParserNodeKind.TypeDecl);
+    const typeDeclRight = this.findParserNodeWithType(kids[1], ParserNodeKind.TypeDecl);
 
-    const typeLeft = findTypeFromTypeDecl(typeDeclLeft);
-    const typeRight = findTypeFromTypeDecl(typeDeclRight);
+    const typeLeft = this.findTypeFromTypeDecl(typeDeclLeft);
+    const typeRight = this.findTypeFromTypeDecl(typeDeclRight);
 
-    const base = createNodeBase(ASTNodeTypes.BinaryExpression, {
+    const base = this.createNodeBase(ASTNodeTypes.BinaryExpression, {
       operator: bin.op,
       type: `${typeLeft}/${typeRight}`,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Break → IBreakStatement */
   private convertBreak(node: ParserNode): IBreakStatement {
-    const base = createNodeBase(ASTNodeTypes.BreakStatement);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.BreakStatement);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Case → ISwitchCase */
   private convertCase(node: ParserNode): ISwitchCase {
-    const base = createNodeBase(ASTNodeTypes.SwitchCase);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.SwitchCase);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Cast → ICastExpression */
   private convertCast(node: ParserNode): ICastExpression {
-    const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (!typeDecl) {
       throw new Error("Missing TypeDecl in Cast: " + JSON.stringify(node));
     }
 
-    const targetType = findTypeFromTypeDecl(typeDecl);
-    const base = createNodeBase(ASTNodeTypes.CastExpression, { targetType });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const targetType = this.findTypeFromTypeDecl(typeDecl);
+    const base = this.createNodeBase(ASTNodeTypes.CastExpression, { targetType });
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Compound → ICompoundStatement */
   private convertCompound(node: ParserNode): ICompoundStatement {
-    const base = createNodeBase(ASTNodeTypes.CompoundStatement);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.CompoundStatement);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Constant → ILiteral */
   private convertConstant(node: ParserNode): ILiteral {
     const value = (node as IParserConstantNode).value;
     const type = (node as IParserConstantNode).type;
-    const base = createNodeBase(ASTNodeTypes.Literal, {
+    const base = this.createNodeBase(ASTNodeTypes.Literal, {
       type,
       value,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Continue → IContinueStatement */
   private convertContinue(node: ParserNode): IContinueStatement {
-    const base = createNodeBase(ASTNodeTypes.ContinueStatement);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.ContinueStatement);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Decl → IVariableDeclaration */
   private convertDecl(node: ParserNode): IVariableDeclaration {
-    const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (!typeDecl) {
       throw new Error("Missing TypeDecl in Decl: " + JSON.stringify(node));
     }
 
     const name = (node as IParserDeclNode).name;
-    const type = findTypeFromTypeDecl(typeDecl);
-    const base = createNodeBase(ASTNodeTypes.VariableDeclaration, {
+    const type = this.findTypeFromTypeDecl(typeDecl);
+    const base = this.createNodeBase(ASTNodeTypes.VariableDeclaration, {
       name,
       type,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Decl → IParameterDeclaration */
   private convertDeclFromParam(node: ParserNode): IParameterDeclaration {
-    const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (!typeDecl) {
       throw new Error("Missing TypeDecl in Decl: " + JSON.stringify(node));
     }
 
     const name = (node as IParserDeclNode).name;
-    const type = findTypeFromTypeDecl(typeDecl);
-    const base = createNodeBase(ASTNodeTypes.ParameterDeclaration, {
+    const type = this.findTypeFromTypeDecl(typeDecl);
+    const base = this.createNodeBase(ASTNodeTypes.ParameterDeclaration, {
       name,
       type,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** DoWhile → IDoWhileStatement */
   private convertDoWhile(node: ParserNode): IDoWhileStatement {
-    const base = createNodeBase(ASTNodeTypes.DoWhileStatement);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.DoWhileStatement);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** FileAST → ITranslationUnit */
   private convertFileAST(node: ParserNode): ITranslationUnit {
-    const base = createNodeBase(ASTNodeTypes.TranslationUnit);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.TranslationUnit);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** For → IForStatement */
   private convertFor(node: ParserNode): IForStatement {
-    const base = createNodeBase(ASTNodeTypes.ForStatement);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.ForStatement);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** FuncCall → IUserDefinedCall or IStandardLibCall */
   private convertFuncCall(node: ParserNode): IStandardLibCall | IUserDefinedCall {
-    const identifierNode = findParserNodeWithType(node, ParserNodeKind.ID);
+    const identifierNode = this.findParserNodeWithType(node, ParserNodeKind.ID);
     if (!identifierNode) {
       throw new Error("Missing Identifier in FuncCall: " + JSON.stringify(node));
     }
 
     const name = identifierNode.name;
-    const base = createNodeBase((ASTNodeTypes.StandardLibCall + "/" + ASTNodeTypes.UserDefinedCall) as ASTNodeTypes.UserDefinedCall, {
+    const base = this.createNodeBase((ASTNodeTypes.StandardLibCall + "/" + ASTNodeTypes.UserDefinedCall) as ASTNodeTypes.UserDefinedCall, {
       name,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** FuncDecl → IFunctionDeclaration */
   private convertFuncDecl(node: ParserNode): IFunctionDeclaration {
-    const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (!typeDecl) {
       throw new Error("Missing TypeDecl in FuncDecl: " + JSON.stringify(node));
     }
 
     const name = typeDecl.declname ?? "";
-    const returnType = findTypeFromTypeDecl(typeDecl);
-    const base = createNodeBase(ASTNodeTypes.FunctionDeclaration, {
+    const returnType = this.findTypeFromTypeDecl(typeDecl);
+    const base = this.createNodeBase(ASTNodeTypes.FunctionDeclaration, {
       name,
       returnType,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** FuncDef → IFunctionDefinition */
   private convertFuncDef(node: ParserNode): IFunctionDefinition {
-    const funcDecl = findParserNodeWithType(node, ParserNodeKind.FuncDecl);
+    const funcDecl = this.findParserNodeWithType(node, ParserNodeKind.FuncDecl);
     if (!funcDecl) {
       throw new Error("Missing FuncDecl in FuncDef: " + JSON.stringify(node));
     }
-    const typeDecl = findParserNodeWithType(funcDecl, ParserNodeKind.TypeDecl);
-    const returnType = findTypeFromTypeDecl(typeDecl);
+    const typeDecl = this.findParserNodeWithType(funcDecl, ParserNodeKind.TypeDecl);
+    const returnType = this.findTypeFromTypeDecl(typeDecl);
 
     const functionName = typeDecl?.declname ?? "";
-    const base = createNodeBase(ASTNodeTypes.FunctionDefinition, {
+    const base = this.createNodeBase(ASTNodeTypes.FunctionDefinition, {
       name: functionName,
       returnType,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Goto → IGotoStatement */
   private convertGoto(node: ParserNode): IGotoStatement {
     const { name } = node as IParserGotoNode;
     const jumpTarget = typeof name === "string" ? name : "";
-    const base = createNodeBase(ASTNodeTypes.GotoStatement, { jumpTarget });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.GotoStatement, { jumpTarget });
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** ID → IIdentifier */
   private convertID(node: ParserNode): IIdentifier {
     const { name } = node as IParserIDNode;
     const safeName = name ? name : "";
-    const typeDeclNode = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    const typeDeclNode = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
 
-    const type = findTypeFromTypeDecl(typeDeclNode);
-    const base = createNodeBase(ASTNodeTypes.Identifier, {
+    const type = this.findTypeFromTypeDecl(typeDeclNode);
+    const base = this.createNodeBase(ASTNodeTypes.Identifier, {
       name: safeName,
       size: "undefined",
       type,
     });
 
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** If → IIfStatement */
   private convertIf(node: ParserNode): IIfStatement {
-    const base = createNodeBase(ASTNodeTypes.IfStatement);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.IfStatement);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Label → ILabel */
   private convertLabel(node: ParserNode): ILabel {
     const { name } = node as IParserLabelNode;
     const safeName = typeof name === "string" ? name : "";
-    const base = createNodeBase(ASTNodeTypes.Label, { name: safeName });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.Label, { name: safeName });
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** ParamList → IParameterList */
   private convertParamList(node: ParserNode): IParameterList {
-    const base = createNodeBase(ASTNodeTypes.ParameterList);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes, true));
+    const base = this.createNodeBase(ASTNodeTypes.ParameterList);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes, true));
   }
 
   /** PtrDecl → IPointerDeclaration */
   private convertPtrDecl(node: ParserNode): IPointerDeclaration {
-    const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (!typeDecl) {
       throw new Error("Missing TypeDecl in PtrDecl: " + JSON.stringify(node));
     }
 
     const name = typeDecl.declname ?? "";
 
-    const pointingType = findTypeFromTypeDecl(typeDecl);
+    const pointingType = this.findTypeFromTypeDecl(typeDecl);
 
-    const base = createNodeBase(ASTNodeTypes.PointerDeclaration, {
+    const base = this.createNodeBase(ASTNodeTypes.PointerDeclaration, {
       level: 0,
       name,
       pointingType,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Return → IReturnStatement */
   private convertReturn(node: ParserNode): IReturnStatement {
-    const base = createNodeBase(ASTNodeTypes.ReturnStatement);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.ReturnStatement);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /**
@@ -439,7 +451,7 @@ export class CParserNodeConverter {
       case ParserNodeKind.While:
         return this.convertWhile(node);
       default:
-        return assertNever(kind);
+        return this.assertNever(kind);
     }
   }
 
@@ -447,38 +459,38 @@ export class CParserNodeConverter {
   private convertStruct(node: ParserNode): IStructType {
     const { name } = node as IParserStructNode;
     const safeName = typeof name === "string" ? name : "";
-    const base = createNodeBase(ASTNodeTypes.StructType, { name: safeName });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.StructType, { name: safeName });
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** StructRef → IMemberAccess */
   private convertStructRef(node: ParserNode): IMemberAccess {
-    const base = createNodeBase(ASTNodeTypes.MemberAccess, {
+    const base = this.createNodeBase(ASTNodeTypes.MemberAccess, {
       type: "undefined",
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Switch → ISwitchStatement */
   private convertSwitch(node: ParserNode): ISwitchStatement {
-    const base = createNodeBase(ASTNodeTypes.SwitchStatement);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.SwitchStatement);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Typedef → ITypeDefinition */
   private convertTypedef(node: ParserNode): ITypeDefinition {
-    const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (!typeDecl) {
       throw new Error(`Missing TypeDecl in Typedef: ${JSON.stringify(node)}`);
     }
     const underlyingKind = Array.isArray(typeDecl.children) && typeDecl.children.length > 0 ? typeDecl.children[0].kind : "undefined";
     const { name } = node as IParserTypedefNode;
     const safeName = typeof name === "string" ? name : "";
-    const base = createNodeBase(ASTNodeTypes.TypeDefinition, {
+    const base = this.createNodeBase(ASTNodeTypes.TypeDefinition, {
       name: safeName,
       underlyingType: underlyingKind,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** UnaryOp → IUnaryExpression | IAddressOfExpression*/
@@ -490,15 +502,14 @@ export class CParserNodeConverter {
       return this.convertUnaryOpConventional(uop);
     }
   }
-
   private convertUnaryOpConventional(node: IParserUnaryOpNode): IUnaryExpression {
     let type: string;
-    const typeDecl = findParserNodeWithType(node, ParserNodeKind.TypeDecl);
+    const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (typeDecl) {
-      const idType = findParserNodeWithType(typeDecl, ParserNodeKind.IdentifierType);
+      const idType = this.findParserNodeWithType(typeDecl, ParserNodeKind.IdentifierType);
       type = Array.isArray(idType?.names) ? idType.names.join(" ") : "";
     } else {
-      const constNode = findParserNodeWithType(node, ParserNodeKind.Constant);
+      const constNode = this.findParserNodeWithType(node, ParserNodeKind.Constant);
       if (typeof constNode?.type === "string") {
         type = constNode.type;
       } else if (typeof constNode?.type === "number") {
@@ -507,15 +518,16 @@ export class CParserNodeConverter {
         type = "";
       }
     }
-    const base = createNodeBase(ASTNodeTypes.UnaryExpression, {
+    const base = this.createNodeBase(ASTNodeTypes.UnaryExpression, {
       operator: node.op,
       type,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
+
   /** UnaryOp → IAddressOfExpression | IPointerDereference */
   private convertUnaryOpToSpecial(node: IParserUnaryOpNode): IAddressOfExpression | IPointerDereference {
-    const idNode = findParserNodeWithType(node, ParserNodeKind.ID);
+    const idNode = this.findParserNodeWithType(node, ParserNodeKind.ID);
     if (!idNode) {
       throw new Error("Missing idNode in UnaryOp for AddressOfExpression: " + JSON.stringify(node));
     }
@@ -523,23 +535,63 @@ export class CParserNodeConverter {
     const nodeType =
       node.op == "*" ? ASTNodeTypes.AddressOfExpression : node.op == "&" ? ASTNodeTypes.AddressOfExpression : ASTNodeTypes.AddressOfExpression;
 
-    const base = createNodeBase(nodeType, {
+    const base = this.createNodeBase(nodeType, {
       rhs: idNode.name,
     });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** Union → IUnionType */
   private convertUnion(node: ParserNode): IUnionType {
     const { name } = node as IParserUnionNode;
     const safeName = typeof name === "string" ? name : "";
-    const base = createNodeBase(ASTNodeTypes.UnionType, { name: safeName });
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.UnionType, { name: safeName });
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
   /** While → IWhileStatement */
   private convertWhile(node: ParserNode): IWhileStatement {
-    const base = createNodeBase(ASTNodeTypes.WhileStatement);
-    return wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.WhileStatement);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+  }
+
+  private createNodeBase<T extends ASTNodeTypes, U extends object = object>(nodeType: T, extras?: U): U & { id: number; nodeType: T } {
+    const base: U & { id: number; nodeType: T } = {
+      nodeType,
+      ...(extras ?? ({} as U)),
+      id: this.nodeIdCounter++,
+    };
+    return base;
+  }
+
+  private findParserNodeWithType<K extends ParserNodeKind>(node: ParserNode, kind: K): KindToNodeMap[K] | undefined {
+    if (node.kind === kind) return node as KindToNodeMap[K];
+    if (!Array.isArray(node.children)) return undefined;
+    for (const child of node.children) {
+      const found = this.findParserNodeWithType(child, kind);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  private findTypeFromTypeDecl(typeDecl?: IParserTypeDeclNode): string {
+    const attr = typeDecl?.type ? this.findParserNodeWithType(typeDecl.type, ParserNodeKind.IdentifierType) : undefined;
+    const idt = typeDecl ? this.findParserNodeWithType(typeDecl, ParserNodeKind.IdentifierType) : undefined;
+    return attr?.names.join(" ") ?? idt?.names.join(" ") ?? "undefined";
+  }
+
+  private wrapChildren<T extends { nodeType: ASTNodeTypes }>(
+    base: T,
+    parserNode: ParserNode,
+    convertFn: (kids: ParserNode[]) => ASTNodes[]
+  ): T & { children?: ASTNodes[] } {
+    const rawKids: ParserNode[] = Array.isArray(parserNode.children) ? parserNode.children : [];
+    const conv: ASTNodes[] = convertFn(rawKids);
+
+    if (conv.length) {
+      // cast to the more specific type so eslint is happy
+      (base as T & { children?: ASTNodes[] }).children = conv;
+    }
+    return base as T & { children?: ASTNodes[] };
   }
 }

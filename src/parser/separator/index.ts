@@ -2,13 +2,13 @@ import { ASTNodes } from "@/types/node";
 
 export interface ASTGraph {
   edges: { from: number; to: number }[];
-  nodes: (ASTNodes & { id: number })[];
+  nodes: ASTNodes[];
 }
 
 export class ASTNodesSeparator {
   private edges: { from: number; to: number }[] = [];
   private idCounter = 0;
-  private nodes: (ASTNodes & { id: number })[] = [];
+  private nodes: ASTNodes[] = [];
 
   /**
    * Public entry: given an array of root ASTNodes, returns an array of ASTGraphs—one per root.
@@ -27,7 +27,6 @@ export class ASTNodesSeparator {
   private reset(): void {
     this.edges = [];
     this.nodes = [];
-    this.idCounter = 0;
   }
 
   /**
@@ -36,17 +35,16 @@ export class ASTNodesSeparator {
    * @returns assigned id of this node
    */
   private traverse(node: ASTNodes): number {
-    const id = this.idCounter++;
-    const { children, ...rest } = node as ASTNodes & { children?: ASTNodes[] };
-    const nodeWithId: ASTNodes & { id: number } = { ...rest, id };
-    this.nodes.push(nodeWithId);
+    const { children } = node as ASTNodes & { children?: ASTNodes[] };
+
+    this.nodes.push(node);
 
     if (children) {
       for (const child of children) {
         const childId = this.traverse(child);
-        this.edges.push({ from: id, to: childId });
+        this.edges.push({ from: node.id, to: childId });
       }
     }
-    return id;
+    return node.id;
   }
 }
