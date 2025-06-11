@@ -12,6 +12,8 @@ import { writeJSONFiles, writeJSONWithChunkSize, writeLongJSONFiles } from "@/pa
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ASTNodes } from "@/types/node";
 
+import { ASTGraph, ASTNodesSeparator } from "./separator";
+
 const targetDir = "./ast_output";
 const cacheDir = "./converted";
 const cachePath = path.join(cacheDir, "cache.bin");
@@ -41,6 +43,20 @@ function convertParserToTemplate(nodes: ASTNodes[]): ASTNodes[] {
   const BLACKLIST = Object.values(ASTNodeTypes).filter((val) => !WHITELIST.includes(val));
   const filter = new ASTFilter(BLACKLIST);
   return filter.filterNodes(nodes);
+}
+
+const separateNodeEdge = (nodes: ASTNodes[]) => {
+  const separator = new ASTNodesSeparator();
+  return separator.build(nodes);
+};
+
+function buildPathSaveJSONWithChunkAndSuffix(originalFileNames: string[], json: unknown[], suffix: string) {
+  const convertedPaths = originalFileNames.map((input) => {
+    const rel = path.relative(targetDir, input);
+    const parsed = path.parse(path.join(cacheDir, rel));
+    return path.join(parsed.dir, `${parsed.name}_${suffix}${parsed.ext}`);
+  });
+  writeJSONWithChunkSize(json, convertedPaths, 3);
 }
 
 async function loadRawNodes(): Promise<ParserNode[]> {
@@ -114,28 +130,20 @@ async function processASTFiles(): Promise<void> {
 
     console.log(`[debug] Conversion produced ${converted.length.toString()} nodes.`);
 
-    const filtered = convertParserToTemplate(converted);
-
-    // build the list of input files
     const inputFiles = await listJsonFiles(targetDir);
 
-    // map each input → its converted output path
-    const convertedPaths = inputFiles.map((input) => {
-      const rel = path.relative(targetDir, input);
-      const parsed = path.parse(path.join(cacheDir, rel));
-      return path.join(parsed.dir, `${parsed.name}_converted${parsed.ext}`);
-    });
+    buildPathSaveJSONWithChunkAndSuffix(inputFiles, converted, "convert");
 
-    // map each input → its filtered output path
-    const filteredPaths = inputFiles.map((input) => {
-      const rel = path.relative(targetDir, input);
-      const parsed = path.parse(path.join(cacheDir, rel));
-      return path.join(parsed.dir, `${parsed.name}_filtered${parsed.ext}`);
-    });
+    const convertedFlattened = separateNodeEdge(converted);
+    buildPathSaveJSONWithChunkAndSuffix(inputFiles, convertedFlattened, "convertFlat");
+    convertedFlattened.fill({} as ASTGraph);
 
-    // write both arrays in parallel, using your shared utility
-    writeJSONWithChunkSize(converted, convertedPaths, 3);
-    writeJSONWithChunkSize(filtered, filteredPaths, 3);
+    const filtered = convertParserToTemplate(converted);
+    buildPathSaveJSONWithChunkAndSuffix(inputFiles, filtered, "filter");
+    converted.fill({} as ASTNodes);
+
+    const filteredFlattened = separateNodeEdge(filtered);
+    buildPathSaveJSONWithChunkAndSuffix(inputFiles, filteredFlattened, "filterFlat");
   } catch (error) {
     bar.stop();
     console.error("[fatal-error] Processing failed:", error);
