@@ -70,16 +70,10 @@ export class CParserNodeConverter {
    * Convert an array of ParserNodes, filtering out undefined results
    */
   public convertCParserNodes(nodes: ParserNode[], fromParam?: boolean): ASTNodes[] {
-    const converted = nodes.map((n) => this.convertSingleNode(n, fromParam));
-    const filtered = converted.filter((n): n is ASTNodes => n !== undefined);
-    // reset your per-batch counter
-    this.nodeIdCounter = 0;
+    const converted = nodes.map((n) => this.convertSingleNode(n, fromParam)).filter((n): n is ASTNodes => n !== undefined);
 
-    // assign a unique id to each converted node
-    return filtered.map((n) => ({
-      ...n,
-      id: this.nodeIdCounter++,
-    }));
+    // IDs were stamped as each node was created, so just return:
+    return converted;
   }
 
   /**
