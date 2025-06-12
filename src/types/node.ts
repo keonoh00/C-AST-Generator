@@ -23,6 +23,7 @@ import { IIdentifier } from "./Expressions/Identifier";
 import { ILiteral } from "./Expressions/Literal";
 import { IMemberAccess } from "./Expressions/MemberAccess";
 import { IPointerDereference } from "./Expressions/PointerDereference";
+import { ISizeOfExpression } from "./Expressions/SizeOfExpression";
 import { IStandardLibCall } from "./Expressions/StandardLibCall";
 import { IUnaryExpression } from "./Expressions/UnaryExpression";
 import { IUserDefinedCall } from "./Expressions/UserDefinedCall";
@@ -68,6 +69,7 @@ type ASTExpressionNodes =
   | ILiteral
   | IMemberAccess
   | IPointerDereference
+  | ISizeOfExpression
   | IStandardLibCall
   | IUnaryExpression
   | IUserDefinedCall;
