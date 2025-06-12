@@ -9,8 +9,8 @@ import type { ParserNode } from "@/types/pycparser";
 import { CParserNodeConverter } from "@/parser/converter";
 import { ASTGraphFilter } from "@/parser/filter/GraphFilter";
 import { listJsonFiles } from "@/parser/utils/listJson";
-import { readJSONFiles, readLongJSONFiles } from "@/parser/utils/readJson";
-import { writeJSONFiles, writeJSONWithChunkSize, writeLongJSONFiles } from "@/parser/utils/writeJson";
+import { readJSONFiles } from "@/parser/utils/readJson";
+import { writeJSONFiles, writeJSONWithChunkSize } from "@/parser/utils/writeJson";
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ASTNodes } from "@/types/node";
 
@@ -19,7 +19,6 @@ import { validateGraphs } from "./validator/functions";
 
 const targetDir = "./ast_output";
 const cacheDir = "./converted";
-const cachePath = path.join(cacheDir, "cache.bin");
 
 // your whitelist of nodeTypes to *keep*
 const WHITELIST = [
@@ -56,17 +55,10 @@ function buildPathSaveJSONWithChunkAndSuffix(originalFileNames: string[], jsonOb
 }
 
 async function loadRawNodes(): Promise<ParserNode[]> {
-  if (fs.existsSync(cachePath)) {
-    console.log("[debug] Loading nodes from cache...");
-    const data = readLongJSONFiles(cachePath) as ParserNode[];
-    console.log(`[debug] Loaded ${data.length.toString()} nodes from cache.`);
-    return data;
-  }
   console.log("[debug] No cache, reading JSON files...");
   const files = await listJsonFiles(targetDir);
   if (!files.length) return [];
   const nodes = (await readJSONFiles(files)) as ParserNode[];
-  writeLongJSONFiles(nodes, cachePath);
   console.log(`[debug] Cached ${nodes.length.toString()} nodes.`);
   return nodes;
 }
