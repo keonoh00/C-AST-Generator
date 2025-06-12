@@ -507,6 +507,7 @@ export class CParserNodeConverter {
     });
     return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
+
   /**
    * UnaryOp → IAddressOfExpression | IPointerDereference | IUnaryExpression | ISizeOfExpression
    */
@@ -549,8 +550,8 @@ export class CParserNodeConverter {
     });
     return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
-  /** UnaryOp → IAddressOfExpression | IPointerDereference | ISizeOfExpression */
-  private convertUnaryOpToSpecial(node: IParserUnaryOpNode): IAddressOfExpression | IPointerDereference | ISizeOfExpression {
+  /** UnaryOp → IAddressOfExpression | IPointerDereference */
+  private convertUnaryOpToSpecial(node: IParserUnaryOpNode): IAddressOfExpression | IPointerDereference {
     const idNode = this.findParserNodeWithType(node, ParserNodeKind.ID);
     if (!idNode) {
       throw new Error("Missing idNode in UnaryOp for AddressOfExpression: " + JSON.stringify(node));
