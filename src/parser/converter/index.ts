@@ -25,6 +25,7 @@ import { IIdentifier } from "@/types/Expressions/Identifier";
 import { ILiteral } from "@/types/Expressions/Literal";
 import { IMemberAccess } from "@/types/Expressions/MemberAccess";
 import { IPointerDereference } from "@/types/Expressions/PointerDereference";
+import { ISizeOfExpression } from "@/types/Expressions/SizeOfExpression";
 import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
 import { IUnaryExpression } from "@/types/Expressions/UnaryExpression";
 import { IUserDefinedCall } from "@/types/Expressions/UserDefinedCall";
@@ -463,6 +464,12 @@ export class CParserNodeConverter {
     }
   }
 
+  /** SizeOf → ISizeOfExpression */
+  private convertSizeOf(node: ParserNode): ISizeOfExpression {
+    const base = this.createNodeBase(ASTNodeTypes.SizeOfExpression);
+    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+  }
+
   /** Struct → IStructType */
   private convertStruct(node: ParserNode): IStructType {
     const { name } = node as IParserStructNode;
@@ -500,16 +507,26 @@ export class CParserNodeConverter {
     });
     return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
-
-  /** UnaryOp → IUnaryExpression | IAddressOfExpression*/
-  private convertUnaryOp(node: ParserNode): IAddressOfExpression | IPointerDereference | IUnaryExpression {
+  /**
+   * UnaryOp → IAddressOfExpression | IPointerDereference | IUnaryExpression | ISizeOfExpression
+   */
+  private convertUnaryOp(node: ParserNode): IAddressOfExpression | IPointerDereference | ISizeOfExpression | IUnaryExpression {
     const uop = node as IParserUnaryOpNode;
-    if (["&", "*"].includes(uop.op)) {
-      return this.convertUnaryOpToSpecial(uop);
-    } else {
-      return this.convertUnaryOpConventional(uop);
+
+    // sizeof(...) → own SizeOfExpression node
+    if (uop.op === "sizeof") {
+      return this.convertSizeOf(node);
     }
+
+    // &expr or *expr → special
+    if (uop.op === "&" || uop.op === "*") {
+      return this.convertUnaryOpToSpecial(uop);
+    }
+
+    // everything else is a conventional unary expression
+    return this.convertUnaryOpConventional(uop);
   }
+
   private convertUnaryOpConventional(node: IParserUnaryOpNode): IUnaryExpression {
     let type: string;
     const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
@@ -532,16 +549,15 @@ export class CParserNodeConverter {
     });
     return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
-
-  /** UnaryOp → IAddressOfExpression | IPointerDereference */
-  private convertUnaryOpToSpecial(node: IParserUnaryOpNode): IAddressOfExpression | IPointerDereference {
+  /** UnaryOp → IAddressOfExpression | IPointerDereference | ISizeOfExpression */
+  private convertUnaryOpToSpecial(node: IParserUnaryOpNode): IAddressOfExpression | IPointerDereference | ISizeOfExpression {
     const idNode = this.findParserNodeWithType(node, ParserNodeKind.ID);
     if (!idNode) {
       throw new Error("Missing idNode in UnaryOp for AddressOfExpression: " + JSON.stringify(node));
     }
 
     const nodeType =
-      node.op == "*" ? ASTNodeTypes.AddressOfExpression : node.op == "&" ? ASTNodeTypes.AddressOfExpression : ASTNodeTypes.AddressOfExpression;
+      node.op == "*" ? ASTNodeTypes.PointerDereference : node.op == "&" ? ASTNodeTypes.AddressOfExpression : ASTNodeTypes.AddressOfExpression;
 
     const base = this.createNodeBase(nodeType, {
       rhs: idNode.name,
