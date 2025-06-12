@@ -1,50 +1,55 @@
+// src/parser/separator/ASTNodesSeparator.ts
+
 import { ASTNodes } from "@/types/node";
 
 export interface ASTGraph {
   edges: { from: number; to: number }[];
-  nodes: ASTNodes[];
+  nodes: (ASTNodes & { id: number })[];
 }
 
 export class ASTNodesSeparator {
   private edges: { from: number; to: number }[] = [];
   private idCounter = 0;
-  private nodes: ASTNodes[] = [];
+  private nodes: (ASTNodes & { id: number })[] = [];
 
-  /**
-   * Public entry: given an array of root ASTNodes, returns an array of ASTGraphs—one per root.
-   */
   public build(astRoots: ASTNodes[]): ASTGraph[] {
     const graphs: ASTGraph[] = [];
     for (const root of astRoots) {
       this.reset();
       this.traverse(root);
-      graphs.push({ edges: this.edges.slice(), nodes: this.nodes.slice() });
+      graphs.push({
+        edges: this.edges.slice(),
+        nodes: this.nodes.slice(),
+      });
     }
     return graphs;
   }
 
-  /** Reset internal state between builds */
   private reset(): void {
     this.edges = [];
     this.nodes = [];
+    this.idCounter = 0; // ← reset here!
   }
 
-  /**
-   * Recursively traverse the AST, assign an id to each node,
-   * strip children, record nodes, and record edges parent→child.
-   * @returns assigned id of this node
-   */
-  private traverse(node: ASTNodes): number {
-    const { children } = node as ASTNodes & { children?: ASTNodes[] };
+  private traverse(node: ASTNodes & { children?: ASTNodes[] }): number {
+    const id = this.idCounter++;
 
-    this.nodes.push(node);
+    // shallow-clone node without its children, add our new id
+    const { children, ...rest } = node;
+    const clone: ASTNodes & { id: number } = {
+      ...(rest as ASTNodes),
+      id,
+    };
+    this.nodes.push(clone);
 
-    if (children) {
+    // recurse into the real children, record edges
+    if (Array.isArray(children)) {
       for (const child of children) {
         const childId = this.traverse(child);
-        this.edges.push({ from: node.id, to: childId });
+        this.edges.push({ from: id, to: childId });
       }
     }
-    return node.id;
+
+    return id;
   }
 }
