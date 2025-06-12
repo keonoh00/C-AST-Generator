@@ -86,7 +86,7 @@ export class CParserNodeConverter {
     throw new Error(`Unhandled parser node kind: ${x as string}`);
   }
 
-  /** ArrayDecl → IArrayDeclaration */
+  /** Decl → IArrayDeclaration */
   private convertArrayDecl(node: ParserNode): IArrayDeclaration {
     const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     const constNode = this.findParserNodeWithType(node, ParserNodeKind.Constant);
@@ -188,20 +188,35 @@ export class CParserNodeConverter {
     return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
   }
 
-  /** Decl → IVariableDeclaration */
-  private convertDecl(node: ParserNode): IVariableDeclaration {
+  /** Decl → IVariableDeclaration | IArrayDeclaration | IPointerDeclaration */
+  private convertDecl(node: ParserNode): IArrayDeclaration | IPointerDeclaration | IVariableDeclaration {
+    // if this Decl is just an ArrayDecl wrapper, peel it off
+    const arrChild = node.children?.find((c) => c.kind === ParserNodeKind.ArrayDecl);
+    if (arrChild) {
+      // take all of node.children **except** the ArrayDecl itself
+      const extras = (node.children ?? []).filter((c) => c !== arrChild);
+      // prepend any existing ArrayDecl.children
+      (arrChild as ParserNode).children = [...(arrChild.children ?? []), ...extras];
+      return this.convertArrayDecl(arrChild as ParserNode);
+    }
+
+    // same for pointer declarations
+    const ptrChild = node.children?.find((c) => c.kind === ParserNodeKind.PtrDecl);
+    if (ptrChild) {
+      const extras = (node.children ?? []).filter((c) => c !== ptrChild);
+      (ptrChild as ParserNode).children = [...(ptrChild.children ?? []), ...extras];
+      return this.convertPtrDecl(ptrChild as ParserNode);
+    }
+
+    // otherwise a normal variable decl
     const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (!typeDecl) {
       throw new Error("Missing TypeDecl in Decl: " + JSON.stringify(node));
     }
-
     const name = (node as IParserDeclNode).name;
     const type = this.findTypeFromTypeDecl(typeDecl);
-    const base = this.createNodeBase(ASTNodeTypes.VariableDeclaration, {
-      name,
-      type,
-    });
-    return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes));
+    const base = this.createNodeBase(ASTNodeTypes.VariableDeclaration, { name, type });
+    return this.wrapChildren(base, node, (kids) => this.convertCParserNodes(kids));
   }
 
   /** Decl → IParameterDeclaration */
@@ -329,7 +344,7 @@ export class CParserNodeConverter {
     return this.wrapChildren(base, node, (childNodes: ParserNode[]) => this.convertCParserNodes(childNodes, true));
   }
 
-  /** PtrDecl → IPointerDeclaration */
+  /** Decl → IPointerDeclaration */
   private convertPtrDecl(node: ParserNode): IPointerDeclaration {
     const typeDecl = this.findParserNodeWithType(node, ParserNodeKind.TypeDecl);
     if (!typeDecl) {
@@ -381,7 +396,7 @@ export class CParserNodeConverter {
       case ParserNodeKind.Typename:
         return undefined;
       case ParserNodeKind.ArrayDecl:
-        return this.convertArrayDecl(node);
+        return undefined;
       case ParserNodeKind.ArrayRef:
         return this.convertArrayRef(node);
       case ParserNodeKind.Assignment:
@@ -426,7 +441,7 @@ export class CParserNodeConverter {
       case ParserNodeKind.ParamList:
         return this.convertParamList(node);
       case ParserNodeKind.PtrDecl:
-        return this.convertPtrDecl(node);
+        return undefined;
       case ParserNodeKind.Return:
         return this.convertReturn(node);
       case ParserNodeKind.Struct:
