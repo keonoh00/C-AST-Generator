@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AST Graph Explorer</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 1rem;
+      }
+      #controls {
+        margin-bottom: 1rem;
+      }
+      #results li {
+        margin: 0.25rem 0;
+        cursor: pointer;
+      }
+      #pagination {
+        margin: 0.5rem 0;
+      }
+      .grid {
+        display: grid;
+        /* four columns now */
+        grid-template-columns: 2fr 2fr 2fr 1fr;
+        gap: 1rem;
+      }
+      .variant-container {
+        border: 1px solid #ccc;
+        padding: 0.5rem;
+        height: 600px;
+        position: relative;
+      }
+      .variant-label {
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+      }
+      #info {
+        white-space: pre-wrap;
+        font-size: 12px;
+        overflow-y: auto;
+        height: calc(100% - 1.5rem);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AST Graph Explorer</h1>
+    <div id="controls">
+      <input id="search" placeholder="Search base filename…" />
+      <button id="btnSearch">Search</button>
+      <ul id="results"></ul>
+      <div id="pagination"></div>
+    </div>
+
+    <div class="grid">
+      <div class="variant-container">
+        <div class="variant-label">ConvertFlat<br />(with deletions)</div>
+        <div id="graph1" style="width: 100%; height: calc(100% - 1.5rem)"></div>
+      </div>
+
+      <div class="variant-container">
+        <div class="variant-label">FilterFlat</div>
+        <div id="graph2" style="width: 100%; height: calc(100% - 1.5rem)"></div>
+      </div>
+
+      <div class="variant-container">
+        <div class="variant-label">Zoomed Subgraph</div>
+        <div id="graph3" style="width: 100%; height: calc(100% - 1.5rem)"></div>
+      </div>
+
+      <div class="variant-container">
+        <div class="variant-label">Node Info</div>
+        <div id="info"></div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+    <script src="client.js"></script>
+  </body>
+</html>
