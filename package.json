@@ -5,6 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "start": "tsx src/parser/server.js",
     "convert": "NODE_OPTIONS=--max-old-space-size=8192 tsx src/parser/convert.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
