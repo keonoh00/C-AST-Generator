@@ -21,7 +21,7 @@
       .grid {
         display: grid;
         /* four columns now */
-        grid-template-columns: 2fr 2fr 2fr 1fr;
+        grid-template-columns: 2fr 2fr 1fr 1fr;
         gap: 1rem;
       }
       .variant-container {
@@ -29,16 +29,27 @@
         padding: 0.5rem;
         height: 600px;
         position: relative;
+        display: flex;
+        flex-direction: column;
       }
       .variant-label {
         font-weight: bold;
         margin-bottom: 0.25rem;
       }
+      /* For the ConvertFlat container, we'll add space for dropdown */
+      #convertFlatContainer #functionDropdownWrapper {
+        margin-bottom: 0.5rem;
+      }
+      /* Graph divs fill remaining space */
+      .graph-area {
+        flex: 1;
+      }
       #info {
         white-space: pre-wrap;
         font-size: 12px;
         overflow-y: auto;
-        height: calc(100% - 1.5rem);
+        /* fill remaining height under label */
+        flex: 1;
       }
     </style>
   </head>
@@ -52,19 +63,22 @@
     </div>
 
     <div class="grid">
-      <div class="variant-container">
+      <!-- ConvertFlat panel with dropdown wrapper -->
+      <div class="variant-container" id="convertFlatContainer">
         <div class="variant-label">ConvertFlat<br />(with deletions)</div>
-        <div id="graph1" style="width: 100%; height: calc(100% - 1.5rem)"></div>
+        <!-- Dropdown will be injected here -->
+        <div id="functionDropdownWrapper"></div>
+        <div id="graph1" class="graph-area"></div>
       </div>
 
       <div class="variant-container">
         <div class="variant-label">FilterFlat</div>
-        <div id="graph2" style="width: 100%; height: calc(100% - 1.5rem)"></div>
+        <div id="graph2" class="graph-area"></div>
       </div>
 
       <div class="variant-container">
         <div class="variant-label">Zoomed Subgraph</div>
-        <div id="graph3" style="width: 100%; height: calc(100% - 1.5rem)"></div>
+        <div id="graph3" class="graph-area"></div>
       </div>
 
       <div class="variant-container">
@@ -73,7 +87,9 @@
       </div>
     </div>
 
+    <!-- Cytoscape -->
     <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+    <!-- Client logic -->
     <script src="client.js"></script>
   </body>
 </html>
