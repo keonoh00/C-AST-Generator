@@ -38,6 +38,11 @@ import { IPointerDeclaration } from "./ProgramStructures/PointerDeclaration";
 import { ITranslationUnit } from "./ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "./ProgramStructures/VariableDeclaration";
 
+export interface ASTGraph {
+  edges: { from: number; to: number }[];
+  nodes: (ASTNodes & { id: number })[];
+}
+
 export type ASTNodes = ASTBlockNodes | ASTControlStructureNodes | ASTExpressionNodes | ASTPreprocessorDirectiveNodes | ASTProgramStructureNodes;
 
 type ASTBlockNodes = ICompoundStatement;
