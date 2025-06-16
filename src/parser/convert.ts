@@ -8,9 +8,9 @@ import type { ParserNode } from "@/types/pycparser";
 
 import { CParserNodeConverter } from "@/parser/converter";
 import { ASTGraphFilter } from "@/parser/filter/GraphFilter";
-import { listJsonFiles } from "@/parser/utils/listJson";
-import { readJSONFiles } from "@/parser/utils/readJson";
-import { writeJSONFiles, writeJSONWithChunkSize } from "@/parser/utils/writeJson";
+import { listJsonFiles } from "@/utils/listJson";
+import { readJSONFiles } from "@/utils/readJson";
+import { writeJSONFiles, writeJSONWithChunkSize } from "@/utils/writeJson";
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ASTNodes } from "@/types/node";
 
