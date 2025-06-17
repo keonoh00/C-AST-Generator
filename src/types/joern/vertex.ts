@@ -216,7 +216,7 @@ export interface VertexByLabelMap {
 /**
  * A generic vertex wrapper with its label and properties.
  */
-export interface VertexGeneric<L extends VertexLabel = VertexLabel> {
+export interface VertexGeneric<L extends keyof VertexByLabelMap = keyof VertexByLabelMap> {
   "@type": string;
   id: GraphSON<number>;
   label: L;
