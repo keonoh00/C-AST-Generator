@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+import { TreeNode } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 
-import { TreeNodeInfo } from "../ast/ASTExtractor";
-
 export class KASTConverter {
   /** Convert an array (“forest”) of root nodes into ASTNodes[], skipping undefined conversions. */
-  public convertForest(nodes: TreeNodeInfo[]): ASTNodes[] {
+  public convertForest(nodes: TreeNode[]): ASTNodes[] {
     const convertedNodes: ASTNodes[] = [];
     for (const node of nodes) {
       const single = this.convertTree(node);
@@ -19,10 +18,10 @@ export class KASTConverter {
   }
 
   /**
-   * Convert one TreeNodeInfo into ASTNodes (or undefined if this node should be omitted).
+   * Convert one TreeNode into ASTNodes (or undefined if this node should be omitted).
    * We first dispatch to handle payload, then recurse on children.
    */
-  public convertTree(node: TreeNodeInfo): ASTNodes | undefined {
+  public convertTree(node: TreeNode): ASTNodes | undefined {
     const converted = this.dispatchConvert(node);
     if (converted === undefined) {
       return undefined;
@@ -48,7 +47,7 @@ export class KASTConverter {
    * Dispatch helper: switch on node.label, extract payload, call the correct handler.
    * Returns ResultMap[...] or undefined.
    */
-  private dispatchConvert(node: TreeNodeInfo): ASTNodes | undefined {
+  private dispatchConvert(node: TreeNode): ASTNodes | undefined {
     switch (node.label) {
       case "BINDING":
       case "BLOCK":
@@ -78,27 +77,27 @@ export class KASTConverter {
     }
   }
 
-  private handleBinding(node: TreeNodeInfo): undefined {
+  private handleBinding(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleBlock(node: TreeNodeInfo): undefined {
+  private handleBlock(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleCall(node: TreeNodeInfo): undefined {
+  private handleCall(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleControlStructure(node: TreeNodeInfo): undefined {
+  private handleControlStructure(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleDependency(node: TreeNodeInfo): undefined {
+  private handleDependency(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleFile(node: TreeNodeInfo): ITranslationUnit | undefined {
+  private handleFile(node: TreeNode): ITranslationUnit | undefined {
     if (node.name.endsWith(".c") || node.name.endsWith(".cpp")) {
       return {
         children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
@@ -110,63 +109,63 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleIdentifier(node: TreeNodeInfo): undefined {
+  private handleIdentifier(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleImport(node: TreeNodeInfo): undefined {
+  private handleImport(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleLiteral(node: TreeNodeInfo): undefined {
+  private handleLiteral(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleLocal(node: TreeNodeInfo): undefined {
+  private handleLocal(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleMetaData(node: TreeNodeInfo): undefined {
+  private handleMetaData(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleMethod(node: TreeNodeInfo): undefined {
+  private handleMethod(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleMethodParamIn(node: TreeNodeInfo): undefined {
+  private handleMethodParamIn(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleMethodParamOut(node: TreeNodeInfo): undefined {
+  private handleMethodParamOut(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleMethodRef(node: TreeNodeInfo): undefined {
+  private handleMethodRef(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleMethodReturn(node: TreeNodeInfo): undefined {
+  private handleMethodReturn(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleModifier(node: TreeNodeInfo): undefined {
+  private handleModifier(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleNamespace(node: TreeNodeInfo): undefined {
+  private handleNamespace(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleNamespaceBlock(node: TreeNodeInfo): undefined {
+  private handleNamespaceBlock(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleType(node: TreeNodeInfo): undefined {
+  private handleType(node: TreeNode): undefined {
     return undefined;
   }
 
-  private handleTypeDecl(node: TreeNodeInfo): undefined {
+  private handleTypeDecl(node: TreeNode): undefined {
     return undefined;
   }
 }
