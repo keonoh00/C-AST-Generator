@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ASTNodes } from "@/types/node";
+import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 
 import { TreeNodeInfo } from "../ast/ASTExtractor";
 
@@ -53,7 +55,6 @@ export class KASTConverter {
       case "CALL":
       case "CONTROL_STRUCTURE":
       case "DEPENDENCY":
-      case "FILE":
       case "IDENTIFIER":
       case "IMPORT":
       case "LITERAL":
@@ -70,6 +71,8 @@ export class KASTConverter {
       case "TYPE":
       case "TYPE_DECL":
         return undefined;
+      case "FILE":
+        return this.handleFile(node);
       default:
         return assertNever(node.label);
     }
@@ -95,8 +98,20 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleFile(node: TreeNodeInfo): undefined {
-    return undefined;
+  private handleFile(node: TreeNodeInfo): ITranslationUnit | undefined {
+    if (node.children.length === 0) {
+      return undefined; // No children means no meaningful ASTNode can be created
+    }
+
+    if (!node.name.endsWith(".c") || !node.name.endsWith(".cpp")) {
+      return undefined; // Only handle C/C++ files
+    }
+
+    return {
+      children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+      id: Number(node.id) || -999,
+      nodeType: ASTNodeTypes.TranslationUnit,
+    };
   }
 
   private handleIdentifier(node: TreeNodeInfo): undefined {
