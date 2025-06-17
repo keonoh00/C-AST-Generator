@@ -2,11 +2,12 @@ import fs from "fs";
 import path from "path";
 
 import { ASTExtractor } from "@/joern/ast/ASTExtractor";
-import { TreeGenerator } from "@/joern/ast/TreeGenerator";
-import { GraphData } from "@/types/Joern";
+import { RootGraphSON } from "@/types/joern";
 import { listJsonFiles } from "@/utils/listJson";
 import { readJSONFiles } from "@/utils/readJson";
 import { writeJSONWithChunkSize } from "@/utils/writeJson";
+
+import { validateRootGraphSON } from "./validate/zod";
 
 async function processCPGFiles(): Promise<void> {
   const targetDir = "./out";
@@ -21,12 +22,9 @@ async function processCPGFiles(): Promise<void> {
   const parsedRoots = await readJSONFiles(inputFiles);
 
   const extractor = new ASTExtractor();
-  const treeGen = new TreeGenerator();
+  validateRootGraphSON(parsedRoots as unknown);
 
-  const trees = parsedRoots.map((parsed) => {
-    const ast: GraphData = extractor.extractAstEdges(parsed);
-    return treeGen.generateForest(ast);
-  });
+  const asts = extractor.extractMultiple(parsedRoots as RootGraphSON[]);
 
   const outPaths: string[] = inputFiles.map((inPath) => {
     const rel = path.relative(targetDir, inPath);
@@ -37,7 +35,7 @@ async function processCPGFiles(): Promise<void> {
     return path.join(destDir, outFilename);
   });
 
-  writeJSONWithChunkSize(trees, outPaths, 3);
+  writeJSONWithChunkSize(asts, outPaths, 3);
 }
 
 void processCPGFiles().catch((err: unknown) => {
