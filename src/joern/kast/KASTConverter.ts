@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
-import { TreeNode } from "@/types/joern";
+import { LocalVertexProperties, TreeNode } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
+import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
 
 export class KASTConverter {
   /** Convert an array (“forest”) of root nodes into ASTNodes[], skipping undefined conversions. */
@@ -59,7 +60,6 @@ export class KASTConverter {
       case "IMPORT":
       case "JUMP_TARGET":
       case "LITERAL":
-      case "LOCAL":
       case "MEMBER":
       case "META_DATA":
       case "METHOD":
@@ -77,6 +77,8 @@ export class KASTConverter {
         return undefined;
       case "FILE":
         return this.handleFile(node);
+      case "LOCAL":
+        return this.handleLocal(node);
       default:
         return assertNever(node.label);
     }
@@ -126,8 +128,15 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleLocal(node: TreeNode): undefined {
-    return undefined;
+  private handleLocal(node: TreeNode): IVariableDeclaration {
+    const properties = node.properties as unknown as LocalVertexProperties;
+    return {
+      children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+      id: Number(node.id) || -999,
+      name: node.name,
+      nodeType: ASTNodeTypes.VariableDeclaration,
+      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") as string,
+    };
   }
 
   private handleMetaData(node: TreeNode): undefined {
