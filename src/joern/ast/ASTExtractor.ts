@@ -48,13 +48,13 @@ export class ASTExtractor {
     const nodeDict: Record<string, VertexGeneric> = {};
     const childrenMap: Record<string, string[]> = {};
 
-    // Destructure the GraphSON wrapper
     const { "@value": graphData } = root as GraphSON<GraphData>;
 
     for (const v of Array.isArray(graphData.vertices) ? graphData.vertices : []) {
       const vid = this.idOf(v.id);
       if (vid) {
         nodeDict[vid] = v;
+        childrenMap[vid] = [];
       }
     }
 
