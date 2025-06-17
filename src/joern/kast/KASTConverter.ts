@@ -54,10 +54,13 @@ export class KASTConverter {
       case "CALL":
       case "CONTROL_STRUCTURE":
       case "DEPENDENCY":
+      case "FIELD_IDENTIFIER":
       case "IDENTIFIER":
       case "IMPORT":
+      case "JUMP_TARGET":
       case "LITERAL":
       case "LOCAL":
+      case "MEMBER":
       case "META_DATA":
       case "METHOD":
       case "METHOD_PARAMETER_IN":
@@ -67,8 +70,10 @@ export class KASTConverter {
       case "MODIFIER":
       case "NAMESPACE":
       case "NAMESPACE_BLOCK":
+      case "RETURN":
       case "TYPE":
       case "TYPE_DECL":
+      case "TYPE_REF":
         return undefined;
       case "FILE":
         return this.handleFile(node);

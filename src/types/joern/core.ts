@@ -43,11 +43,14 @@ export type VertexLabel =
   | "CALL"
   | "CONTROL_STRUCTURE"
   | "DEPENDENCY"
+  | "FIELD_IDENTIFIER"
   | "FILE"
   | "IDENTIFIER"
   | "IMPORT"
+  | "JUMP_TARGET"
   | "LITERAL"
   | "LOCAL"
+  | "MEMBER"
   | "META_DATA"
   | "METHOD"
   | "METHOD_PARAMETER_IN"
@@ -57,8 +60,10 @@ export type VertexLabel =
   | "MODIFIER"
   | "NAMESPACE"
   | "NAMESPACE_BLOCK"
+  | "RETURN"
   | "TYPE"
-  | "TYPE_DECL";
+  | "TYPE_DECL"
+  | "TYPE_REF";
 
 export interface VertexProperty<T> {
   "@type": "g:VertexProperty";
