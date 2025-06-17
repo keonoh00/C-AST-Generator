@@ -1,181 +1,214 @@
-import { GraphData, GraphSON, GraphSONValue, RootGraphSON, VertexGeneric } from "@/types/joern";
+import { EdgeGeneric, NodeInfo, RootGraphSON, TreeNode } from "@/types/joern";
 
-export interface ASTExtractorOptions {
-  raw?: boolean;
+interface EdgeInfo {
+  edge: EdgeGeneric;
+  inV_node: NodeInfo | null;
+  outV_node: NodeInfo | null;
 }
-
-export interface NodeInfo {
-  code: string;
-  id: string;
-  label: string;
-  line_no: string;
-  name: string;
-  properties: Record<string, unknown>;
-}
-
-export type RawVertexTree = VertexGeneric & { children: RawVertexTree[] };
-export type TreeNodeInfo = NodeInfo & { children: TreeNodeInfo[] };
 
 export class ASTExtractor {
-  private options: ASTExtractorOptions;
-
-  constructor(options?: ASTExtractorOptions) {
-    this.options = options ?? {};
-  }
-
-  extractMultiple(roots: RootGraphSON[], optionsOverride?: ASTExtractorOptions): (RawVertexTree[] | TreeNodeInfo[])[] {
-    return roots.map((r) => this.extractSingle(r, optionsOverride));
-  }
-
-  extractSingle(root: RootGraphSON, optionsOverride?: ASTExtractorOptions): RawVertexTree[] | TreeNodeInfo[] {
-    const opts = optionsOverride ?? this.options;
-    const { childrenMap, nodeDict } = this.buildMaps(root);
-    if (opts.raw) {
-      return this.buildRawForest(nodeDict, childrenMap);
-    } else {
-      return this.buildInfoForest(nodeDict, childrenMap);
+  public getAstTree(cpg: unknown): TreeNode[] {
+    if (typeof cpg !== "object" || cpg === null || !("@value" in (cpg as Record<string, unknown>))) {
+      return [];
     }
-  }
+    const data = cpg as RootGraphSON;
+    const inner = data["@value"];
+    if (typeof inner !== "object" || !Array.isArray(inner.edges) || !Array.isArray(inner.vertices)) {
+      return [];
+    }
 
-  private buildInfoForest(nodeDict: Record<string, VertexGeneric>, childrenMap: Record<string, string[]>): TreeNodeInfo[] {
-    const allIds = Object.keys(nodeDict);
-    const childIds = new Set(Object.values(childrenMap).flat());
-    const roots = allIds.filter((id) => !childIds.has(id));
-    const cache: Record<string, NodeInfo> = {};
-    const makeNode = (id: string): TreeNodeInfo => {
-      cache[id] = this.convertVertex(nodeDict[id]);
+    const edges = inner.edges;
+    const nodes = inner.vertices;
 
-      const info = cache[id];
-      const childList = childrenMap[id];
+    const astEdges = edges.filter((e) => e.label === "AST");
+
+    const nodeDict: Record<string, NodeInfo> = {};
+    for (const n of nodes) {
+      if (this.isValueWrapper(n.id) && (typeof n.id["@value"] === "string" || typeof n.id["@value"] === "number")) {
+        const key = String(n.id["@value"]);
+        nodeDict[key] = n as unknown as NodeInfo;
+      }
+    }
+
+    const astData: EdgeInfo[] = astEdges.map((edge) => {
+      let outNode: NodeInfo | null = null;
+      let inNode: NodeInfo | null = null;
+
+      if (this.isValueWrapper(edge.outV)) {
+        const outIdRaw = edge.outV["@value"];
+        const outIdStr = String(outIdRaw);
+        outNode = nodeDict[outIdStr] ?? null;
+      }
+      if (this.isValueWrapper(edge.inV)) {
+        const inIdRaw = edge.inV["@value"];
+        const inIdStr = String(inIdRaw);
+        inNode = nodeDict[inIdStr] ?? null;
+      }
       return {
-        ...info,
-        children: childList.map(makeNode),
+        edge,
+        inV_node: inNode,
+        outV_node: outNode,
       };
-    };
-    return roots.map(makeNode);
-  }
+    });
 
-  private buildMaps(root: RootGraphSON): {
-    childrenMap: Record<string, string[]>;
-    nodeDict: Record<string, VertexGeneric>;
-  } {
-    const nodeDict: Record<string, VertexGeneric> = {};
+    const nodeInfoMap: Record<string, NodeInfo> = {};
     const childrenMap: Record<string, string[]> = {};
-    const { "@value": graphData } = root as GraphSON<GraphData>;
-    if (Array.isArray(graphData.vertices)) {
-      for (const v of graphData.vertices) {
-        const vid = this.idOf(v.id);
-        if (vid) {
-          nodeDict[vid] = v;
-          childrenMap[vid] = [];
-        }
-      }
-    }
-    if (Array.isArray(graphData.edges)) {
-      for (const e of graphData.edges) {
-        if (e.label !== "AST") continue;
-        const p = this.idOf(e.outV);
-        const c = this.idOf(e.inV);
-        if (p && c) {
-          childrenMap[p].push(c);
-        }
-      }
-    }
-    return { childrenMap, nodeDict };
-  }
 
-  private buildRawForest(nodeDict: Record<string, VertexGeneric>, childrenMap: Record<string, string[]>): RawVertexTree[] {
-    const allIds = Object.keys(nodeDict);
-    const childIds = new Set(Object.values(childrenMap).flat());
-    const roots = allIds.filter((id) => !childIds.has(id));
-    const makeRawNode = (id: string): RawVertexTree => {
-      const v = nodeDict[id];
-      const childList = childrenMap[id];
-      return {
-        ...v,
-        children: childList.map(makeRawNode),
+    for (const item of astData) {
+      const edge = item.edge;
+
+      if (this.isValueWrapper(edge.outV) && this.isValueWrapper(edge.inV)) {
+        const outId = String(edge.outV["@value"]);
+        const inId = String(edge.inV["@value"]);
+
+        if (!(outId in nodeInfoMap)) {
+          nodeInfoMap[outId] = this.extractNodeInfo(item.outV_node);
+        }
+        if (!(inId in nodeInfoMap)) {
+          nodeInfoMap[inId] = this.extractNodeInfo(item.inV_node);
+        }
+
+        if (!(outId in childrenMap)) {
+          childrenMap[outId] = [];
+        }
+        childrenMap[outId].push(inId);
+      }
+    }
+
+    const allIds = new Set<string>(Object.keys(nodeInfoMap));
+    const childIds = new Set<string>();
+    for (const childArr of Object.values(childrenMap)) {
+      for (const cid of childArr) {
+        childIds.add(cid);
+      }
+    }
+    const rootIds = Array.from(allIds).filter((id) => !childIds.has(id));
+
+    function buildTree(nodeId: string): TreeNode {
+      const info = nodeInfoMap[nodeId];
+
+      /* eslint-disable perfectionist/sort-objects */
+      const node: TreeNode = {
+        id: info.id,
+        label: info.label,
+        name: info.name,
+        code: info.code,
+        line_no: info.line_no,
+        properties: info.properties,
+        children: [],
       };
-    };
-    return roots.map(makeRawNode);
-  }
+      /* eslint-enable perfectionist/sort-objects */
 
-  private convertVertex(v: VertexGeneric): NodeInfo {
-    const rawProps = v.properties as unknown as Record<string, unknown>;
+      const childs = childrenMap[nodeId] ?? [];
+      for (const cid of childs) {
+        node.children.push(buildTree(cid));
+      }
+      return node;
+    }
+
+    return rootIds.map((rid) => buildTree(rid));
+  }
+  private extractNodeInfo(node: NodeInfo | null): NodeInfo {
+    if (node === null) {
+      throw new Error("Node cannot be null in extractNodeInfo");
+    }
+
+    let idVal = "";
+    if (this.isValueWrapper(node.id) && (typeof node.id["@value"] === "string" || typeof node.id["@value"] === "number")) {
+      idVal = String(node.id["@value"]);
+    }
+
+    const labelVal = node.label;
+
+    let nameVal = "";
+    if ("NAME" in node.properties) {
+      const rawName = node.properties.NAME;
+      const unwrappedName = this.unwrapValue(rawName);
+      if (unwrappedName !== undefined) {
+        nameVal = String(unwrappedName);
+      }
+    }
+
+    let codeVal = "";
+    if ("CODE" in node.properties) {
+      const rawCode = node.properties.CODE;
+      const unwrappedCode = this.unwrapValue(rawCode);
+      if (unwrappedCode !== undefined) {
+        codeVal = String(unwrappedCode);
+      }
+    }
+
+    let lineNoVal: number | string = "";
+    if ("LINE_NUMBER" in node.properties) {
+      const rawLine = node.properties.LINE_NUMBER;
+      const unwrappedLine = this.unwrapValue(rawLine);
+      if (unwrappedLine !== undefined) {
+        lineNoVal = unwrappedLine;
+      }
+    }
+
     return {
-      code: this.firstPrimitiveNested(rawProps.CODE),
-      id: this.idOf(v.id) ?? "",
-      label: v.label,
-      line_no: this.extractLineNo(rawProps.LINE_NUMBER),
-      name: this.firstPrimitiveNested(rawProps.NAME),
-      properties: rawProps,
+      code: codeVal,
+      id: idVal,
+      label: labelVal,
+      line_no: lineNoVal,
+      name: nameVal,
+      properties: node.properties,
     };
   }
 
-  private extractLineNo(raw: unknown): string {
-    if (raw == null || typeof raw !== "object") return "";
-    const rawObj = raw as Record<string, unknown>;
-    let current: unknown = rawObj["@value"];
-    for (let depth = 0; depth < 5; depth++) {
-      if (current == null) return "";
-      if (typeof current === "string" || typeof current === "number" || typeof current === "boolean") {
-        return String(current);
-      }
-      if (Array.isArray(current)) {
-        if (current.length === 0) return "";
-        current = current[0];
-        continue;
-      }
-      if (typeof current === "object") {
-        const asObj = current as Record<string, unknown>;
-        if ("@value" in asObj) {
-          current = asObj["@value"];
-          continue;
-        }
-        return "";
-      }
-      return "";
-    }
-    return "";
+  /**
+   * Type guard: checks if x is an object with a "@value" key.
+   */
+  private isValueWrapper(x: unknown): x is { "@value": unknown } {
+    return typeof x === "object" && x !== null && "@value" in (x as Record<string, unknown>);
   }
 
-  private firstPrimitiveNested(raw: unknown): string {
-    if (raw == null || typeof raw !== "object") {
-      return "";
-    }
-    let current: unknown = (raw as Record<string, unknown>)["@value"];
-    for (let depth = 0; depth < 5; depth++) {
-      if (current == null) {
-        return "";
-      }
-      if (typeof current === "string" || typeof current === "number" || typeof current === "boolean") {
-        return String(current);
-      }
-      if (Array.isArray(current)) {
-        if (current.length === 0) {
-          return "";
-        }
-        current = current[0];
-        continue;
-      }
-      if (typeof current === "object") {
-        const asObj = current as Record<string, unknown>;
-        if ("@value" in asObj) {
-          current = asObj["@value"];
-          continue;
-        }
-        return "";
-      }
-      return "";
-    }
-    return "";
+  /**
+   * Type guard: checks if x is an array of unknowns,
+   * and at least one element is a ValueWrapper or primitive.
+   */
+  private isValueWrapperArray(x: unknown): x is unknown[] {
+    return Array.isArray(x);
   }
 
-  private idOf(raw?: GraphSON<GraphSONValue>): string | undefined {
-    if (!raw || typeof raw !== "object") return undefined;
-    const v = (raw as unknown as Record<string, unknown>)["@value"];
-    if (typeof v === "string" || typeof v === "number") {
-      return String(v);
+  private unwrapValue(x: unknown): number | string | undefined {
+    if (x == null) {
+      return undefined;
     }
+
+    if (typeof x === "string" || typeof x === "number") {
+      return x;
+    }
+
+    if (this.isValueWrapper(x)) {
+      const inner = x["@value"];
+
+      if (typeof inner === "string" || typeof inner === "number") {
+        return inner;
+      }
+
+      if (this.isValueWrapper(inner)) {
+        return this.unwrapValue(inner["@value"]);
+      }
+
+      if (this.isValueWrapperArray(inner)) {
+        return this.unwrapValue(inner);
+      }
+
+      return undefined;
+    }
+
+    if (this.isValueWrapperArray(x)) {
+      for (const elem of x) {
+        const unwrapped = this.unwrapValue(elem);
+        if (unwrapped !== undefined) {
+          return unwrapped;
+        }
+      }
+      return undefined;
+    }
+
     return undefined;
   }
 }

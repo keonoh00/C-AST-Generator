@@ -19,12 +19,12 @@ async function processCPGFiles(): Promise<void> {
     throw new Error("No JSON files found.");
   }
 
-  const parsedRoots = await readJSONFiles(inputFiles);
+  const parsedRoots = (await readJSONFiles(inputFiles)) as RootGraphSON[];
 
   const extractor = new ASTExtractor();
-  validateRootGraphSON(parsedRoots as unknown);
+  validateRootGraphSON(parsedRoots);
 
-  const asts = extractor.extractMultiple(parsedRoots as RootGraphSON[]);
+  const asts = parsedRoots.map((root) => extractor.getAstTree(root));
 
   const outPaths: string[] = inputFiles.map((inPath) => {
     const rel = path.relative(targetDir, inPath);

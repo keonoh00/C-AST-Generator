@@ -24,6 +24,19 @@ export interface GraphSON<T> {
 
 export type GraphSONValue = boolean | GraphSONValue[] | null | number | string | { [key: string]: GraphSONValue };
 
+export interface NodeInfo {
+  code: string;
+  id: string;
+  label: VertexLabel;
+  line_no: number | string;
+  name: string;
+  properties: VertexProperty<GraphSONValue>[];
+}
+
+export interface TreeNode extends NodeInfo {
+  children: TreeNode[];
+}
+
 export type VertexLabel =
   | "BINDING"
   | "BLOCK"
