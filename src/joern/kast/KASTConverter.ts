@@ -99,19 +99,15 @@ export class KASTConverter {
   }
 
   private handleFile(node: TreeNodeInfo): ITranslationUnit | undefined {
-    if (node.children.length === 0) {
-      return undefined; // No children means no meaningful ASTNode can be created
+    if (node.name.endsWith(".c") || node.name.endsWith(".cpp")) {
+      return {
+        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+        id: Number(node.id) || -999,
+        nodeType: ASTNodeTypes.TranslationUnit,
+      };
     }
 
-    if (!node.name.endsWith(".c") || !node.name.endsWith(".cpp")) {
-      return undefined; // Only handle C/C++ files
-    }
-
-    return {
-      children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
-      id: Number(node.id) || -999,
-      nodeType: ASTNodeTypes.TranslationUnit,
-    };
+    return undefined;
   }
 
   private handleIdentifier(node: TreeNodeInfo): undefined {
