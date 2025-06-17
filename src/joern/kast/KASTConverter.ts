@@ -48,90 +48,28 @@ export class KASTConverter {
    */
   private dispatchConvert(node: TreeNodeInfo): ASTNodes | undefined {
     switch (node.label) {
-      case "BINDING": {
-        this.handleBinding(node);
-        return;
-      }
-      case "BLOCK": {
-        this.handleBlock(node);
-        return;
-      }
-      case "CALL": {
-        this.handleCall(node);
-        return;
-      }
-      case "CONTROL_STRUCTURE": {
-        this.handleControlStructure(node);
-        return;
-      }
-      case "DEPENDENCY": {
-        this.handleDependency(node);
-        return;
-      }
-      case "FILE": {
-        this.handleFile(node);
-        return;
-      }
-      case "IDENTIFIER": {
-        this.handleIdentifier(node);
-        return;
-      }
-      case "IMPORT": {
-        this.handleImport(node);
-        return;
-      }
-      case "LITERAL": {
-        this.handleLiteral(node);
-        return;
-      }
-      case "LOCAL": {
-        this.handleLocal(node);
-        return;
-      }
-      case "META_DATA": {
-        this.handleMetaData(node);
-        return;
-      }
-      case "METHOD": {
-        this.handleMethod(node);
-        return;
-      }
-      case "METHOD_PARAMETER_IN": {
-        this.handleMethodParamIn(node);
-        return;
-      }
-      case "METHOD_PARAMETER_OUT": {
-        this.handleMethodParamOut(node);
-        return;
-      }
-      case "METHOD_REF": {
-        this.handleMethodRef(node);
-        return;
-      }
-      case "METHOD_RETURN": {
-        this.handleMethodReturn(node);
-        return;
-      }
-      case "MODIFIER": {
-        this.handleModifier(node);
-        return;
-      }
-      case "NAMESPACE": {
-        this.handleNamespace(node);
-        return;
-      }
-      case "NAMESPACE_BLOCK": {
-        this.handleNamespaceBlock(node);
-        return;
-      }
-      case "TYPE": {
-        this.handleType(node);
-        return;
-      }
-      case "TYPE_DECL": {
-        this.handleTypeDecl(node);
-        return;
-      }
+      case "BINDING":
+      case "BLOCK":
+      case "CALL":
+      case "CONTROL_STRUCTURE":
+      case "DEPENDENCY":
+      case "FILE":
+      case "IDENTIFIER":
+      case "IMPORT":
+      case "LITERAL":
+      case "LOCAL":
+      case "META_DATA":
+      case "METHOD":
+      case "METHOD_PARAMETER_IN":
+      case "METHOD_PARAMETER_OUT":
+      case "METHOD_REF":
+      case "METHOD_RETURN":
+      case "MODIFIER":
+      case "NAMESPACE":
+      case "NAMESPACE_BLOCK":
+      case "TYPE":
+      case "TYPE_DECL":
+        return undefined;
       default:
         return assertNever(node.label);
     }
