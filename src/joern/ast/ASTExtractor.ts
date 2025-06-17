@@ -11,26 +11,26 @@ export interface NodeInfo {
   properties: Record<string, unknown>;
 }
 
-export type NodeTree = NodeInfo & { children: NodeTree[] };
 export type RawVertexTree = VertexGeneric & { children: RawVertexTree[] };
+export type TreeNodeInfo = NodeInfo & { children: TreeNodeInfo[] };
 
 export class ASTExtractor {
-  extractMultiple(roots: RootGraphSON[]): (NodeTree[] | RawVertexTree[])[] {
+  extractMultiple(roots: RootGraphSON[]): (RawVertexTree[] | TreeNodeInfo[])[] {
     return roots.map((r) => this.extractSingle(r));
   }
 
-  extractSingle(root: RootGraphSON): NodeTree[] | RawVertexTree[] {
+  extractSingle(root: RootGraphSON): RawVertexTree[] | TreeNodeInfo[] {
     const { childrenMap, nodeDict } = this.buildMaps(root);
     return this.buildForest(nodeDict, childrenMap);
   }
 
-  private buildForest(nodeDict: Record<string, VertexGeneric>, childrenMap: Record<string, string[]>): NodeTree[] | RawVertexTree[] {
+  private buildForest(nodeDict: Record<string, VertexGeneric>, childrenMap: Record<string, string[]>): RawVertexTree[] | TreeNodeInfo[] {
     const allIds = Object.keys(nodeDict);
     const childIds = new Set(Object.values(childrenMap).flat());
     const roots = allIds.filter((id) => !childIds.has(id));
 
     const cache: Record<string, NodeInfo> = {};
-    const makeNode = (id: string): NodeTree => {
+    const makeNode = (id: string): TreeNodeInfo => {
       cache[id] = this.convertVertex(nodeDict[id]);
       const info = cache[id];
       return {
