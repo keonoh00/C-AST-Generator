@@ -5,8 +5,10 @@ import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
-import { CallVertexProperties, LocalVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
+import { LocalVertexProperties, MethodVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
+import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
+import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
 
@@ -57,7 +59,6 @@ export class KASTConverter {
     switch (node.label) {
       case "BINDING":
       case "BLOCK":
-
       case "CONTROL_STRUCTURE":
       case "DEPENDENCY":
       case "FIELD_IDENTIFIER":
@@ -67,7 +68,6 @@ export class KASTConverter {
       case "LITERAL":
       case "MEMBER":
       case "META_DATA":
-      case "METHOD":
       case "METHOD_PARAMETER_IN":
       case "METHOD_PARAMETER_OUT":
       case "METHOD_REF":
@@ -79,13 +79,14 @@ export class KASTConverter {
       case "TYPE":
       case "TYPE_REF":
         return undefined;
-
       case "CALL":
         return this.handleCall(node);
       case "FILE":
         return this.handleFile(node);
       case "LOCAL":
         return this.handleLocal(node);
+      case "METHOD":
+        return this.handleMethod(node);
       case "TYPE_DECL":
         return this.handleTypeDecl(node);
       default:
@@ -165,7 +166,38 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleMethod(node: TreeNode): undefined {
+  private handleMethod(node: TreeNode): IFunctionDeclaration | IFunctionDefinition | undefined {
+    const properties = node.properties as unknown as MethodVertexProperties;
+
+    const blockNumber = node.children.filter((child) => child.label === "BLOCK").length;
+
+    if (
+      properties.FILENAME["@value"]["@value"][0] + ":<global>" === properties.AST_PARENT_FULL_NAME["@value"]["@value"][0] &&
+      !properties.IS_EXTERNAL["@value"]["@value"][0] &&
+      properties.SIGNATURE["@value"]["@value"].join("/").length > 0
+    ) {
+      if (blockNumber === 0) {
+        // Global Function Declaration Node
+        return {
+          nodeType: ASTNodeTypes.FunctionDeclaration,
+          id: Number(node.id) || -999,
+          name: node.name,
+          returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
+          children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+      if (blockNumber === 1) {
+        // Global Function Definition Node
+        return {
+          nodeType: ASTNodeTypes.FunctionDefinition,
+          id: Number(node.id) || -999,
+          name: node.name,
+          returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
+          children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+    }
+
     return undefined;
   }
 
