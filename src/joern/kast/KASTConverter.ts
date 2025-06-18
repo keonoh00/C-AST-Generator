@@ -104,10 +104,7 @@ export class KASTConverter {
   private handleCall(node: TreeNode): IAssignmentExpression | undefined {
     if (node.name === "<operator>.assignment") {
       if (node.children.length !== 2) {
-        throw new Error(`Call node ${node.id} has ${node.children.length} children, expected 2.`);
-      }
-      if (node.children[0].label !== "IDENTIFIER" || node.children[1].label !== "LITERAL") {
-        throw new Error(`Call node ${node.id} has children with unexpected labels: ${node.children.map((c) => c.label).join(", ")}`);
+        throw new Error(`Call node ${node.id} has ${node.children.length.toString()} children, expected 2.`);
       }
 
       return {
