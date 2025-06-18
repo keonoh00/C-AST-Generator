@@ -156,7 +156,7 @@ export class KASTConverter {
       nodeType: ASTNodeTypes.VariableDeclaration,
       id: Number(node.id) || -999,
       name: node.name,
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") as string,
+      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
       children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
     };
   }
@@ -201,7 +201,7 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleTypeDecl(node: TreeNode): IUnionType | IStructType | ITypeDefinition | undefined {
+  private handleTypeDecl(node: TreeNode): IStructType | ITypeDefinition | IUnionType | undefined {
     const properties = node.properties as unknown as TypeDeclVertexProperties;
 
     if (node.code.includes("typedef struct")) {
@@ -237,12 +237,12 @@ export class KASTConverter {
       };
     }
 
-    if (properties.ALIAS_TYPE_FULL_NAME && node.code.includes("typedef")) {
+    if (node.code.includes("typedef")) {
       return {
         nodeType: ASTNodeTypes.TypeDefinition,
         id: Number(node.id) || -999,
         name: node.name,
-        underlyingType: properties.ALIAS_TYPE_FULL_NAME["@value"]["@value"].join("/") as string,
+        underlyingType: properties.ALIAS_TYPE_FULL_NAME["@value"]["@value"].join("/"),
         children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
