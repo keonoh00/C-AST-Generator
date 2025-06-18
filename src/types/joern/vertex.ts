@@ -1,5 +1,5 @@
 // vertex.ts
-import { GraphSON, GraphSONValue, VertexLabel, VertexProperty } from "./core";
+import { GraphSON, GraphSONValue, VertexProperty } from "./core";
 
 export interface BindingVertexProperties {
   METHOD_FULL_NAME: VertexProperty<string[]>;
@@ -170,6 +170,7 @@ export interface NamespaceVertexProperties {
 }
 
 export interface TypeDeclVertexProperties {
+  ALIAS_TYPE_FULL_NAME: GraphSON<string[]>;
   AST_PARENT_FULL_NAME: GraphSON<string[]>;
   AST_PARENT_TYPE: GraphSON<string[]>;
   CODE: GraphSON<string[]>;
