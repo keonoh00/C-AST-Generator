@@ -1,3 +1,6 @@
+*.bin
+joern/*.json
+workspace/
 converted/
 ast_output/
 data/
