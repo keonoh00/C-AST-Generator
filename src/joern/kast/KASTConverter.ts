@@ -4,7 +4,8 @@ import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
-import { LocalVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
+import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
+import { CallVertexProperties, LocalVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
@@ -56,7 +57,7 @@ export class KASTConverter {
     switch (node.label) {
       case "BINDING":
       case "BLOCK":
-      case "CALL":
+
       case "CONTROL_STRUCTURE":
       case "DEPENDENCY":
       case "FIELD_IDENTIFIER":
@@ -78,6 +79,9 @@ export class KASTConverter {
       case "TYPE":
       case "TYPE_REF":
         return undefined;
+
+      case "CALL":
+        return this.handleCall(node);
       case "FILE":
         return this.handleFile(node);
       case "LOCAL":
@@ -97,7 +101,23 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleCall(node: TreeNode): undefined {
+  private handleCall(node: TreeNode): IAssignmentExpression | undefined {
+    if (node.name === "<operator>.assignment") {
+      if (node.children.length !== 2) {
+        throw new Error(`Call node ${node.id} has ${node.children.length} children, expected 2.`);
+      }
+      if (node.children[0].label !== "IDENTIFIER" || node.children[1].label !== "LITERAL") {
+        throw new Error(`Call node ${node.id} has children with unexpected labels: ${node.children.map((c) => c.label).join(", ")}`);
+      }
+
+      return {
+        nodeType: ASTNodeTypes.AssignmentExpression,
+        id: Number(node.id) || -999,
+        operator: "=",
+        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
     return undefined;
   }
 
