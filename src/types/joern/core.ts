@@ -19,7 +19,10 @@ export type EdgeLabel =
 
 export interface GraphSON<T> {
   "@type": string;
-  "@value": T;
+  "@value": {
+    "@type": string;
+    "@value": T;
+  };
 }
 
 export type GraphSONValue = boolean | GraphSONValue[] | null | number | string | { [key: string]: GraphSONValue };
