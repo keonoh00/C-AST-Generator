@@ -107,9 +107,9 @@ export class KASTConverter {
   private handleFile(node: TreeNode): ITranslationUnit | undefined {
     if (node.name.endsWith(".c") || node.name.endsWith(".cpp")) {
       return {
-        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
-        id: Number(node.id) || -999,
         nodeType: ASTNodeTypes.TranslationUnit,
+        id: Number(node.id) || -999,
+        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
 
@@ -131,11 +131,11 @@ export class KASTConverter {
   private handleLocal(node: TreeNode): IVariableDeclaration {
     const properties = node.properties as unknown as LocalVertexProperties;
     return {
-      children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+      nodeType: ASTNodeTypes.VariableDeclaration,
       id: Number(node.id) || -999,
       name: node.name,
-      nodeType: ASTNodeTypes.VariableDeclaration,
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") as string,
+      children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
     };
   }
 
