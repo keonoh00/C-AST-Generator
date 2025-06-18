@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
-import { LocalVertexProperties, TreeNode } from "@/types/joern";
+import { IStructType } from "@/types/DataTypes/StructType";
+import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
+import { LocalVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
@@ -72,13 +75,14 @@ export class KASTConverter {
       case "NAMESPACE_BLOCK":
       case "RETURN":
       case "TYPE":
-      case "TYPE_DECL":
       case "TYPE_REF":
         return undefined;
       case "FILE":
         return this.handleFile(node);
       case "LOCAL":
         return this.handleLocal(node);
+      case "TYPE_DECL":
+        return this.handleTypeDecl(node);
       default:
         return assertNever(node.label);
     }
@@ -179,7 +183,18 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleTypeDecl(node: TreeNode): undefined {
+  private handleTypeDecl(node: TreeNode): IStructType | ITypeDefinition | undefined {
+    const properties = node.properties as unknown as TypeDeclVertexProperties;
+
+    if (properties.ALIAS_TYPE_FULL_NAME && node.code.includes("typedef")) {
+      return {
+        nodeType: ASTNodeTypes.TypeDefinition,
+        id: Number(node.id) || -999,
+        name: node.name,
+        underlyingType: properties.ALIAS_TYPE_FULL_NAME["@value"]["@value"].join("/") as string,
+        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
     return undefined;
   }
 }
