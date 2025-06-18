@@ -208,9 +208,6 @@ export class KASTConverter {
     const properties = node.properties as unknown as TypeDeclVertexProperties;
 
     if (node.code.includes("typedef struct")) {
-      if (node.children.length === 0) {
-        throw new Error(`Struct node ${node.id} has no children.`);
-      }
       if (node.children.filter((child) => child.children.length > 0).length > 1) {
         throw new Error(`Struct node ${node.id} has more than one child with children.`);
       }
