@@ -3,6 +3,7 @@
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
+import { IUnionType } from "@/types/DataTypes/UnionType";
 import { LocalVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
@@ -183,7 +184,7 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleTypeDecl(node: TreeNode): IStructType | ITypeDefinition | undefined {
+  private handleTypeDecl(node: TreeNode): IUnionType | IStructType | ITypeDefinition | undefined {
     const properties = node.properties as unknown as TypeDeclVertexProperties;
 
     if (node.code.includes("typedef struct")) {
@@ -198,6 +199,24 @@ export class KASTConverter {
       }
       return {
         nodeType: ASTNodeTypes.StructType,
+        id: Number(node.id) || -999,
+        name: node.name,
+        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (node.code.includes("typedef union")) {
+      if (node.children.length === 0) {
+        throw new Error(`Union node ${node.id} has no children.`);
+      }
+      if (node.children.filter((child) => child.children.length > 0).length > 1) {
+        throw new Error(`Union node ${node.id} has more than one child with children.`);
+      }
+      if (node.children.filter((child) => child.label !== "MEMBER").length > 1) {
+        throw new Error(`Union node ${node.id} has more than one child with label MEMBER.`);
+      }
+      return {
+        nodeType: ASTNodeTypes.UnionType,
         id: Number(node.id) || -999,
         name: node.name,
         children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
