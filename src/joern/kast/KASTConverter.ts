@@ -186,6 +186,15 @@ export class KASTConverter {
   private handleTypeDecl(node: TreeNode): IStructType | ITypeDefinition | undefined {
     const properties = node.properties as unknown as TypeDeclVertexProperties;
 
+    if (node.code.includes("struct")) {
+      return {
+        nodeType: ASTNodeTypes.StructType,
+        id: Number(node.id) || -999,
+        name: node.name,
+        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
     if (properties.ALIAS_TYPE_FULL_NAME && node.code.includes("typedef")) {
       return {
         nodeType: ASTNodeTypes.TypeDefinition,
