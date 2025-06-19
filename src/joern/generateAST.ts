@@ -48,11 +48,7 @@ async function processCPGFiles(): Promise<void> {
   writeJSONWithChunkSize(kasts, outPaths, 3);
 
   const treeToText = new TreeToText(["id", "properties", "line_no", "code"]);
-  const kastsInText: string[][] = kasts.map((kastRoots) =>
-    kastRoots
-      .filter((root) => root.nodeType == ASTNodeTypes.TranslationUnit) // Filter for TranslationUnit nodes only
-      .map((root) => treeToText.convert(root))
-  );
+  const kastsInText: string[][] = kasts.map((kastRoots) => kastRoots.map((root) => treeToText.convert(root)));
 
   const textOutPaths: string[] = outPaths.map((outPath) => {
     const parsedPath = path.parse(outPath);
