@@ -166,24 +166,17 @@ export class KASTConverter {
       return this.handleCallOperators(node);
     }
 
-    if (STANDARD_LIB_CALLS.has(node.name)) {
-      const paramListWrapper: IParameterList = {
-        nodeType: ASTNodeTypes.ParameterList,
-        id: Number(node.id) || -999,
-        children: this.convertedChildren(node.children),
-      };
-      return {
-        nodeType: ASTNodeTypes.StandardLibCall,
-        id: Number(node.id) || -999,
-        name: node.name,
-        children: [paramListWrapper],
-      };
-    }
+    const paramListWrapper: IParameterList = {
+      nodeType: ASTNodeTypes.ParameterList,
+      id: Number(node.id) || -999,
+      children: this.convertedChildren(node.children),
+    };
+
     return {
-      nodeType: ASTNodeTypes.UserDefinedCall,
+      nodeType: STANDARD_LIB_CALLS.has(node.name) ? ASTNodeTypes.StandardLibCall : ASTNodeTypes.UserDefinedCall,
       id: Number(node.id) || -999,
       name: node.name,
-      children: this.convertedChildren(node.children),
+      children: [paramListWrapper],
     };
   }
 
