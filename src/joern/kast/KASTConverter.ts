@@ -6,6 +6,7 @@ import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
+import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ICastExpression } from "@/types/Expressions/CastExpression";
@@ -38,6 +39,17 @@ import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclarat
 
 import { BinaryExpressionOperatorMap } from "./BinaryExpression";
 import { STANDARD_LIB_CALLS } from "./StandardLibCall";
+
+type CallOperatorsReturnTypes =
+  | IArraySubscriptionExpression
+  | IAssignmentExpression
+  | IBinaryExpression
+  | ICastExpression
+  | IMemberAccess
+  | ISizeOfExpression
+  | undefined;
+
+type CallReturnTypes = CallOperatorsReturnTypes | IStandardLibCall | IUserDefinedCall;
 
 export class KASTConverter {
   private callCollection: string[];
@@ -119,17 +131,7 @@ export class KASTConverter {
     };
   }
 
-  private handleCall(
-    node: TreeNode
-  ):
-    | IAssignmentExpression
-    | IBinaryExpression
-    | ICastExpression
-    | IMemberAccess
-    | ISizeOfExpression
-    | IStandardLibCall
-    | IUserDefinedCall
-    | undefined {
+  private handleCall(node: TreeNode): CallReturnTypes {
     const properties = node.properties as unknown as CallVertexProperties;
 
     if (!this.callCollection.includes(node.name)) {
@@ -156,9 +158,7 @@ export class KASTConverter {
     };
   }
 
-  private handleCallOperators(
-    node: TreeNode
-  ): IAssignmentExpression | IBinaryExpression | ICastExpression | IMemberAccess | ISizeOfExpression | undefined {
+  private handleCallOperators(node: TreeNode): CallOperatorsReturnTypes {
     if (Object.keys(BinaryExpressionOperatorMap).includes(node.name)) {
       return {
         nodeType: ASTNodeTypes.BinaryExpression,
@@ -202,6 +202,14 @@ export class KASTConverter {
     if (node.name === "<operator>.sizeOf") {
       return {
         nodeType: ASTNodeTypes.SizeOfExpression,
+        id: Number(node.id) || -999,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (node.name === "<operator>.indirectIndexAccess") {
+      return {
+        nodeType: ASTNodeTypes.ArraySubscriptionExpression,
         id: Number(node.id) || -999,
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
