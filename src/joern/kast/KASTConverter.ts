@@ -72,6 +72,7 @@ export class KASTConverter {
   constructor() {
     this.callCollection = [];
   }
+
   /** Convert an array (“forest”) of root nodes into ASTNodes[], skipping undefined conversions. */
   public convertTree(nodes: TreeNode[]): ASTNodes[] {
     const convertedNodes: ASTNodes[] = [];
@@ -87,6 +88,10 @@ export class KASTConverter {
 
   private assertNever(x: unknown): never {
     throw new Error("Unexpected label: " + JSON.stringify(x));
+  }
+
+  private convertedChildren(children: TreeNode[]): ASTNodes[] {
+    return children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined);
   }
 
   /**
@@ -144,7 +149,7 @@ export class KASTConverter {
     return {
       nodeType: ASTNodeTypes.CompoundStatement,
       id: Number(node.id) || -999,
-      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      children: this.convertedChildren(node.children),
     };
   }
 
@@ -162,14 +167,14 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.StandardLibCall,
         id: Number(node.id) || -999,
         name: node.name,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: this.convertedChildren(node.children),
       };
     }
     return {
       nodeType: ASTNodeTypes.UserDefinedCall,
       id: Number(node.id) || -999,
       name: node.name,
-      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      children: this.convertedChildren(node.children),
     };
   }
 
@@ -182,7 +187,7 @@ export class KASTConverter {
         id: Number(node.id) || -999,
         operator: BinaryExpressionOperatorMap[node.name],
         type: node.code,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: this.convertedChildren(node.children),
       };
     }
 
@@ -192,7 +197,7 @@ export class KASTConverter {
         id: Number(node.id) || -999,
         operator: node.code,
         type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: this.convertedChildren(node.children),
       };
     }
 
@@ -202,7 +207,7 @@ export class KASTConverter {
           nodeType: ASTNodeTypes.AddressOfExpression,
           id: Number(node.id) || -999,
           rhs: node.code.split("&")[1] || node.code,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
       case "<operator>.alloc": {
@@ -210,7 +215,7 @@ export class KASTConverter {
           nodeType: ASTNodeTypes.ArraySizeAllocation,
           id: Number(node.id) || -999,
           length: node.code as unknown as number, // TODO: This should be the length of the array, not the code.
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
       case "<operator>.assignment": {
@@ -221,7 +226,7 @@ export class KASTConverter {
           nodeType: ASTNodeTypes.AssignmentExpression,
           id: Number(node.id) || -999,
           operator: "=",
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
       case "<operator>.cast": {
@@ -229,7 +234,7 @@ export class KASTConverter {
           nodeType: ASTNodeTypes.CastExpression,
           id: Number(node.id) || -999,
           targetType: node.code, // TODO:  This should be the type of the cast, not the code.
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
       case "<operator>.fieldAccess":
@@ -244,14 +249,14 @@ export class KASTConverter {
         return {
           nodeType: ASTNodeTypes.ArraySubscriptionExpression,
           id: Number(node.id) || -999,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
       case "<operator>.sizeOf": {
         return {
           nodeType: ASTNodeTypes.SizeOfExpression,
           id: Number(node.id) || -999,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
     }
@@ -275,21 +280,21 @@ export class KASTConverter {
         return {
           nodeType: ASTNodeTypes.BreakStatement,
           id: Number(node.id) || -999,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
       case "DO": {
         return {
           nodeType: ASTNodeTypes.DoWhileStatement,
           id: Number(node.id) || -999,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
       case "FOR": {
         return {
           nodeType: ASTNodeTypes.ForStatement,
           id: Number(node.id) || -999,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
       case "IF": {
@@ -320,14 +325,14 @@ export class KASTConverter {
         return {
           nodeType: ASTNodeTypes.SwitchStatement,
           id: Number(node.id) || -999,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
       case "WHILE": {
         return {
           nodeType: ASTNodeTypes.DoWhileStatement,
           id: Number(node.id) || -999,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
     }
@@ -344,7 +349,7 @@ export class KASTConverter {
       return {
         nodeType: ASTNodeTypes.TranslationUnit,
         id: Number(node.id) || -999,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: this.convertedChildren(node.children),
       };
     }
 
@@ -359,7 +364,7 @@ export class KASTConverter {
       name: node.name,
       size: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"), // TODO: For now, using TYPE_FULL_NAME as size, this should be changed to a proper size property if available.
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
-      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      children: this.convertedChildren(node.children),
     };
   }
 
@@ -369,7 +374,7 @@ export class KASTConverter {
       nodeType: ASTNodeTypes.IncludeDirective,
       id: Number(node.id) || -999,
       name: properties.IMPORTED_AS["@value"]["@value"].join("/"),
-      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      children: this.convertedChildren(node.children),
     };
   }
 
@@ -379,7 +384,7 @@ export class KASTConverter {
       return {
         nodeType: ASTNodeTypes.SwitchCase,
         id: Number(node.id) || -999,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: this.convertedChildren(node.children),
       };
     }
 
@@ -387,7 +392,7 @@ export class KASTConverter {
       nodeType: ASTNodeTypes.Label,
       id: Number(node.id) || -999,
       name: properties.NAME["@value"]["@value"].join("/"),
-      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      children: this.convertedChildren(node.children),
     };
   }
 
@@ -423,7 +428,7 @@ export class KASTConverter {
           name: node.name,
           elementType,
           length,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
 
@@ -441,7 +446,7 @@ export class KASTConverter {
           name: node.name,
           pointingType: pointsTo,
           level,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: this.convertedChildren(node.children),
         };
       }
     }
@@ -451,7 +456,7 @@ export class KASTConverter {
       id: Number(node.id) || -999,
       name: node.name,
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
-      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      children: this.convertedChildren(node.children),
     };
   }
 
@@ -504,7 +509,7 @@ export class KASTConverter {
       id: Number(node.id) || -999,
       name: node.name,
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
-      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      children: this.convertedChildren(node.children),
     };
   }
 
@@ -529,7 +534,7 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.StructType,
         id: Number(node.id) || -999,
         name: node.name,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: this.convertedChildren(node.children),
       };
     }
 
@@ -547,7 +552,7 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.UnionType,
         id: Number(node.id) || -999,
         name: node.name,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: this.convertedChildren(node.children),
       };
     }
 
@@ -557,7 +562,7 @@ export class KASTConverter {
         id: Number(node.id) || -999,
         name: node.name,
         underlyingType: properties.ALIAS_TYPE_FULL_NAME["@value"]["@value"].join("/"),
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: this.convertedChildren(node.children),
       };
     }
 
