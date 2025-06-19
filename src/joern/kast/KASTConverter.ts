@@ -250,6 +250,7 @@ export class KASTConverter {
           nodeType: ASTNodeTypes.MemberAccess,
           id: Number(node.id) || -999,
           type: node.code, // TODO: This should be the type of the member access, not the code.
+          children: this.convertedChildren(node.children.filter((child) => child.label !== "FIELD_IDENTIFIER")), // TODO: Force removal of FIELD_IDENTIFIER children, as they are not needed in the member access expression.
         };
       }
       case "<operator>.indirectIndexAccess": {
