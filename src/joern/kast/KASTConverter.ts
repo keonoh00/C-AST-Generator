@@ -540,7 +540,7 @@ export class KASTConverter {
         id: Number(node.id) || -999,
         name: node.name,
         returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
-        children: paramList.children && paramList.children.length > 0 ? [paramList, ...nonFuncParamChildren] : nonFuncParamChildren,
+        children: [paramList, ...nonFuncParamChildren],
       };
     }
 
