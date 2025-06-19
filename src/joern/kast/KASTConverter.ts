@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
@@ -10,6 +9,7 @@ import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
+import { IAddressOfExpression } from "@/types/Expressions/AddressOfExpression";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
@@ -50,6 +50,7 @@ import { STANDARD_LIB_CALLS } from "./StandardLibCall";
 import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 
 type CallOperatorsReturnTypes =
+  | IAddressOfExpression
   | IArraySubscriptionExpression
   | IAssignmentExpression
   | IBinaryExpression
@@ -235,6 +236,15 @@ export class KASTConverter {
       return {
         nodeType: ASTNodeTypes.ArraySubscriptionExpression,
         id: Number(node.id) || -999,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (node.name === "<operator>.addressOf") {
+      return {
+        nodeType: ASTNodeTypes.AddressOfExpression,
+        id: Number(node.id) || -999,
+        rhs: node.code.split("&")[1] || node.code,
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
