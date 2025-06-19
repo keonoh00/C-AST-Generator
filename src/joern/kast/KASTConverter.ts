@@ -15,6 +15,7 @@ import { ILiteral } from "@/types/Expressions/Literal";
 import { IMemberAccess } from "@/types/Expressions/MemberAccess";
 import { ISizeOfExpression } from "@/types/Expressions/SizeOfExpression";
 import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
+import { IUnaryExpression } from "@/types/Expressions/UnaryExpression";
 import { IUserDefinedCall } from "@/types/Expressions/UserDefinedCall";
 import {
   CallVertexProperties,
@@ -39,6 +40,7 @@ import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclarat
 
 import { BinaryExpressionOperatorMap } from "./BinaryExpression";
 import { STANDARD_LIB_CALLS } from "./StandardLibCall";
+import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 
 type CallOperatorsReturnTypes =
   | IArraySubscriptionExpression
@@ -47,6 +49,7 @@ type CallOperatorsReturnTypes =
   | ICastExpression
   | IMemberAccess
   | ISizeOfExpression
+  | IUnaryExpression
   | undefined;
 
 type CallReturnTypes = CallOperatorsReturnTypes | IStandardLibCall | IUserDefinedCall;
@@ -159,12 +162,24 @@ export class KASTConverter {
   }
 
   private handleCallOperators(node: TreeNode): CallOperatorsReturnTypes {
+    const properties = node.properties as unknown as CallVertexProperties;
+
     if (Object.keys(BinaryExpressionOperatorMap).includes(node.name)) {
       return {
         nodeType: ASTNodeTypes.BinaryExpression,
         id: Number(node.id) || -999,
         operator: BinaryExpressionOperatorMap[node.name],
         type: node.code,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (Object.keys(UnaryExpressionOperatorMap).includes(node.name)) {
+      return {
+        nodeType: ASTNodeTypes.UnaryExpression,
+        id: Number(node.id) || -999,
+        operator: node.code,
+        type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
