@@ -101,8 +101,9 @@ export class KASTConverter {
 
     // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
     return {
+      ...node,
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-    } as IAssignmentExpression;
+    } as unknown as IAssignmentExpression;
   }
 
   private handleControlStructure(node: TreeNode): undefined {
@@ -186,8 +187,9 @@ export class KASTConverter {
 
     // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
     return {
+      ...node,
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-    } as IFunctionDeclaration;
+    } as unknown as IFunctionDeclaration;
   }
 
   private handleMethodParamIn(node: TreeNode): IParameterDeclaration | undefined {
@@ -287,8 +289,9 @@ export class KASTConverter {
 
     // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
     return {
+      ...node,
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-    } as IStructType;
+    } as unknown as IStructType;
   }
 }
 
