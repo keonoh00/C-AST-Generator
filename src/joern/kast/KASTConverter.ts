@@ -8,6 +8,7 @@ import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
+import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
 import { ILiteral } from "@/types/Expressions/Literal";
 import { IMemberAccess } from "@/types/Expressions/MemberAccess";
@@ -120,7 +121,15 @@ export class KASTConverter {
 
   private handleCall(
     node: TreeNode
-  ): IAssignmentExpression | IBinaryExpression | IMemberAccess | ISizeOfExpression | IStandardLibCall | IUserDefinedCall | undefined {
+  ):
+    | IAssignmentExpression
+    | IBinaryExpression
+    | ICastExpression
+    | IMemberAccess
+    | ISizeOfExpression
+    | IStandardLibCall
+    | IUserDefinedCall
+    | undefined {
     const properties = node.properties as unknown as CallVertexProperties;
 
     if (!this.callCollection.includes(node.name)) {
@@ -147,13 +156,24 @@ export class KASTConverter {
     };
   }
 
-  private handleCallOperators(node: TreeNode): IAssignmentExpression | IBinaryExpression | IMemberAccess | ISizeOfExpression | undefined {
+  private handleCallOperators(
+    node: TreeNode
+  ): IAssignmentExpression | IBinaryExpression | ICastExpression | IMemberAccess | ISizeOfExpression | undefined {
     if (Object.keys(BinaryExpressionOperatorMap).includes(node.name)) {
       return {
         nodeType: ASTNodeTypes.BinaryExpression,
         id: Number(node.id) || -999,
         operator: BinaryExpressionOperatorMap[node.name],
         type: node.code,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (node.name === "<operator>.cast") {
+      return {
+        nodeType: ASTNodeTypes.CastExpression,
+        id: Number(node.id) || -999,
+        targetType: node.code, // TODO:  This should be the type of the cast, not the code.
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
