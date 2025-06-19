@@ -2,6 +2,7 @@
 
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
+import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
@@ -237,7 +238,7 @@ export class KASTConverter {
     } as unknown as IAssignmentExpression;
   }
 
-  private handleControlStructure(node: TreeNode): IIfStatement | undefined {
+  private handleControlStructure(node: TreeNode): IForStatement | IIfStatement | undefined {
     const properties = node.properties as unknown as ControlStructureVertexProperties;
 
     if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "IF") {
@@ -264,6 +265,14 @@ export class KASTConverter {
           id: Number(node.id) || -999,
           children: restructuredChildren,
         };
+    }
+
+    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "FOR") {
+      return {
+        nodeType: ASTNodeTypes.ForStatement,
+        id: Number(node.id) || -999,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
     }
 
     // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
