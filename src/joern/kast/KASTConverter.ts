@@ -12,6 +12,7 @@ import { IIdentifier } from "@/types/Expressions/Identifier";
 import { ILiteral } from "@/types/Expressions/Literal";
 import { ISizeOfExpression } from "@/types/Expressions/SizeOfExpression";
 import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
+import { IUserDefinedCall } from "@/types/Expressions/UserDefinedCall";
 import {
   CallVertexProperties,
   ControlStructureVertexProperties,
@@ -116,7 +117,9 @@ export class KASTConverter {
     };
   }
 
-  private handleCall(node: TreeNode): IAssignmentExpression | IBinaryExpression | ISizeOfExpression | IStandardLibCall | undefined {
+  private handleCall(
+    node: TreeNode
+  ): IAssignmentExpression | IBinaryExpression | ISizeOfExpression | IStandardLibCall | IUserDefinedCall | undefined {
     const properties = node.properties as unknown as CallVertexProperties;
 
     if (!this.callCollection.includes(node.name)) {
@@ -141,15 +144,6 @@ export class KASTConverter {
       };
     }
 
-    if (STANDARD_LIB_CALLS.has(node.name)) {
-      return {
-        nodeType: ASTNodeTypes.StandardLibCall,
-        id: Number(node.id) || -999,
-        name: node.name,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
     if (node.name === "<operator>.assignment") {
       if (node.children.length !== 2) {
         throw new Error(`Call node ${node.id} has ${node.children.length.toString()} children, expected 2.`);
@@ -159,6 +153,23 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.AssignmentExpression,
         id: Number(node.id) || -999,
         operator: "=",
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (!node.name.startsWith("<operator>.")) {
+      if (STANDARD_LIB_CALLS.has(node.name)) {
+        return {
+          nodeType: ASTNodeTypes.StandardLibCall,
+          id: Number(node.id) || -999,
+          name: node.name,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+      return {
+        nodeType: ASTNodeTypes.UserDefinedCall,
+        id: Number(node.id) || -999,
+        name: node.name,
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
