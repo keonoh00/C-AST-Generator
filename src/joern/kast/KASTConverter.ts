@@ -431,9 +431,9 @@ export class KASTConverter {
 
   private handleSkippedNodes(node: TreeNode): ASTNodes | undefined {
     return {
-      ...(node as unknown as ASTNodes),
+      ...node,
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-    };
+    } as unknown as ASTNodes;
   }
 
   private handleType(node: TreeNode): undefined {
