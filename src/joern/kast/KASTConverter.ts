@@ -14,41 +14,15 @@ import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclarat
 
 export class KASTConverter {
   /** Convert an array (“forest”) of root nodes into ASTNodes[], skipping undefined conversions. */
-  public convertForest(nodes: TreeNode[]): ASTNodes[] {
+  public convertTree(nodes: TreeNode[]): ASTNodes[] {
     const convertedNodes: ASTNodes[] = [];
     for (const node of nodes) {
-      const single = this.convertTree(node);
+      const single = this.dispatchConvert(node);
       if (single !== undefined) {
         convertedNodes.push(single);
       }
     }
     return convertedNodes;
-  }
-
-  /**
-   * Convert one TreeNode into ASTNodes (or undefined if this node should be omitted).
-   * We first dispatch to handle payload, then recurse on children.
-   */
-  public convertTree(node: TreeNode): ASTNodes | undefined {
-    const converted = this.dispatchConvert(node);
-    if (converted === undefined) {
-      return undefined;
-    }
-
-    const childNodes: ASTNodes[] = [];
-    if (Array.isArray(node.children)) {
-      for (const child of node.children) {
-        const childConv = this.convertTree(child);
-        if (childConv !== undefined) {
-          childNodes.push(childConv);
-        }
-      }
-    }
-
-    return {
-      ...converted,
-      children: childNodes,
-    };
   }
 
   /**
@@ -78,7 +52,7 @@ export class KASTConverter {
       case "RETURN":
       case "TYPE":
       case "TYPE_REF":
-        return undefined;
+        return this.handleSkippedNodes(node);
       case "CALL":
         return this.handleCall(node);
       case "FILE":
@@ -112,7 +86,7 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.AssignmentExpression,
         id: Number(node.id) || -999,
         operator: "=",
-        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
 
@@ -132,7 +106,7 @@ export class KASTConverter {
       return {
         nodeType: ASTNodeTypes.TranslationUnit,
         id: Number(node.id) || -999,
-        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
 
@@ -158,7 +132,7 @@ export class KASTConverter {
       id: Number(node.id) || -999,
       name: node.name,
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
-      children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     };
   }
 
@@ -183,7 +157,7 @@ export class KASTConverter {
           id: Number(node.id) || -999,
           name: node.name,
           returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
-          children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
         };
       }
       if (blockNumber === 1) {
@@ -193,7 +167,7 @@ export class KASTConverter {
           id: Number(node.id) || -999,
           name: node.name,
           returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
-          children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
         };
       }
     }
@@ -229,6 +203,13 @@ export class KASTConverter {
     return undefined;
   }
 
+  private handleSkippedNodes(node: TreeNode): ASTNodes | undefined {
+    return {
+      ...(node as unknown as ASTNodes),
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    };
+  }
+
   private handleType(node: TreeNode): undefined {
     return undefined;
   }
@@ -247,7 +228,7 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.StructType,
         id: Number(node.id) || -999,
         name: node.name,
-        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
 
@@ -265,7 +246,7 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.UnionType,
         id: Number(node.id) || -999,
         name: node.name,
-        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
 
@@ -275,7 +256,7 @@ export class KASTConverter {
         id: Number(node.id) || -999,
         name: node.name,
         underlyingType: properties.ALIAS_TYPE_FULL_NAME["@value"]["@value"].join("/"),
-        children: node.children.map((child) => this.convertTree(child)).filter((child): child is ASTNodes => child !== undefined),
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
     return undefined;
