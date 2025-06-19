@@ -126,14 +126,33 @@ export class KASTConverter {
       this.callCollection.push(node.name);
     }
 
-    if (node.name === "<operator>.sizeOf") {
+    if (node.name.startsWith("<operator>.")) {
+      return this.handleCallOperators(node);
+    }
+
+    if (STANDARD_LIB_CALLS.has(node.name)) {
       return {
-        nodeType: ASTNodeTypes.SizeOfExpression,
+        nodeType: ASTNodeTypes.StandardLibCall,
         id: Number(node.id) || -999,
+        name: node.name,
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
+    return {
+      nodeType: ASTNodeTypes.UserDefinedCall,
+      id: Number(node.id) || -999,
+      name: node.name,
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    };
 
+    // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
+    return {
+      ...node,
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    } as unknown as IAssignmentExpression;
+  }
+
+  private handleCallOperators(node: TreeNode): IAssignmentExpression | IBinaryExpression | ISizeOfExpression | undefined {
     if (Object.keys(BinaryExpressionOperatorMap).includes(node.name)) {
       return {
         nodeType: ASTNodeTypes.BinaryExpression,
@@ -157,28 +176,13 @@ export class KASTConverter {
       };
     }
 
-    if (!node.name.startsWith("<operator>.")) {
-      if (STANDARD_LIB_CALLS.has(node.name)) {
-        return {
-          nodeType: ASTNodeTypes.StandardLibCall,
-          id: Number(node.id) || -999,
-          name: node.name,
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-        };
-      }
+    if (node.name === "<operator>.sizeOf") {
       return {
-        nodeType: ASTNodeTypes.UserDefinedCall,
+        nodeType: ASTNodeTypes.SizeOfExpression,
         id: Number(node.id) || -999,
-        name: node.name,
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
-
-    // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
-    return {
-      ...node,
-      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-    } as unknown as IAssignmentExpression;
   }
 
   private handleControlStructure(node: TreeNode): IIfStatement | undefined {
