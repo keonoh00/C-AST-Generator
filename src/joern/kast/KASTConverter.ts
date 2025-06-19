@@ -118,6 +118,10 @@ export class KASTConverter {
   private handleCall(node: TreeNode): IAssignmentExpression | IBinaryExpression | ISizeOfExpression | IStandardLibCall | undefined {
     const properties = node.properties as unknown as CallVertexProperties;
 
+    if (!this.callCollection.includes(node.name)) {
+      this.callCollection.push(node.name);
+    }
+
     if (node.name === "<operator>.sizeOf") {
       return {
         nodeType: ASTNodeTypes.SizeOfExpression,
