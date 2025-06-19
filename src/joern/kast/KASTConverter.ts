@@ -1,5 +1,4 @@
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
 import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
@@ -86,6 +85,10 @@ export class KASTConverter {
     return convertedNodes;
   }
 
+  private assertNever(x: unknown): never {
+    throw new Error("Unexpected label: " + JSON.stringify(x));
+  }
+
   /**
    * Dispatch helper: switch on node.label, extract payload, call the correct handler.
    * Returns ResultMap[...] or undefined.
@@ -133,12 +136,8 @@ export class KASTConverter {
       case "TYPE_DECL":
         return this.handleTypeDecl(node);
       default:
-        return assertNever(node.label);
+        return this.assertNever(node.label);
     }
-  }
-
-  private handleBinding(node: TreeNode): undefined {
-    return undefined;
   }
 
   private handleBlock(node: TreeNode): ICompoundStatement | undefined {
@@ -150,8 +149,6 @@ export class KASTConverter {
   }
 
   private handleCall(node: TreeNode): CallReturnTypes {
-    const properties = node.properties as unknown as CallVertexProperties;
-
     if (!this.callCollection.includes(node.name)) {
       this.callCollection.push(node.name);
     }
@@ -199,68 +196,64 @@ export class KASTConverter {
       };
     }
 
-    if (node.name === "<operator>.cast") {
-      return {
-        nodeType: ASTNodeTypes.CastExpression,
-        id: Number(node.id) || -999,
-        targetType: node.code, // TODO:  This should be the type of the cast, not the code.
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
-    if (node.name === "<operator>.fieldAccess" || node.name === "<operator>.indirectFieldAccess") {
-      return {
-        nodeType: ASTNodeTypes.MemberAccess,
-        id: Number(node.id) || -999,
-        type: node.code, // TODO: This should be the type of the member access, not the code.
-      };
-    }
-
-    if (node.name === "<operator>.assignment") {
-      if (node.children.length !== 2) {
-        throw new Error(`Call node ${node.id} has ${node.children.length.toString()} children, expected 2.`);
+    switch (node.name) {
+      case "<operator>.addressOf": {
+        return {
+          nodeType: ASTNodeTypes.AddressOfExpression,
+          id: Number(node.id) || -999,
+          rhs: node.code.split("&")[1] || node.code,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
       }
-
-      return {
-        nodeType: ASTNodeTypes.AssignmentExpression,
-        id: Number(node.id) || -999,
-        operator: "=",
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
-    if (node.name === "<operator>.sizeOf") {
-      return {
-        nodeType: ASTNodeTypes.SizeOfExpression,
-        id: Number(node.id) || -999,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
-    if (node.name === "<operator>.indirectIndexAccess") {
-      return {
-        nodeType: ASTNodeTypes.ArraySubscriptionExpression,
-        id: Number(node.id) || -999,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
-    if (node.name === "<operator>.addressOf") {
-      return {
-        nodeType: ASTNodeTypes.AddressOfExpression,
-        id: Number(node.id) || -999,
-        rhs: node.code.split("&")[1] || node.code,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
-    if (node.name === "<operator>.alloc") {
-      return {
-        nodeType: ASTNodeTypes.ArraySizeAllocation,
-        id: Number(node.id) || -999,
-        length: node.code as unknown as number, // TODO: This should be the length of the array, not the code.
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
+      case "<operator>.alloc": {
+        return {
+          nodeType: ASTNodeTypes.ArraySizeAllocation,
+          id: Number(node.id) || -999,
+          length: node.code as unknown as number, // TODO: This should be the length of the array, not the code.
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+      case "<operator>.assignment": {
+        if (node.children.length !== 2) {
+          throw new Error(`Call node ${node.id} has ${node.children.length.toString()} children, expected 2.`);
+        }
+        return {
+          nodeType: ASTNodeTypes.AssignmentExpression,
+          id: Number(node.id) || -999,
+          operator: "=",
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+      case "<operator>.cast": {
+        return {
+          nodeType: ASTNodeTypes.CastExpression,
+          id: Number(node.id) || -999,
+          targetType: node.code, // TODO:  This should be the type of the cast, not the code.
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+      case "<operator>.fieldAccess":
+      case "<operator>.indirectFieldAccess": {
+        return {
+          nodeType: ASTNodeTypes.MemberAccess,
+          id: Number(node.id) || -999,
+          type: node.code, // TODO: This should be the type of the member access, not the code.
+        };
+      }
+      case "<operator>.indirectIndexAccess": {
+        return {
+          nodeType: ASTNodeTypes.ArraySubscriptionExpression,
+          id: Number(node.id) || -999,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+      case "<operator>.sizeOf": {
+        return {
+          nodeType: ASTNodeTypes.SizeOfExpression,
+          id: Number(node.id) || -999,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
     }
 
     // TODO: Change to undefined after development, temopral fix to handle childen that does not match the label yet.
@@ -275,70 +268,68 @@ export class KASTConverter {
   ): IBreakStatement | IDoWhileStatement | IForStatement | IIfStatement | ISwitchStatement | IWhileStatement | undefined {
     const properties = node.properties as unknown as ControlStructureVertexProperties;
 
-    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "IF") {
-      if (node.children.length < 2) {
-        throw new Error(`Control structure node ${node.id} has ${node.children.length.toString()} children, expected at least 2.`);
+    const controlStructureType = properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0];
+
+    switch (controlStructureType) {
+      case "BREAK": {
+        return {
+          nodeType: ASTNodeTypes.BreakStatement,
+          id: Number(node.id) || -999,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
       }
+      case "DO": {
+        return {
+          nodeType: ASTNodeTypes.DoWhileStatement,
+          id: Number(node.id) || -999,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+      case "FOR": {
+        return {
+          nodeType: ASTNodeTypes.ForStatement,
+          id: Number(node.id) || -999,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+      case "IF": {
+        if (node.children.length < 2) {
+          throw new Error(`Control structure node ${node.id} has ${node.children.length.toString()} children, expected at least 2.`);
+        }
 
-      const conditionChild = this.dispatchConvert(node.children[0]);
-      const ifTrueChild = this.dispatchConvert(node.children[1]);
-      // Unpack the children of the else branch
-      // else node starts with "else" control structure, we do not need the wrapping control structure node.
-      const elseBranch = node.children[2] ? this.dispatchConvert(node.children[2]) : undefined;
-      const elseChild = elseBranch && Array.isArray(elseBranch.children) ? elseBranch.children[0] : undefined;
+        const conditionChild = this.dispatchConvert(node.children[0]);
+        const ifTrueChild = this.dispatchConvert(node.children[1]);
+        // Unpack the children of the else branch
+        // else node starts with "else" control structure, we do not need the wrapping control structure node.
+        const elseBranch = node.children[2] ? this.dispatchConvert(node.children[2]) : undefined;
+        const elseChild = elseBranch && Array.isArray(elseBranch.children) ? elseBranch.children[0] : undefined;
 
-      const restructuredChildren = [];
+        const restructuredChildren = [];
 
-      if (conditionChild) restructuredChildren.push(conditionChild);
-      if (ifTrueChild) restructuredChildren.push(ifTrueChild);
-      if (elseChild) restructuredChildren.push(elseChild);
+        if (conditionChild) restructuredChildren.push(conditionChild);
+        if (ifTrueChild) restructuredChildren.push(ifTrueChild);
+        if (elseChild) restructuredChildren.push(elseChild);
 
-      if (conditionChild)
         return {
           nodeType: ASTNodeTypes.IfStatement,
           id: Number(node.id) || -999,
           children: restructuredChildren,
         };
-    }
-
-    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "FOR") {
-      return {
-        nodeType: ASTNodeTypes.ForStatement,
-        id: Number(node.id) || -999,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
-    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "SWITCH") {
-      return {
-        nodeType: ASTNodeTypes.SwitchStatement,
-        id: Number(node.id) || -999,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
-    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "BREAK") {
-      return {
-        nodeType: ASTNodeTypes.BreakStatement,
-        id: Number(node.id) || -999,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
-    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "DO") {
-      return {
-        nodeType: ASTNodeTypes.DoWhileStatement,
-        id: Number(node.id) || -999,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
-    }
-
-    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "WHILE") {
-      return {
-        nodeType: ASTNodeTypes.DoWhileStatement,
-        id: Number(node.id) || -999,
-        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-      };
+      }
+      case "SWITCH": {
+        return {
+          nodeType: ASTNodeTypes.SwitchStatement,
+          id: Number(node.id) || -999,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+      case "WHILE": {
+        return {
+          nodeType: ASTNodeTypes.DoWhileStatement,
+          id: Number(node.id) || -999,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
     }
 
     // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
@@ -346,10 +337,6 @@ export class KASTConverter {
       ...node,
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     } as unknown as IIfStatement;
-  }
-
-  private handleDependency(node: TreeNode): undefined {
-    return undefined;
   }
 
   private handleFile(node: TreeNode): ITranslationUnit | undefined {
@@ -416,8 +403,6 @@ export class KASTConverter {
       value: node.code,
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
     };
-
-    return undefined;
   }
 
   private handleLocal(node: TreeNode): IArrayDeclaration | IPointerDeclaration | IVariableDeclaration {
@@ -468,10 +453,6 @@ export class KASTConverter {
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     };
-  }
-
-  private handleMetaData(node: TreeNode): undefined {
-    return undefined;
   }
 
   private handleMethod(node: TreeNode): IFunctionDeclaration | IFunctionDefinition | undefined {
@@ -527,39 +508,11 @@ export class KASTConverter {
     };
   }
 
-  private handleMethodParamOut(node: TreeNode): undefined {
-    return undefined;
-  }
-
-  private handleMethodRef(node: TreeNode): undefined {
-    return undefined;
-  }
-
-  private handleMethodReturn(node: TreeNode): undefined {
-    return undefined;
-  }
-
-  private handleModifier(node: TreeNode): undefined {
-    return undefined;
-  }
-
-  private handleNamespace(node: TreeNode): undefined {
-    return undefined;
-  }
-
-  private handleNamespaceBlock(node: TreeNode): undefined {
-    return undefined;
-  }
-
   private handleSkippedNodes(node: TreeNode): ASTNodes | undefined {
     return {
       ...node,
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     } as unknown as ASTNodes;
-  }
-
-  private handleType(node: TreeNode): undefined {
-    return undefined;
   }
 
   private handleTypeDecl(node: TreeNode): IStructType | ITypeDefinition | IUnionType | undefined {
@@ -614,8 +567,4 @@ export class KASTConverter {
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     } as unknown as IStructType;
   }
-}
-
-function assertNever(x: unknown): never {
-  throw new Error("Unexpected label: " + JSON.stringify(x));
 }
