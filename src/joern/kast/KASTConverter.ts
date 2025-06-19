@@ -5,6 +5,7 @@ import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
 import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
+import { ILabel } from "@/types/ControlStructures/Label";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IWhileStatement } from "@/types/ControlStructures/WhileStatement";
@@ -374,7 +375,7 @@ export class KASTConverter {
     };
   }
 
-  private handleJumpTarget(node: TreeNode): ISwitchCase | undefined {
+  private handleJumpTarget(node: TreeNode): ILabel | ISwitchCase | undefined {
     const properties = node.properties as unknown as JumpTargetVertexProperties;
     if (node.name === "case") {
       return {
@@ -383,6 +384,13 @@ export class KASTConverter {
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
+
+    return {
+      nodeType: ASTNodeTypes.Label,
+      id: Number(node.id) || -999,
+      name: properties.NAME["@value"]["@value"].join("/"),
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    };
   }
 
   private handleLiteral(node: TreeNode): ILiteral | undefined {
