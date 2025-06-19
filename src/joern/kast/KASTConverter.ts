@@ -5,10 +5,12 @@ import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
-import { LocalVertexProperties, MethodVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
+import { LocalVertexProperties, MethodParameterInVertexProperties, MethodVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
 import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
+import { IParameterDeclaration } from "@/types/ProgramStructures/ParameterDeclaration";
+import { IParameterList } from "@/types/ProgramStructures/ParameterList";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
 
@@ -42,7 +44,6 @@ export class KASTConverter {
       case "LITERAL":
       case "MEMBER":
       case "META_DATA":
-      case "METHOD_PARAMETER_IN":
       case "METHOD_PARAMETER_OUT":
       case "METHOD_REF":
       case "METHOD_RETURN":
@@ -61,6 +62,8 @@ export class KASTConverter {
         return this.handleLocal(node);
       case "METHOD":
         return this.handleMethod(node);
+      case "METHOD_PARAMETER_IN":
+        return this.handleMethodParamIn(node);
       case "TYPE_DECL":
         return this.handleTypeDecl(node);
       default:
@@ -146,42 +149,53 @@ export class KASTConverter {
   private handleMethod(node: TreeNode): IFunctionDeclaration | IFunctionDefinition | undefined {
     const properties = node.properties as unknown as MethodVertexProperties;
 
-    const blockNumber = node.children.filter((child) => child.label === "BLOCK").length;
+    const firstBlock = node.children.find((child) => child.label === "BLOCK");
 
     if (
       properties.FILENAME["@value"]["@value"][0] + ":<global>" === properties.AST_PARENT_FULL_NAME["@value"]["@value"][0] &&
       !properties.IS_EXTERNAL["@value"]["@value"][0] &&
       properties.SIGNATURE["@value"]["@value"].join("/").length > 0
     ) {
-      if (blockNumber === 0) {
-        // Global Function Declaration Node
-        return {
-          nodeType: ASTNodeTypes.FunctionDeclaration,
-          id: Number(node.id) || -999,
-          name: node.name,
-          returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-        };
-      }
-      if (blockNumber === 1) {
-        // Global Function Definition Node
-        return {
-          nodeType: ASTNodeTypes.FunctionDefinition,
-          id: Number(node.id) || -999,
-          name: node.name,
-          returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
-          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-        };
-      }
+      const paramList: IParameterList = {
+        nodeType: ASTNodeTypes.ParameterList,
+        id: Number(node.id) || -999,
+        children: node.children
+          .filter((child) => child.label === "METHOD_PARAMETER_IN")
+          .map((child) => this.dispatchConvert(child))
+          .filter((child): child is IParameterDeclaration => child !== undefined),
+      };
+      const nonFuncParamChildren = node.children
+        .filter((child) => child.label !== "METHOD_PARAMETER_IN")
+        .map((child) => this.dispatchConvert(child))
+        .filter((child): child is ASTNodes => child !== undefined);
+
+      return {
+        nodeType: firstBlock && firstBlock.code === "<empty>" ? ASTNodeTypes.FunctionDeclaration : ASTNodeTypes.FunctionDefinition,
+        id: Number(node.id) || -999,
+        name: node.name,
+        returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
+        children: paramList.children && paramList.children.length > 0 ? [paramList, ...nonFuncParamChildren] : nonFuncParamChildren,
+      };
     }
+
     // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
     return {
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     } as IFunctionDeclaration;
   }
 
-  private handleMethodParamIn(node: TreeNode): undefined {
-    return undefined;
+  private handleMethodParamIn(node: TreeNode): IParameterDeclaration | undefined {
+    const properties = node.properties as unknown as MethodParameterInVertexProperties;
+    if (properties.TYPE_FULL_NAME["@value"]["@value"].length === 0) {
+      throw new Error(`Method parameter in node ${node.id} has no type.`);
+    }
+    return {
+      nodeType: ASTNodeTypes.ParameterDeclaration,
+      id: Number(node.id) || -999,
+      name: node.name,
+      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    };
   }
 
   private handleMethodParamOut(node: TreeNode): undefined {
