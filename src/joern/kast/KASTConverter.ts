@@ -7,6 +7,7 @@ import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
+import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
 import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
 import {
@@ -29,9 +30,15 @@ import { IPointerDeclaration } from "@/types/ProgramStructures/PointerDeclaratio
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
 
+import { BinaryExpressionOperatorMap } from "./BinaryExpression";
 import { STANDARD_LIB_CALLS } from "./StandardLibCall";
 
 export class KASTConverter {
+  private callCollection: string[];
+
+  constructor() {
+    this.callCollection = [];
+  }
   /** Convert an array (“forest”) of root nodes into ASTNodes[], skipping undefined conversions. */
   public convertTree(nodes: TreeNode[]): ASTNodes[] {
     const convertedNodes: ASTNodes[] = [];
@@ -41,6 +48,10 @@ export class KASTConverter {
         convertedNodes.push(single);
       }
     }
+
+    const uniqueCallCollection = Array.from(new Set(this.callCollection));
+    console.log("Unique Standard Library Calls:", uniqueCallCollection.join(", "));
+
     return convertedNodes;
   }
 
@@ -103,8 +114,18 @@ export class KASTConverter {
     };
   }
 
-  private handleCall(node: TreeNode): IAssignmentExpression | IStandardLibCall | undefined {
+  private handleCall(node: TreeNode): IAssignmentExpression | IBinaryExpression | IStandardLibCall | undefined {
     const properties = node.properties as unknown as CallVertexProperties;
+    if (Object.keys(BinaryExpressionOperatorMap).includes(node.name)) {
+      return {
+        nodeType: ASTNodeTypes.BinaryExpression,
+        id: Number(node.id) || -999,
+        operator: BinaryExpressionOperatorMap[node.name],
+        type: node.code,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
     if (STANDARD_LIB_CALLS.has(node.name)) {
       return {
         nodeType: ASTNodeTypes.StandardLibCall,
