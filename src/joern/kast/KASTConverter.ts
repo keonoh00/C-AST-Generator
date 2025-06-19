@@ -9,12 +9,14 @@ import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
+import { ILiteral } from "@/types/Expressions/Literal";
 import { ISizeOfExpression } from "@/types/Expressions/SizeOfExpression";
 import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
 import {
   CallVertexProperties,
   ControlStructureVertexProperties,
   IdentifierVertexProperties,
+  LiteralVertexProperties,
   LocalVertexProperties,
   MethodParameterInVertexProperties,
   MethodVertexProperties,
@@ -50,9 +52,6 @@ export class KASTConverter {
       }
     }
 
-    const uniqueCallCollection = Array.from(new Set(this.callCollection));
-    console.log("Unique Standard Library Calls:", uniqueCallCollection.join(", "));
-
     return convertedNodes;
   }
 
@@ -67,7 +66,6 @@ export class KASTConverter {
       case "FIELD_IDENTIFIER":
       case "IMPORT":
       case "JUMP_TARGET":
-      case "LITERAL":
       case "MEMBER":
       case "META_DATA":
       case "METHOD_PARAMETER_OUT":
@@ -80,6 +78,7 @@ export class KASTConverter {
       case "TYPE":
       case "TYPE_REF":
         return this.handleSkippedNodes(node);
+
       case "BLOCK":
         return this.handleBlock(node);
       case "CALL":
@@ -90,6 +89,8 @@ export class KASTConverter {
         return this.handleFile(node);
       case "IDENTIFIER":
         return this.handleIdentifier(node);
+      case "LITERAL":
+        return this.handleLiteral(node);
       case "LOCAL":
         return this.handleLocal(node);
       case "METHOD":
@@ -237,7 +238,19 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleLiteral(node: TreeNode): undefined {
+  private handleLiteral(node: TreeNode): ILiteral | undefined {
+    const properties = node.properties as unknown as LiteralVertexProperties;
+    if (node.children.length !== 0) {
+      throw new Error(`Literal node ${node.id} has ${node.children.length.toString()} children, expected 0.`);
+    }
+
+    return {
+      nodeType: ASTNodeTypes.Literal,
+      id: Number(node.id) || -999,
+      value: node.code,
+      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+    };
+
     return undefined;
   }
 
