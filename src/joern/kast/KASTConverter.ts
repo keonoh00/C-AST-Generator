@@ -9,6 +9,7 @@ import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
+import { ISizeOfExpression } from "@/types/Expressions/SizeOfExpression";
 import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
 import {
   CallVertexProperties,
@@ -114,8 +115,17 @@ export class KASTConverter {
     };
   }
 
-  private handleCall(node: TreeNode): IAssignmentExpression | IBinaryExpression | IStandardLibCall | undefined {
+  private handleCall(node: TreeNode): IAssignmentExpression | IBinaryExpression | ISizeOfExpression | IStandardLibCall | undefined {
     const properties = node.properties as unknown as CallVertexProperties;
+
+    if (node.name === "<operator>.sizeOf") {
+      return {
+        nodeType: ASTNodeTypes.SizeOfExpression,
+        id: Number(node.id) || -999,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
     if (Object.keys(BinaryExpressionOperatorMap).includes(node.name)) {
       return {
         nodeType: ASTNodeTypes.BinaryExpression,
