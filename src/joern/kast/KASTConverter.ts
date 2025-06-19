@@ -13,6 +13,7 @@ import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAddressOfExpression } from "@/types/Expressions/AddressOfExpression";
+import { IArraySizeAllocation } from "@/types/Expressions/ArraySizeAllocation";
 import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
@@ -54,6 +55,7 @@ import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 
 type CallOperatorsReturnTypes =
   | IAddressOfExpression
+  | IArraySizeAllocation
   | IArraySubscriptionExpression
   | IAssignmentExpression
   | IBinaryExpression
@@ -93,7 +95,7 @@ export class KASTConverter {
       case "BINDING":
       case "DEPENDENCY":
       case "FIELD_IDENTIFIER":
-      case "MEMBER":
+      case "MEMBER": // Handled as part of type declaration.
       case "META_DATA":
       case "METHOD_PARAMETER_OUT":
       case "METHOD_REF":
@@ -248,6 +250,15 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.AddressOfExpression,
         id: Number(node.id) || -999,
         rhs: node.code.split("&")[1] || node.code,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (node.name === "<operator>.alloc") {
+      return {
+        nodeType: ASTNodeTypes.ArraySizeAllocation,
+        id: Number(node.id) || -999,
+        length: node.code as unknown as number, // TODO: This should be the length of the array, not the code.
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }

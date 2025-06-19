@@ -3,6 +3,7 @@ import { ASTNodes } from "../node";
 export enum ASTNodeTypes {
   AddressOfExpression = "AddressOfExpression",
   ArrayDeclaration = "ArrayDeclaration",
+  ArraySizeAllocation = "ArraySizeAllocation",
   ArraySubscriptionExpression = "ArraySubscriptionExpression",
   AssignmentExpression = "AssignmentExpression",
   BinaryExpression = "BinaryExpression",

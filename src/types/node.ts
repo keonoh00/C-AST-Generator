@@ -15,6 +15,7 @@ import { IStructType } from "./DataTypes/StructType";
 import { ITypeDefinition } from "./DataTypes/TypeDefinition";
 import { IUnionType } from "./DataTypes/UnionType";
 import { IAddressOfExpression } from "./Expressions/AddressOfExpression";
+import { IArraySizeAllocation } from "./Expressions/ArraySizeAllocation";
 import { IArraySubscriptionExpression } from "./Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "./Expressions/AssignmentExpression";
 import { IBinaryExpression } from "./Expressions/BinaryExpression";
@@ -66,6 +67,7 @@ type ASTControlStructureNodes =
 
 type ASTExpressionNodes =
   | IAddressOfExpression
+  | IArraySizeAllocation
   | IArraySubscriptionExpression
   | IAssignmentExpression
   | IBinaryExpression
