@@ -100,6 +100,18 @@ export interface LocalVertexProperties {
   TYPE_FULL_NAME: GraphSON<string[]>;
 }
 
+export interface MemberVertexProperties {
+  AST_PARENT_FULL_NAME: GraphSON<string[]>;
+  AST_PARENT_TYPE: GraphSON<string[]>;
+  CODE: GraphSON<string[]>;
+  COLUMN_NUMBER: GraphSON<GraphSONValue>;
+  GENERIC_SIGNATURE: GraphSON<string[]>;
+  LINE_NUMBER: GraphSON<GraphSONValue>;
+  NAME: GraphSON<string[]>;
+  ORDER: GraphSON<GraphSONValue>;
+  TYPE_FULL_NAME: GraphSON<string[]>;
+}
+
 export interface MetaDataVertexProperties {
   LANGUAGE: GraphSON<string[]>;
   OVERLAYS: GraphSON<string[]>;

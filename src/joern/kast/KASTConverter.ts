@@ -32,6 +32,7 @@ import {
   JumpTargetVertexProperties,
   LiteralVertexProperties,
   LocalVertexProperties,
+  MemberVertexProperties,
   MethodParameterInVertexProperties,
   MethodVertexProperties,
   TreeNode,
@@ -103,7 +104,6 @@ export class KASTConverter {
       case "BINDING":
       case "DEPENDENCY":
       case "FIELD_IDENTIFIER":
-      case "MEMBER": // Handled as part of type declaration.
       case "META_DATA":
       case "METHOD_PARAMETER_OUT":
       case "METHOD_REF":
@@ -134,6 +134,8 @@ export class KASTConverter {
         return this.handleLiteral(node);
       case "LOCAL":
         return this.handleLocal(node);
+      case "MEMBER":
+        return this.handleMember(node);
       case "METHOD":
         return this.handleMethod(node);
       case "METHOD_PARAMETER_IN":
@@ -439,6 +441,56 @@ export class KASTConverter {
       if (typeFullName.includes("*")) {
         const level = typeFullName.split("*").length - 1;
         const pointsTo = typeFullName.split("*").slice(-1)[0];
+
+        return {
+          nodeType: ASTNodeTypes.PointerDeclaration,
+          id: Number(node.id) || -999,
+          name: node.name,
+          pointingType: pointsTo,
+          level,
+          children: this.convertedChildren(node.children),
+        };
+      }
+    }
+
+    return {
+      nodeType: ASTNodeTypes.VariableDeclaration,
+      id: Number(node.id) || -999,
+      name: node.name,
+      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      children: this.convertedChildren(node.children),
+    };
+  }
+
+  private handleMember(node: TreeNode): IArrayDeclaration | IPointerDeclaration | IVariableDeclaration {
+    const properties = node.properties as unknown as MemberVertexProperties;
+
+    if (properties.TYPE_FULL_NAME["@value"]["@value"].length > 0) {
+      const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
+      // ArrayDeclaration is a special case of VariableDeclaration
+      // Checks type full name has [ and ], and if so, it is an array declaration.
+      // Inside of [] is the size of the array and in front of [] is the type of the array.
+      if (typeFullName.includes("[") && typeFullName.includes("]")) {
+        const elementType = typeFullName.split("[")[0];
+        const length = Number(typeFullName.split("[")[1].split("]")[0]);
+
+        return {
+          nodeType: ASTNodeTypes.ArrayDeclaration,
+          id: Number(node.id) || -999,
+          name: node.name,
+          elementType,
+          length,
+          children: this.convertedChildren(node.children),
+        };
+      }
+
+      // PointerDeclaration is a special case of VariableDeclaration
+      // Checks type full name has *, and if so, it is an pointer declaration.
+      // level depends on the number of * in the type full name.
+      // points_to is the type of the pointer.
+      if (typeFullName.includes("*")) {
+        const level = typeFullName.split("*").length - 1;
+        const pointsTo = typeFullName.split("*").slice(-1)[0] || "void";
 
         return {
           nodeType: ASTNodeTypes.PointerDeclaration,
