@@ -27,6 +27,7 @@ import { IUserDefinedCall } from "@/types/Expressions/UserDefinedCall";
 import {
   CallVertexProperties,
   ControlStructureVertexProperties,
+  FieldIdentifierVertexProperties,
   IdentifierVertexProperties,
   ImportVertexProperties,
   JumpTargetVertexProperties,
@@ -103,7 +104,6 @@ export class KASTConverter {
     switch (node.label) {
       case "BINDING":
       case "DEPENDENCY":
-      case "FIELD_IDENTIFIER":
       case "META_DATA":
       case "METHOD_PARAMETER_OUT":
       case "METHOD_REF":
@@ -122,6 +122,8 @@ export class KASTConverter {
         return this.handleCall(node);
       case "CONTROL_STRUCTURE":
         return this.handleControlStructure(node);
+      case "FIELD_IDENTIFIER": // Handle together
+        return this.handleFieldIdentifier(node);
       case "FILE":
         return this.handleFile(node);
       case "IDENTIFIER":
@@ -250,7 +252,7 @@ export class KASTConverter {
           nodeType: ASTNodeTypes.MemberAccess,
           id: Number(node.id) || -999,
           type: node.code, // TODO: This should be the type of the member access, not the code.
-          children: this.convertedChildren(node.children.filter((child) => child.label !== "FIELD_IDENTIFIER")), // TODO: Force removal of FIELD_IDENTIFIER children, as they are not needed in the member access expression.
+          children: this.convertedChildren(node.children),
         };
       }
       case "<operator>.indirectIndexAccess": {
@@ -352,6 +354,18 @@ export class KASTConverter {
     } as unknown as IIfStatement;
   }
 
+  private handleFieldIdentifier(node: TreeNode): IIdentifier | undefined {
+    const properties = node.properties as unknown as FieldIdentifierVertexProperties;
+    return {
+      nodeType: ASTNodeTypes.Identifier,
+      id: Number(node.id) || -999,
+      name: node.name,
+      size: properties.CODE["@value"]["@value"].join("/") || node.code, // TODO: For now, using SIZE as size, this should be changed to a proper size property if available.
+      type: properties.CODE["@value"]["@value"].join("/") || node.code, // TODO: For now, using code as type, this should be changed to a proper size property if available.
+      children: this.convertedChildren(node.children),
+    };
+  }
+
   private handleFile(node: TreeNode): ITranslationUnit | undefined {
     if (node.name.endsWith(".c") || node.name.endsWith(".cpp")) {
       return {
@@ -370,8 +384,8 @@ export class KASTConverter {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
       name: node.name,
-      size: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"), // TODO: For now, using TYPE_FULL_NAME as size, this should be changed to a proper size property if available.
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      size: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || node.code, // TODO: For now, using TYPE_FULL_NAME as size, this should be changed to a proper size property if available.
+      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || node.code,
       children: this.convertedChildren(node.children),
     };
   }

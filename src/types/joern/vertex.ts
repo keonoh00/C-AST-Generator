@@ -45,6 +45,15 @@ export interface DependencyVertexProperties {
   VERSION: GraphSON<string[]>;
 }
 
+export interface FieldIdentifierVertexProperties {
+  ARGUMENT_INDEX: GraphSON<GraphSONValue>;
+  CANONICAL_NAME: GraphSON<string[]>;
+  CODE: GraphSON<string[]>;
+  COLUMN_NUMBER: GraphSON<GraphSONValue>;
+  LINE_NUMBER: GraphSON<GraphSONValue>;
+  ORDER: GraphSON<GraphSONValue>;
+}
+
 export interface FileVertexProperties {
   CODE: GraphSON<string[]>;
   CONTENT: GraphSON<string[]>;
