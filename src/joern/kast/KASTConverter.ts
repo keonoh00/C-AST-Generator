@@ -2,6 +2,7 @@ import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
+import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
@@ -256,7 +257,7 @@ export class KASTConverter {
     } as unknown as IAssignmentExpression;
   }
 
-  private handleControlStructure(node: TreeNode): IBreakStatement | IForStatement | IIfStatement | ISwitchStatement | undefined {
+  private handleControlStructure(node: TreeNode): IBreakStatement | IDoWhileStatement | IForStatement | IIfStatement | ISwitchStatement | undefined {
     const properties = node.properties as unknown as ControlStructureVertexProperties;
 
     if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "IF") {
@@ -304,6 +305,14 @@ export class KASTConverter {
     if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "BREAK") {
       return {
         nodeType: ASTNodeTypes.BreakStatement,
+        id: Number(node.id) || -999,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "DO") {
+      return {
+        nodeType: ASTNodeTypes.DoWhileStatement,
         id: Number(node.id) || -999,
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
