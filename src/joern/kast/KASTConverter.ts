@@ -8,6 +8,7 @@ import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { LocalVertexProperties, MethodParameterInVertexProperties, MethodVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
+import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
 import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
 import { IParameterDeclaration } from "@/types/ProgramStructures/ParameterDeclaration";
@@ -138,8 +139,29 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleLocal(node: TreeNode): IVariableDeclaration {
+  private handleLocal(node: TreeNode): IArrayDeclaration | IVariableDeclaration {
     const properties = node.properties as unknown as LocalVertexProperties;
+
+    // ArrayDeclaration is a special case of VariableDeclaration
+    // Checks type full name has [ and ], and if so, it is an array declaration.
+    // Inside of [] is the size of the array and in front of [] is the type of the array.
+    if (properties.TYPE_FULL_NAME["@value"]["@value"].length > 0) {
+      const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
+      if (typeFullName.includes("[") && typeFullName.includes("]")) {
+        const elementType = typeFullName.split("[")[0];
+        const length = Number(typeFullName.split("[")[1].split("]")[0]);
+
+        return {
+          nodeType: ASTNodeTypes.ArrayDeclaration,
+          id: Number(node.id) || -999,
+          name: node.name,
+          elementType,
+          length,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+    }
+
     return {
       nodeType: ASTNodeTypes.VariableDeclaration,
       id: Number(node.id) || -999,
