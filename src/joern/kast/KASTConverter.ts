@@ -2,12 +2,14 @@
 
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
+import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
 import {
+  ControlStructureVertexProperties,
   IdentifierVertexProperties,
   LocalVertexProperties,
   MethodParameterInVertexProperties,
@@ -45,7 +47,6 @@ export class KASTConverter {
   private dispatchConvert(node: TreeNode): ASTNodes | undefined {
     switch (node.label) {
       case "BINDING":
-      case "CONTROL_STRUCTURE":
       case "DEPENDENCY":
       case "FIELD_IDENTIFIER":
       case "IMPORT":
@@ -67,6 +68,8 @@ export class KASTConverter {
         return this.handleBlock(node);
       case "CALL":
         return this.handleCall(node);
+      case "CONTROL_STRUCTURE":
+        return this.handleControlStructure(node);
       case "FILE":
         return this.handleFile(node);
       case "IDENTIFIER":
@@ -117,8 +120,40 @@ export class KASTConverter {
     } as unknown as IAssignmentExpression;
   }
 
-  private handleControlStructure(node: TreeNode): undefined {
-    return undefined;
+  private handleControlStructure(node: TreeNode): IIfStatement | undefined {
+    const properties = node.properties as unknown as ControlStructureVertexProperties;
+
+    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "IF") {
+      if (node.children.length < 2) {
+        throw new Error(`Control structure node ${node.id} has ${node.children.length.toString()} children, expected at least 2.`);
+      }
+
+      const conditionChild = this.dispatchConvert(node.children[0]);
+      const ifTrueChild = this.dispatchConvert(node.children[1]);
+      // Unpack the children of the else branch
+      // else node starts with "else" control structure, we do not need the wrapping control structure node.
+      const elseBranch = node.children[2] ? this.dispatchConvert(node.children[2]) : undefined;
+      const elseChild = elseBranch && Array.isArray(elseBranch.children) ? elseBranch.children[0] : undefined;
+
+      const restructuredChildren = [];
+
+      if (conditionChild) restructuredChildren.push(conditionChild);
+      if (ifTrueChild) restructuredChildren.push(ifTrueChild);
+      if (elseChild) restructuredChildren.push(elseChild);
+
+      if (conditionChild)
+        return {
+          nodeType: ASTNodeTypes.IfStatement,
+          id: Number(node.id) || -999,
+          children: restructuredChildren,
+        };
+    }
+
+    // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
+    return {
+      ...node,
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    } as unknown as IIfStatement;
   }
 
   private handleDependency(node: TreeNode): undefined {
