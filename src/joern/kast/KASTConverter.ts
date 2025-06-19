@@ -236,7 +236,7 @@ export class KASTConverter {
           nodeType: ASTNodeTypes.CastExpression,
           id: Number(node.id) || -999,
           targetType: node.code, // TODO:  This should be the type of the cast, not the code.
-          children: this.convertedChildren(node.children),
+          children: this.convertedChildren(node.children.filter((child) => child.label !== "TYPE_REF")), // TODO: Force removal of TYPE_REF children, as they are not needed in the cast expression.
         };
       }
       case "<operator>.fieldAccess":
