@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
@@ -34,7 +35,6 @@ export class KASTConverter {
   private dispatchConvert(node: TreeNode): ASTNodes | undefined {
     switch (node.label) {
       case "BINDING":
-      case "BLOCK":
       case "CONTROL_STRUCTURE":
       case "DEPENDENCY":
       case "FIELD_IDENTIFIER":
@@ -54,6 +54,8 @@ export class KASTConverter {
       case "TYPE":
       case "TYPE_REF":
         return this.handleSkippedNodes(node);
+      case "BLOCK":
+        return this.handleBlock(node);
       case "CALL":
         return this.handleCall(node);
       case "FILE":
@@ -75,8 +77,12 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleBlock(node: TreeNode): undefined {
-    return undefined;
+  private handleBlock(node: TreeNode): ICompoundStatement | undefined {
+    return {
+      nodeType: ASTNodeTypes.CompoundStatement,
+      id: Number(node.id) || -999,
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    };
   }
 
   private handleCall(node: TreeNode): IAssignmentExpression | undefined {
