@@ -21,6 +21,7 @@ import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclarat
 import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
 import { IParameterDeclaration } from "@/types/ProgramStructures/ParameterDeclaration";
 import { IParameterList } from "@/types/ProgramStructures/ParameterList";
+import { IPointerDeclaration } from "@/types/ProgramStructures/PointerDeclaration";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
 
@@ -156,14 +157,14 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleLocal(node: TreeNode): IArrayDeclaration | IVariableDeclaration {
+  private handleLocal(node: TreeNode): IArrayDeclaration | IPointerDeclaration | IVariableDeclaration {
     const properties = node.properties as unknown as LocalVertexProperties;
 
-    // ArrayDeclaration is a special case of VariableDeclaration
-    // Checks type full name has [ and ], and if so, it is an array declaration.
-    // Inside of [] is the size of the array and in front of [] is the type of the array.
     if (properties.TYPE_FULL_NAME["@value"]["@value"].length > 0) {
       const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
+      // ArrayDeclaration is a special case of VariableDeclaration
+      // Checks type full name has [ and ], and if so, it is an array declaration.
+      // Inside of [] is the size of the array and in front of [] is the type of the array.
       if (typeFullName.includes("[") && typeFullName.includes("]")) {
         const elementType = typeFullName.split("[")[0];
         const length = Number(typeFullName.split("[")[1].split("]")[0]);
@@ -174,6 +175,24 @@ export class KASTConverter {
           name: node.name,
           elementType,
           length,
+          children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+        };
+      }
+
+      // PointerDeclaration is a special case of VariableDeclaration
+      // Checks type full name has *, and if so, it is an pointer declaration.
+      // level depends on the number of * in the type full name.
+      // points_to is the type of the pointer.
+      if (typeFullName.includes("*")) {
+        const level = typeFullName.split("*").length - 1;
+        const pointsTo = typeFullName.split("*").slice(-1)[0];
+
+        return {
+          nodeType: ASTNodeTypes.PointerDeclaration,
+          id: Number(node.id) || -999,
+          name: node.name,
+          pointingType: pointsTo,
+          level,
           children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
         };
       }
