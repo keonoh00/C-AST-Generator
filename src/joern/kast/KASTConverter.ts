@@ -6,7 +6,15 @@ import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
-import { LocalVertexProperties, MethodParameterInVertexProperties, MethodVertexProperties, TreeNode, TypeDeclVertexProperties } from "@/types/joern";
+import { IIdentifier } from "@/types/Expressions/Identifier";
+import {
+  IdentifierVertexProperties,
+  LocalVertexProperties,
+  MethodParameterInVertexProperties,
+  MethodVertexProperties,
+  TreeNode,
+  TypeDeclVertexProperties,
+} from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
@@ -39,7 +47,6 @@ export class KASTConverter {
       case "CONTROL_STRUCTURE":
       case "DEPENDENCY":
       case "FIELD_IDENTIFIER":
-      case "IDENTIFIER":
       case "IMPORT":
       case "JUMP_TARGET":
       case "LITERAL":
@@ -61,6 +68,8 @@ export class KASTConverter {
         return this.handleCall(node);
       case "FILE":
         return this.handleFile(node);
+      case "IDENTIFIER":
+        return this.handleIdentifier(node);
       case "LOCAL":
         return this.handleLocal(node);
       case "METHOD":
@@ -127,8 +136,16 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleIdentifier(node: TreeNode): undefined {
-    return undefined;
+  private handleIdentifier(node: TreeNode): IIdentifier | undefined {
+    const properties = node.properties as unknown as IdentifierVertexProperties;
+    return {
+      nodeType: ASTNodeTypes.Identifier,
+      id: Number(node.id) || -999,
+      name: node.name,
+      size: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"), // TODO: For now, using TYPE_FULL_NAME as size, this should be changed to a proper size property if available.
+      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    };
   }
 
   private handleImport(node: TreeNode): undefined {
