@@ -8,7 +8,9 @@ import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
+import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
 import {
+  CallVertexProperties,
   ControlStructureVertexProperties,
   IdentifierVertexProperties,
   LocalVertexProperties,
@@ -26,6 +28,8 @@ import { IParameterList } from "@/types/ProgramStructures/ParameterList";
 import { IPointerDeclaration } from "@/types/ProgramStructures/PointerDeclaration";
 import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
+
+import { STANDARD_LIB_CALLS } from "./StandardLibCall";
 
 export class KASTConverter {
   /** Convert an array (“forest”) of root nodes into ASTNodes[], skipping undefined conversions. */
@@ -99,7 +103,17 @@ export class KASTConverter {
     };
   }
 
-  private handleCall(node: TreeNode): IAssignmentExpression | undefined {
+  private handleCall(node: TreeNode): IAssignmentExpression | IStandardLibCall | undefined {
+    const properties = node.properties as unknown as CallVertexProperties;
+    if (STANDARD_LIB_CALLS.has(node.name)) {
+      return {
+        nodeType: ASTNodeTypes.StandardLibCall,
+        id: Number(node.id) || -999,
+        name: node.name,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
     if (node.name === "<operator>.assignment") {
       if (node.children.length !== 2) {
         throw new Error(`Call node ${node.id} has ${node.children.length.toString()} children, expected 2.`);
