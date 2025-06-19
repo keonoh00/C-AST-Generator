@@ -2,8 +2,11 @@
 
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
+import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
+import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
+import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
 import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
@@ -23,6 +26,7 @@ import {
   ControlStructureVertexProperties,
   IdentifierVertexProperties,
   ImportVertexProperties,
+  JumpTargetVertexProperties,
   LiteralVertexProperties,
   LocalVertexProperties,
   MethodParameterInVertexProperties,
@@ -85,7 +89,6 @@ export class KASTConverter {
       case "BINDING":
       case "DEPENDENCY":
       case "FIELD_IDENTIFIER":
-      case "JUMP_TARGET":
       case "MEMBER":
       case "META_DATA":
       case "METHOD_PARAMETER_OUT":
@@ -111,6 +114,8 @@ export class KASTConverter {
         return this.handleIdentifier(node);
       case "IMPORT":
         return this.handleImport(node);
+      case "JUMP_TARGET":
+        return this.handleJumpTarget(node);
       case "LITERAL":
         return this.handleLiteral(node);
       case "LOCAL":
@@ -241,7 +246,7 @@ export class KASTConverter {
     } as unknown as IAssignmentExpression;
   }
 
-  private handleControlStructure(node: TreeNode): IForStatement | IIfStatement | undefined {
+  private handleControlStructure(node: TreeNode): IBreakStatement | IForStatement | IIfStatement | ISwitchStatement | undefined {
     const properties = node.properties as unknown as ControlStructureVertexProperties;
 
     if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "IF") {
@@ -273,6 +278,22 @@ export class KASTConverter {
     if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "FOR") {
       return {
         nodeType: ASTNodeTypes.ForStatement,
+        id: Number(node.id) || -999,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "SWITCH") {
+      return {
+        nodeType: ASTNodeTypes.SwitchStatement,
+        id: Number(node.id) || -999,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
+
+    if (properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0] === "BREAK") {
+      return {
+        nodeType: ASTNodeTypes.BreakStatement,
         id: Number(node.id) || -999,
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
@@ -321,6 +342,17 @@ export class KASTConverter {
       name: properties.IMPORTED_AS["@value"]["@value"].join("/"),
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     };
+  }
+
+  private handleJumpTarget(node: TreeNode): ISwitchCase | undefined {
+    const properties = node.properties as unknown as JumpTargetVertexProperties;
+    if (node.name === "case") {
+      return {
+        nodeType: ASTNodeTypes.SwitchCase,
+        id: Number(node.id) || -999,
+        children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+      };
+    }
   }
 
   private handleLiteral(node: TreeNode): ILiteral | undefined {

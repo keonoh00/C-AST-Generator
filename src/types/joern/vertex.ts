@@ -71,6 +71,16 @@ export interface ImportVertexProperties {
   ORDER: GraphSON<GraphSONValue>;
 }
 
+export interface JumpTargetVertexProperties {
+  ARGUMENT_INDEX: GraphSON<GraphSONValue>;
+  CODE: GraphSON<string[]>;
+  COLUMN_NUMBER: GraphSON<GraphSONValue>;
+  LINE_NUMBER: GraphSON<GraphSONValue>;
+  NAME: GraphSON<string[]>;
+  ORDER: GraphSON<GraphSONValue>;
+  PARSER_TYPE_NAME: GraphSON<string[]>;
+}
+
 export interface LiteralVertexProperties {
   ARGUMENT_INDEX: GraphSON<GraphSONValue>;
   CODE: GraphSON<string[]>;
