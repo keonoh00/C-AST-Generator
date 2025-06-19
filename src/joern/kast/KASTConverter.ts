@@ -22,6 +22,7 @@ import {
   CallVertexProperties,
   ControlStructureVertexProperties,
   IdentifierVertexProperties,
+  ImportVertexProperties,
   LiteralVertexProperties,
   LocalVertexProperties,
   MethodParameterInVertexProperties,
@@ -30,6 +31,7 @@ import {
   TypeDeclVertexProperties,
 } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
+import { IIncludeDirective } from "@/types/PreprocessorDirectives/IncludeDirective";
 import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
 import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
 import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
@@ -83,7 +85,6 @@ export class KASTConverter {
       case "BINDING":
       case "DEPENDENCY":
       case "FIELD_IDENTIFIER":
-      case "IMPORT":
       case "JUMP_TARGET":
       case "MEMBER":
       case "META_DATA":
@@ -108,6 +109,8 @@ export class KASTConverter {
         return this.handleFile(node);
       case "IDENTIFIER":
         return this.handleIdentifier(node);
+      case "IMPORT":
+        return this.handleImport(node);
       case "LITERAL":
         return this.handleLiteral(node);
       case "LOCAL":
@@ -310,8 +313,14 @@ export class KASTConverter {
     };
   }
 
-  private handleImport(node: TreeNode): undefined {
-    return undefined;
+  private handleImport(node: TreeNode): IIncludeDirective {
+    const properties = node.properties as unknown as ImportVertexProperties;
+    return {
+      nodeType: ASTNodeTypes.IncludeDirective,
+      id: Number(node.id) || -999,
+      name: properties.IMPORTED_AS["@value"]["@value"].join("/"),
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    };
   }
 
   private handleLiteral(node: TreeNode): ILiteral | undefined {
