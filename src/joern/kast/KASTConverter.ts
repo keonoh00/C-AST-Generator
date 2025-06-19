@@ -593,7 +593,7 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.StructType,
         id: Number(node.id) || -999,
         name: node.name,
-        children: this.convertedChildren(node.children),
+        children: this.convertedChildren(node.children.filter((child) => child.label !== "METHOD" && child.name !== "<clinit>")), // TODO: Force removal of METHOD children, as they are not needed in the struct type.
       };
     }
 
