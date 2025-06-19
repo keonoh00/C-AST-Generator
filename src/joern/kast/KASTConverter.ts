@@ -144,12 +144,6 @@ export class KASTConverter {
       name: node.name,
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     };
-
-    // TODO: Change to undefined after development, temoporal fix to handle childen that does not match the label yet.
-    return {
-      ...node,
-      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
-    } as unknown as IAssignmentExpression;
   }
 
   private handleCallOperators(node: TreeNode): IAssignmentExpression | IBinaryExpression | ISizeOfExpression | undefined {
@@ -183,6 +177,12 @@ export class KASTConverter {
         children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
       };
     }
+
+    // TODO: Change to undefined after development, temopral fix to handle childen that does not match the label yet.
+    return {
+      ...node,
+      children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
+    } as unknown as IAssignmentExpression;
   }
 
   private handleControlStructure(node: TreeNode): IIfStatement | undefined {
