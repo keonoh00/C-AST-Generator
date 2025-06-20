@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/parser/server.js",
+    "extract": "tsx src/joern/generateAST.ts",
     "convert": "NODE_OPTIONS=--max-old-space-size=8192 tsx src/parser/convert.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
@@ -39,6 +40,7 @@
   },
   "dependencies": {
     "cli-progress": "^3.12.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "zod": "^3.25.67"
   }
 }

@@ -15,6 +15,7 @@ import { IStructType } from "./DataTypes/StructType";
 import { ITypeDefinition } from "./DataTypes/TypeDefinition";
 import { IUnionType } from "./DataTypes/UnionType";
 import { IAddressOfExpression } from "./Expressions/AddressOfExpression";
+import { IArraySizeAllocation } from "./Expressions/ArraySizeAllocation";
 import { IArraySubscriptionExpression } from "./Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "./Expressions/AssignmentExpression";
 import { IBinaryExpression } from "./Expressions/BinaryExpression";
@@ -37,6 +38,11 @@ import { IParameterList } from "./ProgramStructures/ParameterList";
 import { IPointerDeclaration } from "./ProgramStructures/PointerDeclaration";
 import { ITranslationUnit } from "./ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "./ProgramStructures/VariableDeclaration";
+
+export interface ASTGraph {
+  edges: { from: number; to: number }[];
+  nodes: (ASTNodes & { id: number })[];
+}
 
 export type ASTNodes = ASTBlockNodes | ASTControlStructureNodes | ASTExpressionNodes | ASTPreprocessorDirectiveNodes | ASTProgramStructureNodes;
 
@@ -61,6 +67,7 @@ type ASTControlStructureNodes =
 
 type ASTExpressionNodes =
   | IAddressOfExpression
+  | IArraySizeAllocation
   | IArraySubscriptionExpression
   | IAssignmentExpression
   | IBinaryExpression

@@ -5,8 +5,8 @@ import path from "path";
 import { ASTNodes } from "@/types/node";
 
 import { ASTGraph, ASTNodesSeparator } from "./separator";
-import { listJsonFiles } from "./utils/listJson";
-import { readJSONFiles } from "./utils/readJson";
+import { listJsonFiles } from "../utils/listJson";
+import { readJSONFiles } from "../utils/readJson";
 
 async function main(): Promise<void> {
   const app = express();
