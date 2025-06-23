@@ -238,10 +238,11 @@ export class KASTConverter {
         };
       }
       case "<operator>.cast": {
+        const filteredCastingType = node.code.split(")")[0].split("(")[1]; // eg. "(char *)ALLOCA((10)*sizeof(char))"w
         return {
           nodeType: ASTNodeTypes.CastExpression,
           id: Number(node.id) || -999,
-          targetType: node.code, // TODO:  This should be the type of the cast, not the code.
+          targetType: filteredCastingType || node.code, // TODO:  This should be the type of the cast, not the code.
           children: this.convertedChildren(node.children.filter((child) => child.label !== "TYPE_REF")), // TODO: Force removal of TYPE_REF children, as they are not needed in the cast expression.
         };
       }
