@@ -114,8 +114,8 @@ export class KASTConverter {
       case "RETURN":
       case "TYPE":
       case "TYPE_REF":
+      case "UNKNOWN":
         return this.handleSkippedNodes(node);
-
       case "BLOCK":
         return this.handleBlock(node);
       case "CALL":
