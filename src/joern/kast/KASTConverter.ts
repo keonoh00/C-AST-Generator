@@ -379,7 +379,7 @@ export class KASTConverter {
   private handleIdentifier(node: TreeNode): IIdentifier | undefined {
     const properties = node.properties as unknown as IdentifierVertexProperties;
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
-    const size = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[1].split("]")[0] : typeFullName;
+    const size = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[1].split("]")[0] : "<unknown>";
     const type = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[0] : typeFullName;
     return {
       nodeType: ASTNodeTypes.Identifier,
