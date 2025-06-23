@@ -197,7 +197,7 @@ export class KASTConverter {
       return {
         nodeType: ASTNodeTypes.UnaryExpression,
         id: Number(node.id) || -999,
-        operator: node.code,
+        operator: UnaryExpressionOperatorMap[node.name],
         type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
         children: this.convertedChildren(node.children),
       };
@@ -590,12 +590,6 @@ export class KASTConverter {
     const properties = node.properties as unknown as TypeDeclVertexProperties;
 
     if (node.code.includes("typedef struct")) {
-      if (node.children.filter((child) => child.children.length > 0).length > 1) {
-        throw new Error(`Struct node ${node.id} has more than one child with children.`);
-      }
-      if (node.children.filter((child) => child.label !== "MEMBER").length > 1) {
-        throw new Error(`Struct node ${node.id} has more than one child with label MEMBER.`);
-      }
       return {
         nodeType: ASTNodeTypes.StructType,
         id: Number(node.id) || -999,
