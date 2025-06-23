@@ -27,7 +27,6 @@ import { IUserDefinedCall } from "@/types/Expressions/UserDefinedCall";
 import {
   CallVertexProperties,
   ControlStructureVertexProperties,
-  FieldIdentifierVertexProperties,
   IdentifierVertexProperties,
   ImportVertexProperties,
   JumpTargetVertexProperties,
@@ -355,13 +354,12 @@ export class KASTConverter {
   }
 
   private handleFieldIdentifier(node: TreeNode): IIdentifier | undefined {
-    const properties = node.properties as unknown as FieldIdentifierVertexProperties;
     return {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
-      name: node.name,
-      size: properties.CODE["@value"]["@value"].join("/") || node.code, // TODO: For now, using SIZE as size, this should be changed to a proper size property if available.
-      type: properties.CODE["@value"]["@value"].join("/") || node.code, // TODO: For now, using code as type, this should be changed to a proper size property if available.
+      name: node.name || node.code, // Use node.name if available, otherwise use node.code.
+      size: "<unknown>", // TODO: For now, using "<unknown>" as size, this should be changed to a proper size property if available.
+      type: "<unknown>", // TODO: For now, using "<unknown>" as type, this should be changed to a proper size property if available.
       children: this.convertedChildren(node.children),
     };
   }
