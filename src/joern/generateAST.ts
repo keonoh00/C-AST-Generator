@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 import { ASTExtractor } from "@/joern/ast/ASTExtractor";
-import { RootGraphSON } from "@/types/joern";
+import { RootGraphSON, TreeNode } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 import { listJsonFiles } from "@/utils/listJson";
 import { writeJSONFiles } from "@/utils/writeJson";
@@ -87,9 +87,10 @@ async function processCPGFiles(chunkSize = 100): Promise<void> {
       }
 
       // 3) Extract, convert, post-process
+      let ast: TreeNode[];
       let kastResult: ASTNodes[];
       try {
-        const ast = extractor.getAstTree(rootExport);
+        ast = extractor.getAstTree(rootExport);
         const converted = converter.convertTree(ast);
         kastResult = postProcessor.process(converted);
       } catch (err: unknown) {
@@ -105,11 +106,13 @@ async function processCPGFiles(chunkSize = 100): Promise<void> {
       const parsed = path.parse(rel);
       const destDir = path.join(outputDir, parsed.dir);
       fs.mkdirSync(destDir, { recursive: true });
-      const outPath = path.join(destDir, `${parsed.name}_astTree${parsed.ext}`);
+      const astOutPath = path.join(destDir, `${parsed.name}_astTree${parsed.ext}`);
+      const templateAstOutPath = path.join(destDir, `${parsed.name}_templateTree${parsed.ext}`);
 
       // 5) Write JSON via writeJSONFiles
       try {
-        writeSingleJSON(kastResult, outPath);
+        writeSingleJSON(ast, astOutPath);
+        writeSingleJSON(kastResult, templateAstOutPath);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         progressBar.stop();
@@ -150,7 +153,7 @@ async function processCPGFiles(chunkSize = 100): Promise<void> {
  * Writes a single item to JSON via writeJSONFiles, returning the written path.
  * Throws on error.
  */
-function writeSingleJSON(item: ASTNodes[], outPath: string): string {
+function writeSingleJSON(item: ASTNodes[] | TreeNode[], outPath: string): string {
   const [written] = writeJSONFiles([item], [outPath]);
   return written;
 }
