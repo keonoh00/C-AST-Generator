@@ -212,18 +212,25 @@ export class KASTConverter {
           children: this.convertedChildren(node.children),
         };
       }
-      case "<operator>.alloc": {
-        return {
-          nodeType: ASTNodeTypes.ArraySizeAllocation,
-          id: Number(node.id) || -999,
-          length: node.code as unknown as number, // TODO: This should be the length of the array, not the code.
-          children: this.convertedChildren(node.children),
-        };
-      }
       case "<operator>.assignment": {
         if (node.children.length !== 2) {
           throw new Error(`Call node ${node.id} has ${node.children.length.toString()} children, expected 2.`);
         }
+        const allocChild = node.children.filter((child) => child.name === "<operator>.alloc");
+
+        if (allocChild.length === 1) {
+          const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
+          const fullRawType = typeFullName.split("[")[1].split("]")[0];
+          const length = Number(fullRawType) || fullRawType;
+
+          return {
+            nodeType: ASTNodeTypes.ArraySizeAllocation,
+            id: Number(node.id) || -999,
+            length,
+            children: this.convertedChildren(node.children),
+          };
+        }
+
         return {
           nodeType: ASTNodeTypes.AssignmentExpression,
           id: Number(node.id) || -999,
@@ -373,12 +380,15 @@ export class KASTConverter {
 
   private handleIdentifier(node: TreeNode): IIdentifier | undefined {
     const properties = node.properties as unknown as IdentifierVertexProperties;
+    const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
+    const size = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[1].split("]")[0] : typeFullName;
+    const type = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[0] : typeFullName;
     return {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
       name: node.name,
-      size: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || node.code, // TODO: For now, using TYPE_FULL_NAME as size, this should be changed to a proper size property if available.
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || node.code,
+      size,
+      type,
       children: this.convertedChildren(node.children),
     };
   }
@@ -435,7 +445,8 @@ export class KASTConverter {
       // Inside of [] is the size of the array and in front of [] is the type of the array.
       if (typeFullName.includes("[") && typeFullName.includes("]")) {
         const elementType = typeFullName.split("[")[0];
-        const length = Number(typeFullName.split("[")[1].split("]")[0]);
+        const fullRawType = typeFullName.split("[")[1].split("]")[0];
+        const length = Number(fullRawType) || fullRawType;
 
         return {
           nodeType: ASTNodeTypes.ArrayDeclaration,
