@@ -1,71 +1,162 @@
+import cliProgress from "cli-progress";
 import fs from "fs";
 import path from "path";
 
 import { ASTExtractor } from "@/joern/ast/ASTExtractor";
-import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { RootGraphSON } from "@/types/joern";
+import { ASTNodes } from "@/types/node";
 import { listJsonFiles } from "@/utils/listJson";
-import { readJSONFiles } from "@/utils/readJson";
-import { writeJSONWithChunkSize } from "@/utils/writeJson";
+import { writeJSONFiles } from "@/utils/writeJson";
 
 import { KASTConverter } from "./kast/KASTConverter";
 import { PostProcessor } from "./kast/PostProcessor";
 import { TreeToText } from "./utils/TreeToText";
 import { validateRootGraphSON } from "./validate/zod";
 
-async function processCPGFiles(): Promise<void> {
-  const targetDir = "./converted";
+// Helper to split an array into chunks of size `size`
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
+async function processCPGFiles(chunkSize = 100): Promise<void> {
+  const targetDir = "./test";
   const outputDir = "./joern";
   fs.mkdirSync(outputDir, { recursive: true });
 
-  const inputFiles = await listJsonFiles(targetDir);
-  if (inputFiles.length === 0) {
+  const allFiles = await listJsonFiles(targetDir);
+  if (allFiles.length === 0) {
     throw new Error("No JSON files found.");
   }
-
-  const parsedRoots = (await readJSONFiles(inputFiles)).map((root) => (root as { export: RootGraphSON }).export);
 
   const extractor = new ASTExtractor();
   const converter = new KASTConverter();
   const postProcessor = new PostProcessor();
-
-  validateRootGraphSON(parsedRoots);
-
-  const asts = parsedRoots.map((root) => extractor.getAstTree(root));
-  const converted = asts.map((ast) => converter.convertTree(ast));
-  const kasts = converted.map((kast) => postProcessor.process(kast));
-
-  // Prepare JSON output paths
-  const outPaths: string[] = inputFiles.map((inPath) => {
-    const rel = path.relative(targetDir, inPath);
-    const parsedPath = path.parse(rel);
-    const destDir = path.join(outputDir, parsedPath.dir);
-    fs.mkdirSync(destDir, { recursive: true });
-    const outFilename = `${parsedPath.name}_astTree${parsedPath.ext}`;
-    return path.join(destDir, outFilename);
-  });
-
-  writeJSONWithChunkSize(kasts, outPaths, 3);
-
   const treeToText = new TreeToText(["id", "properties", "line_no", "code"]);
-  const kastsInText: string[][] = kasts.map((kastRoots) => kastRoots.map((root) => treeToText.convert(root)));
 
-  const textOutPaths: string[] = outPaths.map((outPath) => {
-    const parsedPath = path.parse(outPath);
-    const textFilename = `${parsedPath.name}_text.txt`;
-    return path.join(parsedPath.dir, textFilename);
-  });
+  const totalFiles = allFiles.length;
+  const chunks = chunkArray(allFiles, chunkSize);
 
-  await Promise.all(
-    kastsInText.map(async (rootTexts, idx) => {
-      const outFilePath = textOutPaths[idx];
-      fs.mkdirSync(path.dirname(outFilePath), { recursive: true });
-      const content = rootTexts.join("\n\n");
-      await fs.promises.writeFile(outFilePath, content, "utf8");
-    })
+  // Create and start a single progress bar for total files
+  const progressBar = new cliProgress.SingleBar(
+    {
+      format: "Progress |{bar}| {percentage}% || {value}/{total}",
+      hideCursor: true,
+    },
+    cliProgress.Presets.shades_classic
   );
+  progressBar.start(totalFiles, 0);
+
+  let processedCount = 0;
+  let successCount = 0;
+
+  // Process files in chunks to limit memory footprint
+  for (const fileChunk of chunks) {
+    for (const inPath of fileChunk) {
+      // Always increment at the start of handling this file
+      processedCount++;
+      progressBar.increment(); // move bar by 1 for this file  [oai_citation:0‡npmjs.com](https://www.npmjs.com/package/cli-progress?utm_source=chatgpt.com) [oai_citation:1‡npmjs.com](https://www.npmjs.com/package/cli-progress/v/3.8.0?utm_source=chatgpt.com)
+
+      // 1) Read & parse
+      let rootExport: RootGraphSON;
+      try {
+        const raw = await fs.promises.readFile(inPath, "utf8");
+        const json = JSON.parse(raw) as { export: RootGraphSON };
+        rootExport = json.export;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        // Stop bar to log error cleanly, then restart at processedCount
+        progressBar.stop();
+        console.error(`Read/parse error for ${path.basename(inPath)}: ${msg}`);
+        progressBar.start(totalFiles, processedCount);
+        continue;
+      }
+
+      // 2) Validate
+      try {
+        validateRootGraphSON([rootExport]);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        progressBar.stop();
+        console.error(`Validation failed for ${path.basename(inPath)}: ${msg}`);
+        progressBar.start(totalFiles, processedCount);
+        continue;
+      }
+
+      // 3) Extract, convert, post-process
+      let kastResult: ASTNodes[];
+      try {
+        const ast = extractor.getAstTree(rootExport);
+        const converted = converter.convertTree(ast);
+        kastResult = postProcessor.process(converted);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        progressBar.stop();
+        console.error(`Processing failed for ${path.basename(inPath)}: ${msg}`);
+        progressBar.start(totalFiles, processedCount);
+        continue;
+      }
+
+      // 4) Prepare output path
+      const rel = path.relative(targetDir, inPath);
+      const parsed = path.parse(rel);
+      const destDir = path.join(outputDir, parsed.dir);
+      fs.mkdirSync(destDir, { recursive: true });
+      const outPath = path.join(destDir, `${parsed.name}_astTree${parsed.ext}`);
+
+      // 5) Write JSON via writeJSONFiles
+      try {
+        writeSingleJSON(kastResult, outPath);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        progressBar.stop();
+        console.error(`Write JSON error for ${path.basename(inPath)}: ${msg}`);
+        progressBar.start(totalFiles, processedCount);
+        continue;
+      }
+
+      // 6) Write text output
+      try {
+        const textLines = kastResult.map((rootNode) => treeToText.convert(rootNode));
+        const textFile = path.join(destDir, `${parsed.name}_text.txt`);
+        await fs.promises.writeFile(textFile, textLines.join("\n\n"), "utf8");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        progressBar.stop();
+        console.error(`Write text error for ${path.basename(inPath)}: ${msg}`);
+        progressBar.start(totalFiles, processedCount);
+        continue;
+      }
+
+      // If reached here, file succeeded
+      successCount++;
+      // No further increment needed; bar already moved above
+    }
+    // After each chunk, nothing special needed; loop continues
+  }
+
+  // Finish progress bar
+  progressBar.update(totalFiles);
+  progressBar.stop();
+
+  // Final summary
+  console.log(`Processed ${String(processedCount)}/${String(totalFiles)} files; succeeded ${String(successCount)}`);
+}
+
+/**
+ * Writes a single item to JSON via writeJSONFiles, returning the written path.
+ * Throws on error.
+ */
+function writeSingleJSON(item: ASTNodes[], outPath: string): string {
+  const [written] = writeJSONFiles([item], [outPath]);
+  return written;
 }
 
 void processCPGFiles().catch((err: unknown) => {
-  throw err;
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(`Fatal error in processCPGFiles: ${msg}`);
+  process.exit(1);
 });
