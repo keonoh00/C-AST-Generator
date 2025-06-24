@@ -251,6 +251,10 @@ export interface VertexByLabelMap {
 export interface VertexGeneric<L extends keyof VertexByLabelMap = keyof VertexByLabelMap> {
   "@type": string;
   id: GraphSON<number>;
+  inV: GraphSON<number>;
+  inVLabel: string;
   label: L;
+  outV: GraphSON<number>;
+  outVLabel: string;
   properties: VertexByLabelMap[L];
 }
