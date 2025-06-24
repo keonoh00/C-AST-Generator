@@ -3,15 +3,14 @@ import fs from "fs";
 import path from "path";
 
 import { ASTExtractor } from "@/joern/ast/ASTExtractor";
-import { RootGraphSON, TreeNode } from "@/types/joern";
+import { KASTConverter } from "@/joern/kast/KASTConverter";
+import { PostProcessor } from "@/joern/kast/PostProcessor";
+import { TreeToText } from "@/joern/utils/TreeToText";
+import { validateCPGRoot } from "@/joern/validate/zod";
+import { CPGRoot, RootGraphSON, TreeNode } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 import { listJsonFiles } from "@/utils/listJson";
 import { writeJSONFiles } from "@/utils/writeJson";
-
-import { KASTConverter } from "./kast/KASTConverter";
-import { PostProcessor } from "./kast/PostProcessor";
-import { TreeToText } from "./utils/TreeToText";
-import { validateRootGraphSON } from "./validate/zod";
 
 // Helper to split an array into chunks of size `size`
 function chunkArray<T>(arr: T[], size: number): T[][] {
@@ -64,7 +63,7 @@ async function processCPGFiles(chunkSize = 100): Promise<void> {
       let rootExport: RootGraphSON;
       try {
         const raw = await fs.promises.readFile(inPath, "utf8");
-        const json = JSON.parse(raw) as { export: RootGraphSON };
+        const json = JSON.parse(raw) as CPGRoot;
         rootExport = json.export;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -77,7 +76,7 @@ async function processCPGFiles(chunkSize = 100): Promise<void> {
 
       // 2) Validate
       try {
-        validateRootGraphSON([rootExport]);
+        validateCPGRoot([rootExport]);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         progressBar.stop();

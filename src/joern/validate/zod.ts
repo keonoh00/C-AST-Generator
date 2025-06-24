@@ -38,12 +38,12 @@ const GraphDataSchema = z.object({
 });
 
 // Single Root GraphSON schema
-const SingleRootGraphSONSchema = GraphSON(GraphDataSchema);
+const SingleCPGRootSchema = GraphSON(GraphDataSchema);
 
 // Array of Root GraphSON objects
-const RootGraphSONArraySchema = z.array(SingleRootGraphSONSchema);
+const CPGRootArraySchema = z.array(SingleCPGRootSchema);
 
-export type RootGraphSON = z.infer<typeof SingleRootGraphSONSchema>;
+export type CPGRoot = z.infer<typeof SingleCPGRootSchema>;
 
 /**
  * Parses and validates unknown JSON.
@@ -51,9 +51,9 @@ export type RootGraphSON = z.infer<typeof SingleRootGraphSONSchema>;
  * @param input The raw JSON (e.g. parsed via JSON.parse or imported)
  * @throws ZodError if validation fails
  */
-export function validateRootGraphSON(input: unknown): RootGraphSON | RootGraphSON[] {
+export function validateCPGRoot(input: unknown): CPGRoot | CPGRoot[] {
   if (Array.isArray(input)) {
-    return RootGraphSONArraySchema.parse(input);
+    return CPGRootArraySchema.parse(input);
   }
-  return SingleRootGraphSONSchema.parse(input);
+  return SingleCPGRootSchema.parse(input);
 }
