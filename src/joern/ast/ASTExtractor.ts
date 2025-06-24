@@ -36,12 +36,14 @@ export class ASTExtractor {
 
       if (this.isValueWrapper(edge.outV)) {
         const outIdRaw = edge.outV["@value"];
-        const outIdStr = String(outIdRaw);
+        const outIdUnwrapped = this.unwrapValue(outIdRaw);
+        const outIdStr = outIdUnwrapped !== undefined ? String(outIdUnwrapped) : "";
         outNode = nodeDict[outIdStr] ?? null;
       }
       if (this.isValueWrapper(edge.inV)) {
         const inIdRaw = edge.inV["@value"];
-        const inIdStr = String(inIdRaw);
+        const inIdUnwrapped = this.unwrapValue(inIdRaw);
+        const inIdStr = inIdUnwrapped !== undefined ? String(inIdUnwrapped) : "";
         inNode = nodeDict[inIdStr] ?? null;
       }
       return {
@@ -58,8 +60,14 @@ export class ASTExtractor {
       const edge = item.edge;
 
       if (this.isValueWrapper(edge.outV) && this.isValueWrapper(edge.inV)) {
-        const outId = String(edge.outV["@value"]);
-        const inId = String(edge.inV["@value"]);
+        const outId = String(this.unwrapValue(edge.outV["@value"]));
+        let inId = "";
+        if (typeof edge.inV["@value"] === "string" || typeof edge.inV["@value"] === "number") {
+          inId = String(edge.inV["@value"]);
+        } else {
+          // fallback: try to unwrap value if it's a value wrapper
+          inId = this.unwrapValue(edge.inV["@value"]) !== undefined ? String(this.unwrapValue(edge.inV["@value"])) : "";
+        }
 
         if (!(outId in nodeInfoMap)) {
           nodeInfoMap[outId] = this.extractNodeInfo(item.outV_node);
@@ -87,7 +95,6 @@ export class ASTExtractor {
     function buildTree(nodeId: string): TreeNode {
       const info = nodeInfoMap[nodeId];
 
-      /* eslint-disable perfectionist/sort-objects */
       const node: TreeNode = {
         id: info.id,
         label: info.label,
@@ -97,7 +104,6 @@ export class ASTExtractor {
         properties: info.properties,
         children: [],
       };
-      /* eslint-enable perfectionist/sort-objects */
 
       const childs = childrenMap[nodeId] ?? [];
       for (const cid of childs) {
