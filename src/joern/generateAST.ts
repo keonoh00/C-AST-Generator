@@ -92,7 +92,7 @@ async function processCPGFiles(chunkSize = 100): Promise<void> {
       try {
         ast = extractor.getAstTree(rootExport);
         const converted = converter.convertTree(ast);
-        kastResult = postProcessor.process(converted);
+        kastResult = postProcessor.removeInvalidNodes(converted);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         progressBar.stop();
