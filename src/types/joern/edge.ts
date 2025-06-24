@@ -28,7 +28,7 @@ export interface EdgeByLabelMap {
   REF: RefEdgeProperties;
   SOURCE_FILE: SourceFileEdgeProperties;
 }
-export interface EdgeGeneric<L extends import("./core").EdgeLabel = import("./core").EdgeLabel> {
+export interface EdgeGeneric<L extends keyof EdgeByLabelMap = keyof EdgeByLabelMap> {
   "@type": string;
   id: EdgeGraphSON<number>;
   inV: EdgeGraphSON<number>;
