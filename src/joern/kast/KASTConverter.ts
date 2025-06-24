@@ -100,51 +100,56 @@ export class KASTConverter {
    * Returns ResultMap[...] or undefined.
    */
   private dispatchConvert(node: TreeNode): ASTNodes | undefined {
-    switch (node.label) {
-      case "BINDING":
-      case "DEPENDENCY":
-      case "META_DATA":
-      case "METHOD_PARAMETER_OUT":
-      case "METHOD_REF":
-      case "METHOD_RETURN":
-      case "MODIFIER":
-      case "NAMESPACE":
-      case "NAMESPACE_BLOCK":
-      case "RETURN":
-      case "TYPE":
-      case "TYPE_REF":
-      case "UNKNOWN":
-        return this.handleSkippedNodes(node);
-      case "BLOCK":
-        return this.handleBlock(node);
-      case "CALL":
-        return this.handleCall(node);
-      case "CONTROL_STRUCTURE":
-        return this.handleControlStructure(node);
-      case "FIELD_IDENTIFIER": // Handle together
-        return this.handleFieldIdentifier(node);
-      case "FILE":
-        return this.handleFile(node);
-      case "IDENTIFIER":
-        return this.handleIdentifier(node);
-      case "IMPORT":
-        return this.handleImport(node);
-      case "JUMP_TARGET":
-        return this.handleJumpTarget(node);
-      case "LITERAL":
-        return this.handleLiteral(node);
-      case "LOCAL":
-        return this.handleLocal(node);
-      case "MEMBER":
-        return this.handleMember(node);
-      case "METHOD":
-        return this.handleMethod(node);
-      case "METHOD_PARAMETER_IN":
-        return this.handleMethodParamIn(node);
-      case "TYPE_DECL":
-        return this.handleTypeDecl(node);
-      default:
-        return this.assertNever(node.label);
+    try {
+      switch (node.label) {
+        case "BINDING":
+        case "DEPENDENCY":
+        case "META_DATA":
+        case "METHOD_PARAMETER_OUT":
+        case "METHOD_REF":
+        case "METHOD_RETURN":
+        case "MODIFIER":
+        case "NAMESPACE":
+        case "NAMESPACE_BLOCK":
+        case "RETURN":
+        case "TYPE":
+        case "TYPE_REF":
+        case "UNKNOWN":
+          return this.handleSkippedNodes(node);
+        case "BLOCK":
+          return this.handleBlock(node);
+        case "CALL":
+          return this.handleCall(node);
+        case "CONTROL_STRUCTURE":
+          return this.handleControlStructure(node);
+        case "FIELD_IDENTIFIER": // Handle together
+          return this.handleFieldIdentifier(node);
+        case "FILE":
+          return this.handleFile(node);
+        case "IDENTIFIER":
+          return this.handleIdentifier(node);
+        case "IMPORT":
+          return this.handleImport(node);
+        case "JUMP_TARGET":
+          return this.handleJumpTarget(node);
+        case "LITERAL":
+          return this.handleLiteral(node);
+        case "LOCAL":
+          return this.handleLocal(node);
+        case "MEMBER":
+          return this.handleMember(node);
+        case "METHOD":
+          return this.handleMethod(node);
+        case "METHOD_PARAMETER_IN":
+          return this.handleMethodParamIn(node);
+        case "TYPE_DECL":
+          return this.handleTypeDecl(node);
+        default:
+          return this.assertNever(node.label);
+      }
+    } catch (error) {
+      console.error(`Error converting node with id ${node.id} and label ${node.label}:`, error);
+      throw error; // Re-throw the error after logging it.
     }
   }
 
