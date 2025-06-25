@@ -1,9 +1,12 @@
 *.bin
-joern/*.json
+joern/*
 workspace/
 converted/
+converted_full/
+joern_full/
 ast_output/
 data/
+overflows/
 C/
 2017-10-01-juliet-test-suite-for-c-cplusplus-v1-3.zip
 

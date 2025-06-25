@@ -3,35 +3,85 @@ import argparse
 import json
 import multiprocessing
 import os
+import re
 import subprocess
 import sys
 import tempfile
-import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from tqdm import tqdm  # Always require tqdm
 
 
+def replace_macros(src_root, macro_exts):
+    """
+    Scan C code files for #define macros and replace occurrences with their definitions.
+    Write results to new files with '_macro_replaced.c' suffix.
+    """
+    macros = {}
+    define_lines = {}
+    # First pass: collect macro definitions
+    for root, dirs, files in os.walk(src_root):
+        for fname in files:
+            if any(fname.lower().endswith(ext) for ext in macro_exts):
+                path = os.path.join(root, fname)
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        lines = f.readlines()
+                        define_lines[path] = []
+                        for idx, line in enumerate(lines):
+                            m = re.match(r"^\s*#define\s+(\w+)\s+(.+)", line)
+                            if m:
+                                name, val = m.groups()
+                                macros[name] = val.strip()
+                                define_lines[path].append(idx)
+                except Exception:
+                    continue
+    if not macros:
+        print("No macros found for replacement.", file=sys.stderr)
+        return
+
+    # Second pass: replace macros and write to _macro_replaced.c
+    for root, dirs, files in os.walk(src_root):
+        for fname in files:
+            if any(fname.lower().endswith(ext) for ext in macro_exts):
+                path = os.path.join(root, fname)
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        lines = f.readlines()
+
+                    updated_lines = []
+                    for idx, line in enumerate(lines):
+                        if idx in define_lines.get(path, []):
+                            continue  # skip original #define lines
+                        for name, val in macros.items():
+                            pattern = r"\b" + re.escape(name) + r"\b"
+                            line = re.sub(pattern, val, line)
+                        updated_lines.append(line)
+
+                    base, ext = os.path.splitext(fname)
+                    new_fname = base + "_macro_replaced" + ext
+                    new_path = os.path.join(root, new_fname)
+                    with open(new_path, "w", encoding="utf-8") as f:
+                        f.writelines(updated_lines)
+                except Exception as e:
+                    print(
+                        f"[WARN] Failed to replace macros in {path}: {e}",
+                        file=sys.stderr,
+                    )
+
+
 def process_file(task):
-    """
-    Parse and export a single source file via Joern, in its own temp directory.
-    Detects joern-export's 'out' directory, merges JSON parts, writes a single .json file.
-    Returns: (src_file, success: bool, message: str)
-    """
     src_file, src_root, out_root, joern_parse_cmd, joern_export_cmd = task
-    # Compute relative path and output file path
     rel_path = os.path.relpath(src_file, src_root)
     base, _ext = os.path.splitext(rel_path)
     out_rel_path = base + ".json"
     out_file = os.path.join(out_root, out_rel_path)
-    # Ensure parent directories exist
     try:
         os.makedirs(os.path.dirname(out_file), exist_ok=True)
     except Exception as e:
         return (src_file, False, f"Failed to create output dir: {e}")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # 1. Run joern-parse
         parse_cmd = [joern_parse_cmd, src_file]
         proc_parse = subprocess.run(
             parse_cmd,
@@ -44,12 +94,10 @@ def process_file(task):
             msg = proc_parse.stderr.strip() or "joern-parse returned non-zero exit"
             return (src_file, False, f"joern-parse failed: {msg}")
 
-        # Expect cpg.bin in tmpdir
         cpg_path = os.path.join(tmpdir, "cpg.bin")
         if not os.path.isfile(cpg_path):
             return (src_file, False, "cpg.bin not found after joern-parse")
 
-        # 2. Run joern-export
         export_cmd = [joern_export_cmd, "--repr=all", "--format=graphson"]
         proc_export = subprocess.run(
             export_cmd,
@@ -62,10 +110,8 @@ def process_file(task):
             msg = proc_export.stderr.strip() or "joern-export returned non-zero exit"
             return (src_file, False, f"joern-export failed: {msg}")
 
-        # Detect default output directory 'out'
         out_dir = os.path.join(tmpdir, "out")
         if not os.path.isdir(out_dir):
-            # Handle JSON on stdout if any
             graphson_output = proc_export.stdout
             if graphson_output and graphson_output.strip().startswith("{"):
                 try:
@@ -81,7 +127,6 @@ def process_file(task):
                 "joern-export did not produce 'out' dir nor JSON on stdout",
             )
 
-        # 3. Read and merge JSON files under out_dir
         merged = {}
         for entry in os.listdir(out_dir):
             path = os.path.join(out_dir, entry)
@@ -101,7 +146,6 @@ def process_file(task):
                 "No JSON files found in joern-export output directory",
             )
 
-        # 4. Write merged JSON to out_file
         try:
             with open(out_file, "w", encoding="utf-8") as f:
                 json.dump(merged, f)
@@ -112,10 +156,6 @@ def process_file(task):
 
 
 def gather_source_files(src_root, exts):
-    """
-    Walk src_root and return list of file paths matching extensions.
-    exts: list of extensions like ['.c', '.cpp', '.java']; if empty list, include all files.
-    """
     src_files = []
     for root, dirs, files in os.walk(src_root):
         for fname in files:
@@ -154,6 +194,12 @@ def main():
         help="Number of parallel workers. Defaults to CPU count.",
     )
     parser.add_argument(
+        "--replace-macro",
+        action="store_true",
+        default=False,
+        help="Scan and replace #define macros in C code before processing.",
+    )
+    parser.add_argument(
         "--joern-parse-cmd",
         default="joern-parse",
         help="Command or full path for joern-parse.",
@@ -165,23 +211,15 @@ def main():
     )
     args = parser.parse_args()
 
-    # Ensure tqdm is available
-    try:
-        # Already imported above; redundant check but ensures error if missing
-        from tqdm import tqdm  # noqa: F401
-    except ImportError:
-        print(
-            "tqdm is required but not installed. Install via: pip install tqdm",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
     src_root = os.path.abspath(args.src_root)
     out_root = os.path.abspath(args.out_root)
     exts = args.ext
     workers = args.workers
     joern_parse_cmd = args.joern_parse_cmd
     joern_export_cmd = args.joern_export_cmd
+
+    if args.replace_macro:
+        replace_macros(src_root, [".c", ".h"])
 
     print(f"Scanning for source files under {src_root} ...", file=sys.stderr)
     src_files = gather_source_files(src_root, exts)
@@ -217,7 +255,6 @@ def main():
             else:
                 if ok:
                     successes += 1
-
                 else:
                     failures.append((file_path, msg))
                     print(f"[FAIL] {file_path}: {msg}", file=sys.stderr)

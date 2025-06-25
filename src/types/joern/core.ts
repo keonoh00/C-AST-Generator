@@ -66,7 +66,8 @@ export type VertexLabel =
   | "RETURN"
   | "TYPE"
   | "TYPE_DECL"
-  | "TYPE_REF";
+  | "TYPE_REF"
+  | "UNKNOWN";
 
 export interface VertexProperty<T> {
   "@type": "g:VertexProperty";

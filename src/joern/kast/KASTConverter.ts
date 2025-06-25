@@ -27,7 +27,6 @@ import { IUserDefinedCall } from "@/types/Expressions/UserDefinedCall";
 import {
   CallVertexProperties,
   ControlStructureVertexProperties,
-  FieldIdentifierVertexProperties,
   IdentifierVertexProperties,
   ImportVertexProperties,
   JumpTargetVertexProperties,
@@ -101,51 +100,56 @@ export class KASTConverter {
    * Returns ResultMap[...] or undefined.
    */
   private dispatchConvert(node: TreeNode): ASTNodes | undefined {
-    switch (node.label) {
-      case "BINDING":
-      case "DEPENDENCY":
-      case "META_DATA":
-      case "METHOD_PARAMETER_OUT":
-      case "METHOD_REF":
-      case "METHOD_RETURN":
-      case "MODIFIER":
-      case "NAMESPACE":
-      case "NAMESPACE_BLOCK":
-      case "RETURN":
-      case "TYPE":
-      case "TYPE_REF":
-        return this.handleSkippedNodes(node);
-
-      case "BLOCK":
-        return this.handleBlock(node);
-      case "CALL":
-        return this.handleCall(node);
-      case "CONTROL_STRUCTURE":
-        return this.handleControlStructure(node);
-      case "FIELD_IDENTIFIER": // Handle together
-        return this.handleFieldIdentifier(node);
-      case "FILE":
-        return this.handleFile(node);
-      case "IDENTIFIER":
-        return this.handleIdentifier(node);
-      case "IMPORT":
-        return this.handleImport(node);
-      case "JUMP_TARGET":
-        return this.handleJumpTarget(node);
-      case "LITERAL":
-        return this.handleLiteral(node);
-      case "LOCAL":
-        return this.handleLocal(node);
-      case "MEMBER":
-        return this.handleMember(node);
-      case "METHOD":
-        return this.handleMethod(node);
-      case "METHOD_PARAMETER_IN":
-        return this.handleMethodParamIn(node);
-      case "TYPE_DECL":
-        return this.handleTypeDecl(node);
-      default:
-        return this.assertNever(node.label);
+    try {
+      switch (node.label) {
+        case "BINDING":
+        case "DEPENDENCY":
+        case "META_DATA":
+        case "METHOD_PARAMETER_OUT":
+        case "METHOD_REF":
+        case "METHOD_RETURN":
+        case "MODIFIER":
+        case "NAMESPACE":
+        case "NAMESPACE_BLOCK":
+        case "RETURN":
+        case "TYPE":
+        case "TYPE_REF":
+        case "UNKNOWN":
+          return this.handleSkippedNodes(node);
+        case "BLOCK":
+          return this.handleBlock(node);
+        case "CALL":
+          return this.handleCall(node);
+        case "CONTROL_STRUCTURE":
+          return this.handleControlStructure(node);
+        case "FIELD_IDENTIFIER": // Handle together
+          return this.handleFieldIdentifier(node);
+        case "FILE":
+          return this.handleFile(node);
+        case "IDENTIFIER":
+          return this.handleIdentifier(node);
+        case "IMPORT":
+          return this.handleImport(node);
+        case "JUMP_TARGET":
+          return this.handleJumpTarget(node);
+        case "LITERAL":
+          return this.handleLiteral(node);
+        case "LOCAL":
+          return this.handleLocal(node);
+        case "MEMBER":
+          return this.handleMember(node);
+        case "METHOD":
+          return this.handleMethod(node);
+        case "METHOD_PARAMETER_IN":
+          return this.handleMethodParamIn(node);
+        case "TYPE_DECL":
+          return this.handleTypeDecl(node);
+        default:
+          return this.assertNever(node.label);
+      }
+    } catch (error) {
+      console.error(`Error converting node with id ${node.id} and label ${node.label}:`, error);
+      throw error; // Re-throw the error after logging it.
     }
   }
 
@@ -197,7 +201,7 @@ export class KASTConverter {
       return {
         nodeType: ASTNodeTypes.UnaryExpression,
         id: Number(node.id) || -999,
-        operator: node.code,
+        operator: UnaryExpressionOperatorMap[node.name],
         type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
         children: this.convertedChildren(node.children),
       };
@@ -212,18 +216,25 @@ export class KASTConverter {
           children: this.convertedChildren(node.children),
         };
       }
-      case "<operator>.alloc": {
-        return {
-          nodeType: ASTNodeTypes.ArraySizeAllocation,
-          id: Number(node.id) || -999,
-          length: node.code as unknown as number, // TODO: This should be the length of the array, not the code.
-          children: this.convertedChildren(node.children),
-        };
-      }
       case "<operator>.assignment": {
         if (node.children.length !== 2) {
           throw new Error(`Call node ${node.id} has ${node.children.length.toString()} children, expected 2.`);
         }
+        const allocChild = node.children.filter((child) => child.name === "<operator>.alloc");
+
+        if (allocChild.length === 1) {
+          const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
+          const fullRawType = typeFullName.split("[")[1].split("]")[0];
+          const length = Number(fullRawType) || fullRawType;
+
+          return {
+            nodeType: ASTNodeTypes.ArraySizeAllocation,
+            id: Number(node.id) || -999,
+            length,
+            children: this.convertedChildren(node.children),
+          };
+        }
+
         return {
           nodeType: ASTNodeTypes.AssignmentExpression,
           id: Number(node.id) || -999,
@@ -232,10 +243,11 @@ export class KASTConverter {
         };
       }
       case "<operator>.cast": {
+        const filteredCastingType = node.code.split(")")[0].split("(")[1]; // eg. "(char *)ALLOCA((10)*sizeof(char))"w
         return {
           nodeType: ASTNodeTypes.CastExpression,
           id: Number(node.id) || -999,
-          targetType: node.code, // TODO:  This should be the type of the cast, not the code.
+          targetType: filteredCastingType || node.code, // TODO:  This should be the type of the cast, not the code.
           children: this.convertedChildren(node.children.filter((child) => child.label !== "TYPE_REF")), // TODO: Force removal of TYPE_REF children, as they are not needed in the cast expression.
         };
       }
@@ -348,13 +360,12 @@ export class KASTConverter {
   }
 
   private handleFieldIdentifier(node: TreeNode): IIdentifier | undefined {
-    const properties = node.properties as unknown as FieldIdentifierVertexProperties;
     return {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
-      name: node.name,
-      size: properties.CODE["@value"]["@value"].join("/") || node.code, // TODO: For now, using SIZE as size, this should be changed to a proper size property if available.
-      type: properties.CODE["@value"]["@value"].join("/") || node.code, // TODO: For now, using code as type, this should be changed to a proper size property if available.
+      name: node.name || node.code, // Use node.name if available, otherwise use node.code.
+      size: "<unknown>", // TODO: For now, using "<unknown>" as size, this should be changed to a proper size property if available.
+      type: "<unknown>", // TODO: For now, using "<unknown>" as type, this should be changed to a proper size property if available.
       children: this.convertedChildren(node.children),
     };
   }
@@ -373,12 +384,15 @@ export class KASTConverter {
 
   private handleIdentifier(node: TreeNode): IIdentifier | undefined {
     const properties = node.properties as unknown as IdentifierVertexProperties;
+    const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
+    const size = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[1].split("]")[0] : "<unknown>";
+    const type = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[0] : typeFullName;
     return {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
       name: node.name,
-      size: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || node.code, // TODO: For now, using TYPE_FULL_NAME as size, this should be changed to a proper size property if available.
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || node.code,
+      size,
+      type,
       children: this.convertedChildren(node.children),
     };
   }
@@ -435,7 +449,8 @@ export class KASTConverter {
       // Inside of [] is the size of the array and in front of [] is the type of the array.
       if (typeFullName.includes("[") && typeFullName.includes("]")) {
         const elementType = typeFullName.split("[")[0];
-        const length = Number(typeFullName.split("[")[1].split("]")[0]);
+        const fullRawType = typeFullName.split("[")[1].split("]")[0];
+        const length = Number(fullRawType) || fullRawType;
 
         return {
           nodeType: ASTNodeTypes.ArrayDeclaration,
@@ -543,6 +558,17 @@ export class KASTConverter {
           .map((child) => this.dispatchConvert(child))
           .filter((child): child is IParameterDeclaration => child !== undefined),
       };
+      if ((paramList.children ?? []).length === 0) {
+        paramList.children = [
+          {
+            nodeType: ASTNodeTypes.ParameterDeclaration,
+            id: -999,
+            name: "<empty>",
+            type: "<empty>",
+            children: [],
+          },
+        ];
+      }
       const nonFuncParamChildren = node.children
         .filter((child) => child.label !== "METHOD_PARAMETER_IN")
         .filter((child) => !["METHOD_RETURN", "MODIFIER"].includes(child.label)) // TODO: currently skipping METHOD_RETURN and MODIFIER children, as they are not needed in the function declaration.
@@ -590,12 +616,6 @@ export class KASTConverter {
     const properties = node.properties as unknown as TypeDeclVertexProperties;
 
     if (node.code.includes("typedef struct")) {
-      if (node.children.filter((child) => child.children.length > 0).length > 1) {
-        throw new Error(`Struct node ${node.id} has more than one child with children.`);
-      }
-      if (node.children.filter((child) => child.label !== "MEMBER").length > 1) {
-        throw new Error(`Struct node ${node.id} has more than one child with label MEMBER.`);
-      }
       return {
         nodeType: ASTNodeTypes.StructType,
         id: Number(node.id) || -999,
