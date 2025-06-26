@@ -1,6 +1,7 @@
 // edge.ts
 import { VertexLabel } from "./core";
 
+export type AliasOfEdgeProperties = object;
 export type ArgumentEdgeProperties = object;
 export type AstEdgeProperties = object;
 export type BindsEdgeProperties = object;
@@ -10,7 +11,9 @@ export type CfgEdgeProperties = object;
 export type ConditionEdgeProperties = object;
 export type ContainsEdgeProperties = object;
 export type DominateEdgeProperties = object;
+
 export interface EdgeByLabelMap {
+  ALIAS_OF: AliasOfEdgeProperties;
   ARGUMENT: ArgumentEdgeProperties;
   AST: AstEdgeProperties;
   BINDS: BindsEdgeProperties;
@@ -42,6 +45,7 @@ export interface EdgeGraphSON<T> {
   "@type": string;
   "@value": T;
 }
+
 export type EvalTypeEdgeProperties = object;
 
 export type ImportsEdgeProperties = object;

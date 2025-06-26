@@ -201,7 +201,7 @@ export interface NamespaceVertexProperties {
 }
 
 export interface TypeDeclVertexProperties {
-  ALIAS_TYPE_FULL_NAME: GraphSON<string[]>;
+  ALIAS_TYPE_FULL_NAME?: GraphSON<string[]>;
   AST_PARENT_FULL_NAME: GraphSON<string[]>;
   AST_PARENT_TYPE: GraphSON<string[]>;
   CODE: GraphSON<string[]>;
