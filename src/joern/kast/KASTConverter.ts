@@ -625,15 +625,6 @@ export class KASTConverter {
     }
 
     if (node.code.includes("typedef union")) {
-      if (node.children.length === 0) {
-        throw new Error(`Union node ${node.id} has no children.`);
-      }
-      if (node.children.filter((child) => child.children.length > 0).length > 1) {
-        throw new Error(`Union node ${node.id} has more than one child with children.`);
-      }
-      if (node.children.filter((child) => child.label !== "MEMBER").length > 1) {
-        throw new Error(`Union node ${node.id} has more than one child with label MEMBER.`);
-      }
       return {
         nodeType: ASTNodeTypes.UnionType,
         id: Number(node.id) || -999,

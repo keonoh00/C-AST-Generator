@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/parser/server.js",
-    "extract": "tsx src/joern/generateAST.ts",
-    "convert": "NODE_OPTIONS=--max-old-space-size=8192 tsx src/parser/convert.ts",
+    "generate:cpg": "python src/joern.py --src-root $npm_config_data --out-root ${npm_config_output:-tmp}",
+    "generate:template": "tsx src/joern/generateAST.ts $npm_config_data ${npm_config_output:-result}",
+    "generate:full": "npm run generate:cpg --data=$npm_config_data && npm run generate:template --data=tmp --output=$npm_config_output",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",

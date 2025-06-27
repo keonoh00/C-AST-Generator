@@ -1,5 +1,6 @@
 // core.ts
 export type EdgeLabel =
+  | "ALIAS_OF"
   | "ARGUMENT"
   | "AST"
   | "BINDS"

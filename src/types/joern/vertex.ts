@@ -201,7 +201,7 @@ export interface NamespaceVertexProperties {
 }
 
 export interface TypeDeclVertexProperties {
-  ALIAS_TYPE_FULL_NAME: GraphSON<string[]>;
+  ALIAS_TYPE_FULL_NAME?: GraphSON<string[]>;
   AST_PARENT_FULL_NAME: GraphSON<string[]>;
   AST_PARENT_TYPE: GraphSON<string[]>;
   CODE: GraphSON<string[]>;
@@ -227,11 +227,14 @@ export interface VertexByLabelMap {
   CALL: CallVertexProperties;
   CONTROL_STRUCTURE: ControlStructureVertexProperties;
   DEPENDENCY: DependencyVertexProperties;
+  FIELD_IDENTIFIER: FieldIdentifierVertexProperties;
   FILE: FileVertexProperties;
   IDENTIFIER: IdentifierVertexProperties;
   IMPORT: ImportVertexProperties;
+  JUMP_TARGET: JumpTargetVertexProperties;
   LITERAL: LiteralVertexProperties;
   LOCAL: LocalVertexProperties;
+  MEMBER: MemberVertexProperties;
   META_DATA: MetaDataVertexProperties;
   METHOD: MethodVertexProperties;
   METHOD_PARAMETER_IN: MethodParameterInVertexProperties;
@@ -250,7 +253,10 @@ export interface VertexByLabelMap {
  */
 export interface VertexGeneric<L extends keyof VertexByLabelMap = keyof VertexByLabelMap> {
   "@type": string;
-  id: GraphSON<number>;
+  id: {
+    "@type": string;
+    "@value": number;
+  };
   label: L;
   properties: VertexByLabelMap[L];
 }
