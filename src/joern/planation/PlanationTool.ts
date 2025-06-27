@@ -7,7 +7,6 @@ export interface ASTGraph {
 
 export class PlanationTool {
   private edges: { from: number; to: number }[] = [];
-  private idCounter = 0;
   private nodes: (ASTNodes & { id: number })[] = [];
 
   /**
@@ -42,7 +41,6 @@ export class PlanationTool {
   private reset(): void {
     this.edges = [];
     this.nodes = [];
-    this.idCounter = 0;
   }
 
   /**
@@ -51,8 +49,6 @@ export class PlanationTool {
    * @returns the `id` assigned to this node
    */
   private traverse(node: ASTNodes & { children?: ASTNodes[] }): number {
-    const id = this.idCounter++;
-
     // clone node minus its children, attach id
     const { children, ...rest } = node;
     const clone: ASTNodes & { id: number } = { ...(rest as ASTNodes), id };
