@@ -12,6 +12,11 @@ This tool extracts ASTs from C code, converts them to KAST format, and processes
 - Validates CPG roots
 - Provides utilities for listing and writing JSON files
 
+## Prerequisites
+
+- Node.js (version 14 or higher)
+- Joern 4.0.361 (installed and configured)
+
 ## Usage
 
 1. Install dependencies:
