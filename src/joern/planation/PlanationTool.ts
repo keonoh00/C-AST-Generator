@@ -1,3 +1,4 @@
+import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ASTNodes } from "@/types/node";
 
 export interface ASTGraph {
@@ -6,14 +7,19 @@ export interface ASTGraph {
 }
 
 export class PlanationTool {
+  private blacklist: Set<ASTNodeTypes>;
   private edges: { from: number; to: number }[] = [];
   private nodes: (ASTNodes & { id: number })[] = [];
+
+  constructor(blacklist: ASTNodeTypes[] = []) {
+    this.blacklist = new Set(blacklist);
+  }
 
   /**
    * Given an array of root ASTNodes, returns one ASTGraph per root,
    * where each graph has a flat list of nodes (with unique ids) and edges.
    */
-  public flatten(astRoots: ASTNodes[]): ASTGraph[] {
+  public flatten(astRoots: ASTNodes[], removeBlackList = false): ASTGraph[] {
     const graphs: ASTGraph[] = [];
 
     for (const root of astRoots) {
@@ -34,6 +40,14 @@ export class PlanationTool {
       });
     }
 
+    if (removeBlackList) {
+      // filter out blacklisted nodes
+      for (const graph of graphs) {
+        graph.nodes = graph.nodes.filter((node) => !this.blacklist.has(node.nodeType));
+        graph.edges = graph.edges.filter((edge) => graph.nodes.some((n) => n.id === edge.from) && graph.nodes.some((n) => n.id === edge.to));
+      }
+    }
+
     return graphs;
   }
 
@@ -51,17 +65,17 @@ export class PlanationTool {
   private traverse(node: ASTNodes & { children?: ASTNodes[] }): number {
     // clone node minus its children, attach id
     const { children, ...rest } = node;
-    const clone: ASTNodes & { id: number } = { ...(rest as ASTNodes), id };
+    const clone: ASTNodes & { id: number } = { ...(rest as ASTNodes), id: node.id };
     this.nodes.push(clone);
 
     if (Array.isArray(children)) {
       for (const child of children) {
         const childId = this.traverse(child);
-        this.edges.push({ from: id, to: childId });
+        this.edges.push({ from: clone.id, to: childId });
       }
     }
 
-    return id;
+    return clone.id;
   }
 
   /**
