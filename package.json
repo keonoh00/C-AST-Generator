@@ -7,7 +7,6 @@
   "scripts": {
     "start": "tsx src/parser/server.js",
     "extract": "tsx src/joern/generateAST.ts",
-    "convert": "NODE_OPTIONS=--max-old-space-size=8192 tsx src/parser/convert.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
