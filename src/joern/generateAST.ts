@@ -8,7 +8,7 @@ import { PostProcessor } from "@/joern/kast/PostProcessor";
 import { TreeToText } from "@/joern/utils/TreeToText";
 import { validateCPGRoot } from "@/joern/validate/zod";
 import { CPGRoot, TreeNode } from "@/types/joern";
-import { ASTNodes } from "@/types/node";
+import { ASTGraph, ASTNodes } from "@/types/node";
 import { listJsonFiles } from "@/utils/listJson";
 import { writeJSONFiles } from "@/utils/writeJson";
 
@@ -182,7 +182,7 @@ async function processCPGFiles(chunkSize = 100, progressBar = false): Promise<vo
  * Writes a single item to JSON via writeJSONFiles, returning the written path.
  * Throws on error.
  */
-function writeSingleJSON(item: ASTNodes[] | TreeNode[], outPath: string): string {
+function writeSingleJSON(item: ASTGraph[] | ASTNodes[] | TreeNode[], outPath: string): string {
   const [written] = writeJSONFiles([item], [outPath]);
   return written;
 }
