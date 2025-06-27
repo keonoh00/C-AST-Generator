@@ -7,6 +7,7 @@ import { KASTConverter } from "@/joern/kast/KASTConverter";
 import { PostProcessor } from "@/joern/kast/PostProcessor";
 import { TreeToText } from "@/joern/utils/TreeToText";
 import { validateCPGRoot } from "@/joern/validate/zod";
+import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { CPGRoot, TreeNode } from "@/types/joern";
 import { ASTGraph, ASTNodes } from "@/types/node";
 import { listJsonFiles } from "@/utils/listJson";
@@ -16,8 +17,13 @@ import { PlanationTool } from "./planation/PlanationTool";
 
 // Read command-line arguments: first is input directory, second is output directory
 const args: string[] = process.argv.slice(2);
-const targetDir: string = args[0] ?? "./test";
-const outputDir: string = args[1] ?? "./joern";
+const targetDir: string = args[0];
+const outputDir: string = args[1];
+
+if (!targetDir || !outputDir) {
+  console.error("Usage: node generateAST.js <input_directory> <output_directory>");
+  process.exit(1);
+}
 
 // Helper to split an array into chunks of size `size`
 function chunkArray<T>(arr: T[], size: number): T[][] {
@@ -39,7 +45,27 @@ async function processCPGFiles(chunkSize = 100, progressBar = false): Promise<vo
   const extractor = new ASTExtractor();
   const converter = new KASTConverter();
   const postProcessor = new PostProcessor();
-  const planationTool = new PlanationTool();
+  const planationTool = new PlanationTool([
+    ASTNodeTypes.VariableDeclaration,
+    ASTNodeTypes.ArrayDeclaration,
+    ASTNodeTypes.PointerDeclaration,
+    ASTNodeTypes.ParameterDeclaration,
+    ASTNodeTypes.AssignmentExpression,
+    ASTNodeTypes.FunctionDeclaration,
+    ASTNodeTypes.FunctionDefinition,
+    ASTNodeTypes.StandardLibCall,
+    ASTNodeTypes.UserDefinedCall,
+    ASTNodeTypes.CastExpression,
+    ASTNodeTypes.MemberAccess,
+    ASTNodeTypes.PointerDereference,
+    ASTNodeTypes.AddressOfExpression,
+    ASTNodeTypes.ArraySubscriptionExpression,
+    ASTNodeTypes.BinaryExpression,
+    ASTNodeTypes.UnaryExpression,
+    ASTNodeTypes.SizeOfExpression,
+    ASTNodeTypes.Identifier,
+    ASTNodeTypes.Literal,
+  ]);
   const treeToText = new TreeToText(["properties", "line_no", "code"]);
 
   const totalFiles = allFiles.length;
