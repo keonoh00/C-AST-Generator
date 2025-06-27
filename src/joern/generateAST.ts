@@ -33,7 +33,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
   return chunks;
 }
 
-async function processCPGFiles(chunkSize = 100, progressBar = false): Promise<void> {
+async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<void> {
   fs.mkdirSync(outputDir, { recursive: true });
 
   const allFiles = await listJsonFiles(targetDir);

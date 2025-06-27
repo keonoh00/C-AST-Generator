@@ -149,9 +149,6 @@ export class PostProcessor {
     const typeDeclIncomingEdges = this.getIncomingEdges(typeDeclId, cpg);
     const typeDeclIncomingASTEdges = typeDeclIncomingEdges.filter((edge) => edge.label === "AST");
     if (typeDeclIncomingASTEdges.length === 0) {
-      console.warn(
-        `No AST edges found for TypeDecl node ${typeDeclId.toString()}. Cannot find members for MemberAccess node ${memberAccessId.toString()}.`
-      );
       return undefined;
     }
     const membersId = typeDeclIncomingASTEdges.map((edge) => edge.inV["@value"]);
