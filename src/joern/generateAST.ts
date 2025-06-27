@@ -14,6 +14,11 @@ import { writeJSONFiles } from "@/utils/writeJson";
 
 import { PlanationTool } from "./planation/PlanationTool";
 
+// Read command-line arguments: first is input directory, second is output directory
+const args: string[] = process.argv.slice(2);
+const targetDir: string = args[0] ?? "./test";
+const outputDir: string = args[1] ?? "./joern";
+
 // Helper to split an array into chunks of size `size`
 function chunkArray<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -24,8 +29,6 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 }
 
 async function processCPGFiles(chunkSize = 100, progressBar = false): Promise<void> {
-  const targetDir = "./test";
-  const outputDir = "./joern";
   fs.mkdirSync(outputDir, { recursive: true });
 
   const allFiles = await listJsonFiles(targetDir);
