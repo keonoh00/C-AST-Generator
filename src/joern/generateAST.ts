@@ -5,6 +5,7 @@ import path from "path";
 import { ASTExtractor } from "@/joern/ast/ASTExtractor";
 import { KASTConverter } from "@/joern/kast/KASTConverter";
 import { PostProcessor } from "@/joern/kast/PostProcessor";
+import { PlanationTool } from "@/joern/planation/PlanationTool";
 import { TreeToText } from "@/joern/utils/TreeToText";
 import { validateCPGRoot } from "@/joern/validate/zod";
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
@@ -12,8 +13,6 @@ import { CPGRoot, TreeNode } from "@/types/joern";
 import { ASTGraph, ASTNodes } from "@/types/node";
 import { listJsonFiles } from "@/utils/listJson";
 import { writeJSONFiles } from "@/utils/writeJson";
-
-import { PlanationTool } from "./planation/PlanationTool";
 
 // Read command-line arguments: first is input directory, second is output directory
 const args: string[] = process.argv.slice(2);
