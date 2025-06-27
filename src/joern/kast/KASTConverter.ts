@@ -3,6 +3,7 @@ import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
 import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
+import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { ILabel } from "@/types/ControlStructures/Label";
 import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
@@ -285,7 +286,7 @@ export class KASTConverter {
 
   private handleControlStructure(
     node: TreeNode
-  ): IBreakStatement | IDoWhileStatement | IForStatement | IIfStatement | ISwitchStatement | IWhileStatement | undefined {
+  ): IBreakStatement | IDoWhileStatement | IForStatement | IGotoStatement | IIfStatement | ISwitchStatement | IWhileStatement | undefined {
     const properties = node.properties as unknown as ControlStructureVertexProperties;
 
     const controlStructureType = properties.CONTROL_STRUCTURE_TYPE["@value"]["@value"][0];
@@ -309,6 +310,14 @@ export class KASTConverter {
         return {
           nodeType: ASTNodeTypes.ForStatement,
           id: Number(node.id) || -999,
+          children: this.convertedChildren(node.children),
+        };
+      }
+      case "GOTO": {
+        return {
+          nodeType: ASTNodeTypes.GotoStatement,
+          id: Number(node.id) || -999,
+          jumpTarget: node.code.split("goto ")[1].replace(";", "") || node.code, // Extract the jump target from the code.
           children: this.convertedChildren(node.children),
         };
       }
@@ -638,7 +647,7 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.TypeDefinition,
         id: Number(node.id) || -999,
         name: node.name,
-        underlyingType: properties.ALIAS_TYPE_FULL_NAME["@value"]["@value"].join("/"),
+        underlyingType: properties.ALIAS_TYPE_FULL_NAME ? properties.ALIAS_TYPE_FULL_NAME["@value"]["@value"].join("/") : "<unknown>",
         children: this.convertedChildren(node.children),
       };
     }
