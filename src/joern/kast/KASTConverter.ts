@@ -435,7 +435,8 @@ export class KASTConverter {
     return baseObj;
   }
 
-  private handleImport(node: TreeNode): IIncludeDirective {
+  private handleImport(node: TreeNode): IIncludeDirective | undefined {
+    return undefined; // Drop imports for now, as they are not needed in the KAST.
     const properties = node.properties as unknown as ImportVertexProperties;
     return {
       nodeType: ASTNodeTypes.IncludeDirective,
