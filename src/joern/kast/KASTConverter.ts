@@ -1,12 +1,12 @@
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
+import { ICaseLabel } from "@/types/ControlStructures/CaseLabel";
 import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { ILabel } from "@/types/ControlStructures/Label";
-import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IWhileStatement } from "@/types/ControlStructures/WhileStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
@@ -450,11 +450,11 @@ export class KASTConverter {
     };
   }
 
-  private handleJumpTarget(node: TreeNode): ILabel | ISwitchCase | undefined {
+  private handleJumpTarget(node: TreeNode): ICaseLabel | ILabel | undefined {
     const properties = node.properties as unknown as JumpTargetVertexProperties;
     if (node.name === "case") {
       return {
-        nodeType: ASTNodeTypes.SwitchCase,
+        nodeType: ASTNodeTypes.CaseLabel,
         id: Number(node.id) || -999,
         children: this.convertedChildren(node.children),
       };

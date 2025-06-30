@@ -1,13 +1,14 @@
 import { ICompoundStatement } from "./Block/CompoundStatement";
 import { IBreakStatement } from "./ControlStructures/BreakStatement";
+import { ICaseLabel } from "./ControlStructures/CaseLabel";
 import { IContinueStatement } from "./ControlStructures/ContinueStatement";
+import { IDefaultLabel } from "./ControlStructures/DefaultLabel";
 import { IDoWhileStatement } from "./ControlStructures/DoWhileStatement";
 import { IForStatement } from "./ControlStructures/ForStatement";
 import { IGotoStatement } from "./ControlStructures/GotoStatement";
 import { IIfStatement } from "./ControlStructures/IfStatement";
 import { ILabel } from "./ControlStructures/Label";
 import { IReturnStatement } from "./ControlStructures/ReturnStatement";
-import { ISwitchCase } from "./ControlStructures/SwitchCase";
 import { ISwitchStatement } from "./ControlStructures/SwitchStatement";
 import { IWhileStatement } from "./ControlStructures/WhileStatement";
 import { IEnumType } from "./DataTypes/EnumType";
@@ -50,7 +51,9 @@ type ASTBlockNodes = ICompoundStatement;
 
 type ASTControlStructureNodes =
   | IBreakStatement
+  | ICaseLabel
   | IContinueStatement
+  | IDefaultLabel
   | IDoWhileStatement
   | IEnumType
   | IForStatement
@@ -59,7 +62,6 @@ type ASTControlStructureNodes =
   | ILabel
   | IReturnStatement
   | IStructType
-  | ISwitchCase
   | ISwitchStatement
   | ITypeDefinition
   | IUnionType
