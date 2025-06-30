@@ -215,8 +215,8 @@ export class KASTConverter {
         return {
           nodeType: ASTNodeTypes.Literal,
           id: Number(node.id) || -999,
-          value: "-" + node.children[0].code, // The value is the code of the child.
-          type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "<unknown>",
+          value: Number("-" + node.children[0].code),
+          type: "int",
           children: [],
         };
       }
