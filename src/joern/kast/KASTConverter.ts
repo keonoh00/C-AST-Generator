@@ -395,15 +395,22 @@ export class KASTConverter {
     const properties = node.properties as unknown as IdentifierVertexProperties;
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const size = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[1].split("]")[0] : "<unknown>";
-    const type = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[0] : typeFullName;
-    return {
+    const isArray = typeFullName.includes("[") && typeFullName.includes("]");
+    const type = isArray
+      ? typeFullName.split("[")[0] // The type is the part before the first "[".
+      : typeFullName; // If no type is found, use "<
+    const baseObj: IIdentifier = {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
       name: node.name,
-      size,
       type,
       children: this.convertedChildren(node.children),
     };
+
+    if (isArray) {
+      baseObj.size = size;
+    }
+    return baseObj;
   }
 
   private handleImport(node: TreeNode): IIncludeDirective {
