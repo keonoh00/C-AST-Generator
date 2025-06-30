@@ -22,7 +22,7 @@ This tool extracts ASTs from C code, converts them to KAST format, and processes
 1. Install dependencies:
 
 ```bash
-npm install
+npm install && pip install -r script/requirements.txt
 ```
 
 2. Run the tool:
