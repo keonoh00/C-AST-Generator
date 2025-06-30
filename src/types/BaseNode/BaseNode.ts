@@ -4,7 +4,7 @@ export enum ASTNodeTypes {
   AddressOfExpression = "AddressOfExpression",
   ArrayDeclaration = "ArrayDeclaration",
   ArraySizeAllocation = "ArraySizeAllocation",
-  ArraySubscriptionExpression = "ArraySubscriptionExpression",
+  ArraySubscriptExpression = "ArraySubscriptExpression",
   AssignmentExpression = "AssignmentExpression",
   BinaryExpression = "BinaryExpression",
   BreakStatement = "BreakStatement",

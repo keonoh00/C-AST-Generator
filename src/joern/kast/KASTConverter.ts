@@ -14,7 +14,7 @@ import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAddressOfExpression } from "@/types/Expressions/AddressOfExpression";
 import { IArraySizeAllocation } from "@/types/Expressions/ArraySizeAllocation";
-import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
+import { IArraySubscriptExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ICastExpression } from "@/types/Expressions/CastExpression";
@@ -58,7 +58,7 @@ import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 type CallOperatorsReturnTypes =
   | IAddressOfExpression
   | IArraySizeAllocation
-  | IArraySubscriptionExpression
+  | IArraySubscriptExpression
   | IAssignmentExpression
   | IBinaryExpression
   | ICastExpression
@@ -285,7 +285,7 @@ export class KASTConverter {
       }
       case "<operator>.indirectIndexAccess": {
         return {
-          nodeType: ASTNodeTypes.ArraySubscriptionExpression,
+          nodeType: ASTNodeTypes.ArraySubscriptExpression,
           id: Number(node.id) || -999,
           children: this.convertedChildren(node.children),
         };
