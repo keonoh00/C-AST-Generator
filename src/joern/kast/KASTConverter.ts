@@ -595,7 +595,7 @@ export class KASTConverter {
         nodeType: firstBlock && firstBlock.code === "<empty>" ? ASTNodeTypes.FunctionDeclaration : ASTNodeTypes.FunctionDefinition,
         id: Number(node.id) || -999,
         name: node.name,
-        returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
+        returnType: properties.SIGNATURE["@value"]["@value"].join("/").replace("(", "").replace(")", ""),
         children: [paramList, ...nonFuncParamChildren],
       };
     }
