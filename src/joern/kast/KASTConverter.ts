@@ -468,13 +468,19 @@ export class KASTConverter {
     if (node.children.length !== 0) {
       throw new Error(`Literal node ${node.id} has ${node.children.length.toString()} children, expected 0.`);
     }
-
-    return {
+    const isString = properties.TYPE_FULL_NAME["@value"]["@value"].join("/").includes("char");
+    const baseObj: ILiteral = {
       nodeType: ASTNodeTypes.Literal,
       id: Number(node.id) || -999,
-      value: node.code,
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      value: node.code,
     };
+
+    if (isString) {
+      baseObj.size = node.code.length; // For string literals, size is the length of the string.
+    }
+
+    return baseObj;
   }
 
   private handleLocal(node: TreeNode): IArrayDeclaration | IPointerDeclaration | IVariableDeclaration {
