@@ -155,6 +155,11 @@ export class KASTConverter {
     }
   }
 
+  private formatString(str: string): string {
+    // Format the string to remove quotes and escape characters.
+    return str.replace(/"/g, "").replace(/\\n/g, "\n").replace(/\\t/g, "\t");
+  }
+
   private handleBlock(node: TreeNode): ICompoundStatement | undefined {
     return {
       nodeType: ASTNodeTypes.CompoundStatement,
@@ -473,11 +478,11 @@ export class KASTConverter {
       nodeType: ASTNodeTypes.Literal,
       id: Number(node.id) || -999,
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
-      value: node.code,
+      value: this.formatString(node.code),
     };
 
     if (isString) {
-      baseObj.size = node.code.length; // For string literals, size is the length of the string.
+      baseObj.size = this.formatString(node.code).length;
     }
 
     return baseObj;
