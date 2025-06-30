@@ -376,7 +376,7 @@ export class KASTConverter {
       }
       case "WHILE": {
         return {
-          nodeType: ASTNodeTypes.DoWhileStatement,
+          nodeType: ASTNodeTypes.WhileStatement,
           id: Number(node.id) || -999,
           children: this.convertedChildren(node.children),
         };
