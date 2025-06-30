@@ -213,7 +213,6 @@ export class KASTConverter {
         return {
           nodeType: ASTNodeTypes.AddressOfExpression,
           id: Number(node.id) || -999,
-          rhs: node.code.split("&")[1] || node.code,
           children: this.convertedChildren(node.children),
         };
       }
