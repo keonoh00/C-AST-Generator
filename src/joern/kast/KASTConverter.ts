@@ -51,6 +51,7 @@ import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
 
 import { BinaryExpressionOperatorMap } from "./BinaryExpression";
+import { BinaryUnaryTypeWrapper } from "./BinaryUnaryTypeWrapper";
 import { STANDARD_LIB_CALLS } from "./StandardLibCall";
 import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 
@@ -193,7 +194,7 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.BinaryExpression,
         id: Number(node.id) || -999,
         operator: BinaryExpressionOperatorMap[node.name],
-        type: node.code,
+        type: BinaryUnaryTypeWrapper(node),
         children: this.convertedChildren(node.children),
       };
     }
@@ -203,7 +204,7 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.UnaryExpression,
         id: Number(node.id) || -999,
         operator: UnaryExpressionOperatorMap[node.name],
-        type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+        type: BinaryUnaryTypeWrapper(node),
         children: this.convertedChildren(node.children),
       };
     }
