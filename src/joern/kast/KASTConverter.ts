@@ -373,10 +373,13 @@ export class KASTConverter {
         };
       }
       case "SWITCH": {
+        const blockChild = this.reshapeLabelChildren(node.children.find((child) => child.label === "BLOCK")?.children ?? []);
+        const fullChildren = node.children.filter((child) => child.label !== "BLOCK").concat(blockChild);
+
         return {
           nodeType: ASTNodeTypes.SwitchStatement,
           id: Number(node.id) || -999,
-          children: this.convertedChildren(node.children),
+          children: this.convertedChildren(fullChildren),
         };
       }
       case "WHILE": {
@@ -659,5 +662,34 @@ export class KASTConverter {
       ...node,
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     } as unknown as IStructType;
+  }
+
+  /**
+   * Reshape the children of a switch label node to match the expected structure.
+   * Loops through the children from jump target to the next jump target
+   * and append to the jump target's children.
+   */
+  private reshapeLabelChildren(children: TreeNode[]): TreeNode[] {
+    const reshapedChildren: TreeNode[] = [];
+    let currentLabel: null | TreeNode = null;
+
+    for (const child of children) {
+      if (child.label === "JUMP_TARGET" && (child.name === "case" || child.name === "default")) {
+        if (currentLabel) {
+          reshapedChildren.push(currentLabel);
+        }
+        currentLabel = child; // Start a new label.
+      } else if (currentLabel) {
+        currentLabel.children.push(child);
+      } else {
+        reshapedChildren.push(child);
+      }
+    }
+
+    if (currentLabel) {
+      reshapedChildren.push(currentLabel); // Add the last label if it exists.
+    }
+
+    return reshapedChildren;
   }
 }
