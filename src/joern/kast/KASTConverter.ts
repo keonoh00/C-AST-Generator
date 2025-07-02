@@ -607,6 +607,7 @@ export class KASTConverter {
       const nonFuncParamChildren = node.children
         .filter((child) => child.label !== "METHOD_PARAMETER_IN")
         .filter((child) => !["METHOD_RETURN", "MODIFIER"].includes(child.label)) // TODO: currently skipping METHOD_RETURN and MODIFIER children, as they are not needed in the function declaration.
+        .filter((child) => !(child.label === "BLOCK" && child.children.length === 0))
         .map((child) => this.dispatchConvert(child))
         .filter((child): child is ASTNodes => child !== undefined);
 
