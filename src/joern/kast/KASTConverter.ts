@@ -22,6 +22,7 @@ import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
 import { ILiteral } from "@/types/Expressions/Literal";
 import { IMemberAccess } from "@/types/Expressions/MemberAccess";
+import { IPointerDereference } from "@/types/Expressions/PointerDereference";
 import { ISizeOfExpression } from "@/types/Expressions/SizeOfExpression";
 import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
 import { IUnaryExpression } from "@/types/Expressions/UnaryExpression";
@@ -421,7 +422,7 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleIdentifier(node: TreeNode): IIdentifier | undefined {
+  private handleIdentifier(node: TreeNode): IIdentifier | IPointerDereference | undefined {
     const properties = node.properties as unknown as IdentifierVertexProperties;
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
@@ -429,6 +430,26 @@ export class KASTConverter {
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<
+
+    if (type.includes("*")) {
+      const pointerType = type.replace("*", "").trim();
+      return {
+        nodeType: ASTNodeTypes.PointerDereference,
+        id: Number(node.id) || -999,
+        type: pointerType,
+        children: [
+          {
+            nodeType: ASTNodeTypes.Identifier,
+            id: Number(node.id) || -999,
+            name: node.name,
+            type: typeFullName,
+            size,
+            children: this.convertedChildren(node.children),
+          },
+        ],
+      };
+    }
+
     const baseObj: IIdentifier = {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
