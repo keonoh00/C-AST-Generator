@@ -284,7 +284,7 @@ export class KASTConverter {
         return {
           nodeType: ASTNodeTypes.MemberAccess,
           id: Number(node.id) || -999,
-          type: node.code, // TODO: This should be the type of the member access, not the code.
+          type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
           children: this.convertedChildren(node.children),
         };
       }
@@ -424,8 +424,8 @@ export class KASTConverter {
   private handleIdentifier(node: TreeNode): IIdentifier | undefined {
     const properties = node.properties as unknown as IdentifierVertexProperties;
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
-    const size = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[1].split("]")[0] : "<unknown>";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size>" : "<not-array>";
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<
