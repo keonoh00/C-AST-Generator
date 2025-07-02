@@ -36,6 +36,7 @@ import {
   LiteralVertexProperties,
   LocalVertexProperties,
   MethodParameterInVertexProperties,
+  MethodRefVertexProperties,
   MethodVertexProperties,
   TreeNode,
   TypeDeclVertexProperties,
@@ -110,7 +111,6 @@ export class KASTConverter {
         case "DEPENDENCY":
         case "META_DATA":
         case "METHOD_PARAMETER_OUT":
-        case "METHOD_REF":
         case "METHOD_RETURN":
         case "MODIFIER":
         case "NAMESPACE":
@@ -120,6 +120,7 @@ export class KASTConverter {
         case "TYPE_REF":
         case "UNKNOWN":
           return this.handleSkippedNodes(node);
+
         case "BLOCK":
           return this.handleBlock(node);
         case "CALL":
@@ -146,6 +147,8 @@ export class KASTConverter {
           return this.handleMethod(node);
         case "METHOD_PARAMETER_IN":
           return this.handleMethodParamIn(node);
+        case "METHOD_REF":
+          return this.handleMethodRef(node);
         case "TYPE_DECL":
           return this.handleTypeDecl(node);
         default:
@@ -647,6 +650,29 @@ export class KASTConverter {
       : typeFullName; // If no type is found, use "<
     return {
       nodeType: ASTNodeTypes.ParameterDeclaration,
+      id: Number(node.id) || -999,
+      name: node.name,
+      type: type,
+      size,
+      children: this.convertedChildren(node.children),
+    };
+  }
+
+  private handleMethodRef(node: TreeNode): IIdentifier | undefined {
+    const properties = node.properties as unknown as MethodRefVertexProperties;
+
+    if (properties.TYPE_FULL_NAME["@value"]["@value"].length === 0) {
+      throw new Error(`Method reference node ${node.id} has no type.`);
+    }
+    const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
+    const isArray = typeFullName.includes("[") && typeFullName.includes("]");
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : undefined;
+    const type = isArray
+      ? typeFullName.split("[")[0] // The type is the part before the first "[".
+      : typeFullName; // If no type is found, use "<unknown>".
+
+    return {
+      nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
       name: node.name,
       type: type,
