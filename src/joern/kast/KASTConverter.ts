@@ -433,7 +433,7 @@ export class KASTConverter {
     const properties = node.properties as unknown as IdentifierVertexProperties;
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
-    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size>" : "<not-array>";
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : "<not-array>";
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<
@@ -622,7 +622,7 @@ export class KASTConverter {
         nodeType: firstBlock && firstBlock.code === "<empty>" ? ASTNodeTypes.FunctionDeclaration : ASTNodeTypes.FunctionDefinition,
         id: Number(node.id) || -999,
         name: node.name,
-        returnType: properties.SIGNATURE["@value"]["@value"].join("/").replace("(", "").replace(")", ""),
+        returnType: properties.SIGNATURE["@value"]["@value"].join("/").split("(")[0],
         children: [paramList, ...nonFuncParamChildren],
       };
     }
@@ -641,7 +641,7 @@ export class KASTConverter {
     }
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
-    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size>" : "<not-array>";
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : undefined;
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<
@@ -650,7 +650,7 @@ export class KASTConverter {
       id: Number(node.id) || -999,
       name: node.name,
       type: type,
-      size: isArray ? size : "<not-array>",
+      size,
       children: this.convertedChildren(node.children),
     };
   }
