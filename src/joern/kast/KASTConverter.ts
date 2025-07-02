@@ -239,9 +239,16 @@ export class KASTConverter {
 
     switch (node.name) {
       case "<operator>.addressOf": {
+        const identifierChild = node.children
+          .filter((child) => child.label === "IDENTIFIER")
+          .find((child) => child.name === node.code.replace("&", ""));
+
         return {
           nodeType: ASTNodeTypes.AddressOfExpression,
           id: Number(node.id) || -999,
+          type: identifierChild
+            ? (identifierChild.properties as unknown as IdentifierVertexProperties).TYPE_FULL_NAME["@value"]["@value"].join("/") + "*"
+            : "<unknown>",
           children: this.convertedChildren(node.children),
         };
       }
