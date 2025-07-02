@@ -556,7 +556,7 @@ export class KASTConverter {
       // points_to is the type of the pointer.
       if (typeFullName.includes("*")) {
         const level = typeFullName.split("*").length - 1;
-        const pointsTo = typeFullName.split("*")[0];
+        const pointsTo = typeFullName.replace("*", "");
 
         return {
           nodeType: ASTNodeTypes.PointerDeclaration,
