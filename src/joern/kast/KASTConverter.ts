@@ -639,11 +639,18 @@ export class KASTConverter {
     if (properties.TYPE_FULL_NAME["@value"]["@value"].length === 0) {
       throw new Error(`Method parameter in node ${node.id} has no type.`);
     }
+    const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
+    const isArray = typeFullName.includes("[") && typeFullName.includes("]");
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size>" : "<not-array>";
+    const type = isArray
+      ? typeFullName.split("[")[0] // The type is the part before the first "[".
+      : typeFullName; // If no type is found, use "<
     return {
       nodeType: ASTNodeTypes.ParameterDeclaration,
       id: Number(node.id) || -999,
       name: node.name,
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      type: type,
+      size: isArray ? size : "<not-array>",
       children: this.convertedChildren(node.children),
     };
   }
