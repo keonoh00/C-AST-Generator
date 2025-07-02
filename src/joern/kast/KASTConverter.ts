@@ -1,12 +1,13 @@
 import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
 import { ICompoundStatement } from "@/types/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
+import { ICaseLabel } from "@/types/ControlStructures/CaseLabel";
+import { IDefaultLabel } from "@/types/ControlStructures/DefaultLabel";
 import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
 import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { ILabel } from "@/types/ControlStructures/Label";
-import { ISwitchCase } from "@/types/ControlStructures/SwitchCase";
 import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IWhileStatement } from "@/types/ControlStructures/WhileStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
@@ -14,13 +15,14 @@ import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
 import { IUnionType } from "@/types/DataTypes/UnionType";
 import { IAddressOfExpression } from "@/types/Expressions/AddressOfExpression";
 import { IArraySizeAllocation } from "@/types/Expressions/ArraySizeAllocation";
-import { IArraySubscriptionExpression } from "@/types/Expressions/ArraySubscriptExpression";
+import { IArraySubscriptExpression } from "@/types/Expressions/ArraySubscriptExpression";
 import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
 import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
 import { ICastExpression } from "@/types/Expressions/CastExpression";
 import { IIdentifier } from "@/types/Expressions/Identifier";
 import { ILiteral } from "@/types/Expressions/Literal";
 import { IMemberAccess } from "@/types/Expressions/MemberAccess";
+import { IPointerDereference } from "@/types/Expressions/PointerDereference";
 import { ISizeOfExpression } from "@/types/Expressions/SizeOfExpression";
 import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
 import { IUnaryExpression } from "@/types/Expressions/UnaryExpression";
@@ -33,8 +35,8 @@ import {
   JumpTargetVertexProperties,
   LiteralVertexProperties,
   LocalVertexProperties,
-  MemberVertexProperties,
   MethodParameterInVertexProperties,
+  MethodRefVertexProperties,
   MethodVertexProperties,
   TreeNode,
   TypeDeclVertexProperties,
@@ -51,16 +53,18 @@ import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
 import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
 
 import { BinaryExpressionOperatorMap } from "./BinaryExpression";
+import { BinaryUnaryTypeWrapper } from "./BinaryUnaryTypeWrapper";
 import { STANDARD_LIB_CALLS } from "./StandardLibCall";
 import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 
 type CallOperatorsReturnTypes =
   | IAddressOfExpression
   | IArraySizeAllocation
-  | IArraySubscriptionExpression
+  | IArraySubscriptExpression
   | IAssignmentExpression
   | IBinaryExpression
   | ICastExpression
+  | ILiteral
   | IMemberAccess
   | ISizeOfExpression
   | IUnaryExpression
@@ -107,7 +111,6 @@ export class KASTConverter {
         case "DEPENDENCY":
         case "META_DATA":
         case "METHOD_PARAMETER_OUT":
-        case "METHOD_REF":
         case "METHOD_RETURN":
         case "MODIFIER":
         case "NAMESPACE":
@@ -117,6 +120,7 @@ export class KASTConverter {
         case "TYPE_REF":
         case "UNKNOWN":
           return this.handleSkippedNodes(node);
+
         case "BLOCK":
           return this.handleBlock(node);
         case "CALL":
@@ -143,6 +147,8 @@ export class KASTConverter {
           return this.handleMethod(node);
         case "METHOD_PARAMETER_IN":
           return this.handleMethodParamIn(node);
+        case "METHOD_REF":
+          return this.handleMethodRef(node);
         case "TYPE_DECL":
           return this.handleTypeDecl(node);
         default:
@@ -152,6 +158,11 @@ export class KASTConverter {
       console.error(`Error converting node with id ${node.id} and label ${node.label}:`, error);
       throw error; // Re-throw the error after logging it.
     }
+  }
+
+  private formatString(str: string): string {
+    // Format the string to remove quotes and escape characters.
+    return str.replace(/"/g, "").replace(/\\n/g, "\n").replace(/\\t/g, "\t");
   }
 
   private handleBlock(node: TreeNode): ICompoundStatement | undefined {
@@ -193,27 +204,54 @@ export class KASTConverter {
         nodeType: ASTNodeTypes.BinaryExpression,
         id: Number(node.id) || -999,
         operator: BinaryExpressionOperatorMap[node.name],
-        type: node.code,
+        type: BinaryUnaryTypeWrapper(node),
         children: this.convertedChildren(node.children),
       };
     }
 
     if (Object.keys(UnaryExpressionOperatorMap).includes(node.name)) {
+      if (node.name === "<operator>.minus") {
+        // Special case for unary minus, which is a binary expression with a single child.
+        if (node.children.length !== 1) {
+          throw new Error(`Unary minus node ${node.id} has ${node.children.length.toString()} children, expected 1.`);
+        }
+        if (node.children[0].label !== "LITERAL") {
+          throw new Error(`Unary minus node ${node.id} has a child with label ${node.children[0].label}, expected LITERAL.`);
+        }
+        if (node.children[0].children.length !== 0) {
+          throw new Error(`Unary minus node ${node.id} has a child with ${node.children[0].children.length.toString()} children, expected 0.`);
+        }
+
+        return {
+          nodeType: ASTNodeTypes.Literal,
+          id: Number(node.id) || -999,
+          value: Number("-" + node.children[0].code),
+          type: "int",
+          children: [],
+        };
+      }
+
       return {
         nodeType: ASTNodeTypes.UnaryExpression,
         id: Number(node.id) || -999,
         operator: UnaryExpressionOperatorMap[node.name],
-        type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+        type: BinaryUnaryTypeWrapper(node),
         children: this.convertedChildren(node.children),
       };
     }
 
     switch (node.name) {
       case "<operator>.addressOf": {
+        const identifierChild = node.children
+          .filter((child) => child.label === "IDENTIFIER")
+          .find((child) => child.name === node.code.replace("&", ""));
+
         return {
           nodeType: ASTNodeTypes.AddressOfExpression,
           id: Number(node.id) || -999,
-          rhs: node.code.split("&")[1] || node.code,
+          type: identifierChild
+            ? (identifierChild.properties as unknown as IdentifierVertexProperties).TYPE_FULL_NAME["@value"]["@value"].join("/") + "*"
+            : "<unknown>",
           children: this.convertedChildren(node.children),
         };
       }
@@ -257,13 +295,13 @@ export class KASTConverter {
         return {
           nodeType: ASTNodeTypes.MemberAccess,
           id: Number(node.id) || -999,
-          type: node.code, // TODO: This should be the type of the member access, not the code.
+          type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
           children: this.convertedChildren(node.children),
         };
       }
       case "<operator>.indirectIndexAccess": {
         return {
-          nodeType: ASTNodeTypes.ArraySubscriptionExpression,
+          nodeType: ASTNodeTypes.ArraySubscriptExpression,
           id: Number(node.id) || -999,
           children: this.convertedChildren(node.children),
         };
@@ -346,15 +384,18 @@ export class KASTConverter {
         };
       }
       case "SWITCH": {
+        const blockChild = this.reshapeLabelChildren(node.children.find((child) => child.label === "BLOCK")?.children ?? []);
+        const fullChildren = node.children.filter((child) => child.label !== "BLOCK").concat(blockChild);
+
         return {
           nodeType: ASTNodeTypes.SwitchStatement,
           id: Number(node.id) || -999,
-          children: this.convertedChildren(node.children),
+          children: this.convertedChildren(fullChildren),
         };
       }
       case "WHILE": {
         return {
-          nodeType: ASTNodeTypes.DoWhileStatement,
+          nodeType: ASTNodeTypes.WhileStatement,
           id: Number(node.id) || -999,
           children: this.convertedChildren(node.children),
         };
@@ -391,22 +432,50 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleIdentifier(node: TreeNode): IIdentifier | undefined {
+  private handleIdentifier(node: TreeNode): IIdentifier | IPointerDereference | undefined {
     const properties = node.properties as unknown as IdentifierVertexProperties;
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
-    const size = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[1].split("]")[0] : "<unknown>";
-    const type = typeFullName.includes("[") && typeFullName.includes("]") ? typeFullName.split("[")[0] : typeFullName;
-    return {
+    const isArray = typeFullName.includes("[") && typeFullName.includes("]");
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : "<not-array>";
+    const type = isArray
+      ? typeFullName.split("[")[0] // The type is the part before the first "[".
+      : typeFullName; // If no type is found, use "<
+
+    if (type.includes("*")) {
+      const pointerType = type.replace("*", "").trim();
+      return {
+        nodeType: ASTNodeTypes.PointerDereference,
+        id: Number(node.id) || -999,
+        type: pointerType,
+        children: [
+          {
+            nodeType: ASTNodeTypes.Identifier,
+            id: Number(node.id) || -999,
+            name: node.name,
+            type: typeFullName,
+            size,
+            children: this.convertedChildren(node.children),
+          },
+        ],
+      };
+    }
+
+    const baseObj: IIdentifier = {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
       name: node.name,
-      size,
       type,
       children: this.convertedChildren(node.children),
     };
+
+    if (isArray) {
+      baseObj.size = size;
+    }
+    return baseObj;
   }
 
-  private handleImport(node: TreeNode): IIncludeDirective {
+  private handleImport(node: TreeNode): IIncludeDirective | undefined {
+    return undefined; // Drop imports for now, as they are not needed in the KAST.
     const properties = node.properties as unknown as ImportVertexProperties;
     return {
       nodeType: ASTNodeTypes.IncludeDirective,
@@ -416,11 +485,18 @@ export class KASTConverter {
     };
   }
 
-  private handleJumpTarget(node: TreeNode): ILabel | ISwitchCase | undefined {
+  private handleJumpTarget(node: TreeNode): ICaseLabel | IDefaultLabel | ILabel | undefined {
     const properties = node.properties as unknown as JumpTargetVertexProperties;
     if (node.name === "case") {
       return {
-        nodeType: ASTNodeTypes.SwitchCase,
+        nodeType: ASTNodeTypes.CaseLabel,
+        id: Number(node.id) || -999,
+        children: this.convertedChildren(node.children),
+      };
+    }
+    if (node.name === "default") {
+      return {
+        nodeType: ASTNodeTypes.DefaultLabel,
         id: Number(node.id) || -999,
         children: this.convertedChildren(node.children),
       };
@@ -439,13 +515,19 @@ export class KASTConverter {
     if (node.children.length !== 0) {
       throw new Error(`Literal node ${node.id} has ${node.children.length.toString()} children, expected 0.`);
     }
-
-    return {
+    const isString = properties.TYPE_FULL_NAME["@value"]["@value"].join("/").includes("char");
+    const baseObj: ILiteral = {
       nodeType: ASTNodeTypes.Literal,
       id: Number(node.id) || -999,
-      value: node.code,
       type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      value: this.formatString(node.code),
     };
+
+    if (isString) {
+      baseObj.size = this.formatString(node.code).length;
+    }
+
+    return baseObj;
   }
 
   private handleLocal(node: TreeNode): IArrayDeclaration | IPointerDeclaration | IVariableDeclaration {
@@ -477,7 +559,7 @@ export class KASTConverter {
       // points_to is the type of the pointer.
       if (typeFullName.includes("*")) {
         const level = typeFullName.split("*").length - 1;
-        const pointsTo = typeFullName.split("*").slice(-1)[0];
+        const pointsTo = typeFullName.replace("*", "");
 
         return {
           nodeType: ASTNodeTypes.PointerDeclaration,
@@ -500,53 +582,7 @@ export class KASTConverter {
   }
 
   private handleMember(node: TreeNode): IArrayDeclaration | IPointerDeclaration | IVariableDeclaration {
-    const properties = node.properties as unknown as MemberVertexProperties;
-
-    if (properties.TYPE_FULL_NAME["@value"]["@value"].length > 0) {
-      const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
-      // ArrayDeclaration is a special case of VariableDeclaration
-      // Checks type full name has [ and ], and if so, it is an array declaration.
-      // Inside of [] is the size of the array and in front of [] is the type of the array.
-      if (typeFullName.includes("[") && typeFullName.includes("]")) {
-        const elementType = typeFullName.split("[")[0];
-        const length = Number(typeFullName.split("[")[1].split("]")[0]);
-
-        return {
-          nodeType: ASTNodeTypes.ArrayDeclaration,
-          id: Number(node.id) || -999,
-          name: node.name,
-          elementType,
-          length,
-          children: this.convertedChildren(node.children),
-        };
-      }
-
-      // PointerDeclaration is a special case of VariableDeclaration
-      // Checks type full name has *, and if so, it is an pointer declaration.
-      // level depends on the number of * in the type full name.
-      // points_to is the type of the pointer.
-      if (typeFullName.includes("*")) {
-        const level = typeFullName.split("*").length - 1;
-        const pointsTo = typeFullName.split("*").slice(-1)[0] || "void";
-
-        return {
-          nodeType: ASTNodeTypes.PointerDeclaration,
-          id: Number(node.id) || -999,
-          name: node.name,
-          pointingType: pointsTo,
-          level,
-          children: this.convertedChildren(node.children),
-        };
-      }
-    }
-
-    return {
-      nodeType: ASTNodeTypes.VariableDeclaration,
-      id: Number(node.id) || -999,
-      name: node.name,
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
-      children: this.convertedChildren(node.children),
-    };
+    return this.handleLocal(node); // Member is handled the same way as Local, so we can reuse the same method.
   }
 
   private handleMethod(node: TreeNode): IFunctionDeclaration | IFunctionDefinition | undefined {
@@ -581,6 +617,7 @@ export class KASTConverter {
       const nonFuncParamChildren = node.children
         .filter((child) => child.label !== "METHOD_PARAMETER_IN")
         .filter((child) => !["METHOD_RETURN", "MODIFIER"].includes(child.label)) // TODO: currently skipping METHOD_RETURN and MODIFIER children, as they are not needed in the function declaration.
+        .filter((child) => !(child.label === "BLOCK" && child.children.length === 0))
         .map((child) => this.dispatchConvert(child))
         .filter((child): child is ASTNodes => child !== undefined);
 
@@ -588,7 +625,7 @@ export class KASTConverter {
         nodeType: firstBlock && firstBlock.code === "<empty>" ? ASTNodeTypes.FunctionDeclaration : ASTNodeTypes.FunctionDefinition,
         id: Number(node.id) || -999,
         name: node.name,
-        returnType: properties.SIGNATURE["@value"]["@value"].join("/"),
+        returnType: properties.SIGNATURE["@value"]["@value"].join("/").split("(")[0],
         children: [paramList, ...nonFuncParamChildren],
       };
     }
@@ -605,11 +642,41 @@ export class KASTConverter {
     if (properties.TYPE_FULL_NAME["@value"]["@value"].length === 0) {
       throw new Error(`Method parameter in node ${node.id} has no type.`);
     }
+    const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
+    const isArray = typeFullName.includes("[") && typeFullName.includes("]");
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : undefined;
+    const type = isArray
+      ? typeFullName.split("[")[0] // The type is the part before the first "[".
+      : typeFullName; // If no type is found, use "<
     return {
       nodeType: ASTNodeTypes.ParameterDeclaration,
       id: Number(node.id) || -999,
       name: node.name,
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      type: type,
+      size,
+      children: this.convertedChildren(node.children),
+    };
+  }
+
+  private handleMethodRef(node: TreeNode): IIdentifier | undefined {
+    const properties = node.properties as unknown as MethodRefVertexProperties;
+
+    if (properties.TYPE_FULL_NAME["@value"]["@value"].length === 0) {
+      throw new Error(`Method reference node ${node.id} has no type.`);
+    }
+    const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
+    const isArray = typeFullName.includes("[") && typeFullName.includes("]");
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : undefined;
+    const type = isArray
+      ? typeFullName.split("[")[0] // The type is the part before the first "[".
+      : typeFullName; // If no type is found, use "<unknown>".
+
+    return {
+      nodeType: ASTNodeTypes.Identifier,
+      id: Number(node.id) || -999,
+      name: node.name,
+      type: type,
+      size,
       children: this.convertedChildren(node.children),
     };
   }
@@ -657,5 +724,34 @@ export class KASTConverter {
       ...node,
       children: node.children.map((child) => this.dispatchConvert(child)).filter((child): child is ASTNodes => child !== undefined),
     } as unknown as IStructType;
+  }
+
+  /**
+   * Reshape the children of a switch label node to match the expected structure.
+   * Loops through the children from jump target to the next jump target
+   * and append to the jump target's children.
+   */
+  private reshapeLabelChildren(children: TreeNode[]): TreeNode[] {
+    const reshapedChildren: TreeNode[] = [];
+    let currentLabel: null | TreeNode = null;
+
+    for (const child of children) {
+      if (child.label === "JUMP_TARGET" && (child.name === "case" || child.name === "default")) {
+        if (currentLabel) {
+          reshapedChildren.push(currentLabel);
+        }
+        currentLabel = child; // Start a new label.
+      } else if (currentLabel) {
+        currentLabel.children.push(child);
+      } else {
+        reshapedChildren.push(child);
+      }
+    }
+
+    if (currentLabel) {
+      reshapedChildren.push(currentLabel); // Add the last label if it exists.
+    }
+
+    return reshapedChildren;
   }
 }

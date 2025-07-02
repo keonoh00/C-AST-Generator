@@ -2,5 +2,5 @@ import { ASTNodeTypes, IBaseNode } from "../BaseNode/BaseNode";
 
 export interface IAddressOfExpression extends IBaseNode {
   nodeType: ASTNodeTypes.AddressOfExpression;
-  rhs: string;
+  type: string;
 }

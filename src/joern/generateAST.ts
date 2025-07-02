@@ -58,7 +58,7 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
     ASTNodeTypes.MemberAccess,
     ASTNodeTypes.PointerDereference,
     ASTNodeTypes.AddressOfExpression,
-    ASTNodeTypes.ArraySubscriptionExpression,
+    ASTNodeTypes.ArraySubscriptExpression,
     ASTNodeTypes.BinaryExpression,
     ASTNodeTypes.UnaryExpression,
     ASTNodeTypes.SizeOfExpression,

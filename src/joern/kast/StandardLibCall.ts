@@ -41,6 +41,7 @@ const cppStlMethods: string[] = [
 // Combined list, if a single array is preferred
 const standardLibCalls: string[] = [
   // C Standard Library
+  "malloc",
   "memset",
   "memcpy",
   "memmove",
