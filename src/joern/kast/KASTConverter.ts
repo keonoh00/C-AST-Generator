@@ -664,6 +664,7 @@ export class KASTConverter {
     if (properties.TYPE_FULL_NAME["@value"]["@value"].length === 0) {
       throw new Error(`Method reference node ${node.id} has no type.`);
     }
+    const name = properties.METHOD_FULL_NAME["@value"]["@value"].join("/") || node.name || "<unknown>";
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
     const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : undefined;
@@ -674,7 +675,7 @@ export class KASTConverter {
     return {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
-      name: node.name,
+      name,
       type: type,
       size,
       children: this.convertedChildren(node.children),
