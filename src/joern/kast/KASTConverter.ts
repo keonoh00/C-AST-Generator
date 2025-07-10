@@ -437,7 +437,7 @@ export class KASTConverter {
     const properties = node.properties as unknown as IdentifierVertexProperties;
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
-    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : "<not-array>";
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<dynamic>" : "<not-array>";
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<
@@ -664,7 +664,7 @@ export class KASTConverter {
     }
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
-    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : undefined;
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<dynamic>" : undefined;
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<
@@ -687,7 +687,7 @@ export class KASTConverter {
     const name = properties.METHOD_FULL_NAME["@value"]["@value"].join("/") || node.name || "<unknown>";
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
-    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : undefined;
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<dynamic>" : undefined;
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<unknown>".
