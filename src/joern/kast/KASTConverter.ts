@@ -530,10 +530,13 @@ export class KASTConverter {
       throw new Error(`Literal node ${node.id} has ${node.children.length.toString()} children, expected 0.`);
     }
     const isString = properties.TYPE_FULL_NAME["@value"]["@value"].join("/").includes("char");
+    const predefinedType = Object.keys(PredefinedIdentifierTypes).includes(node.name)
+      ? PredefinedIdentifierTypes[node.name as keyof typeof PredefinedIdentifierTypes]
+      : undefined;
     const baseObj: ILiteral = {
       nodeType: ASTNodeTypes.Literal,
       id: Number(node.id) || -999,
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      type: predefinedType ?? properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
       value: this.formatString(node.code),
     };
 
@@ -546,6 +549,9 @@ export class KASTConverter {
 
   private handleLocal(node: TreeNode): IArrayDeclaration | IPointerDeclaration | IVariableDeclaration {
     const properties = node.properties as unknown as LocalVertexProperties;
+    const predefinedType = Object.keys(PredefinedIdentifierTypes).includes(node.name)
+      ? PredefinedIdentifierTypes[node.name as keyof typeof PredefinedIdentifierTypes]
+      : undefined;
 
     if (properties.TYPE_FULL_NAME["@value"]["@value"].length > 0) {
       const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
@@ -590,7 +596,7 @@ export class KASTConverter {
       nodeType: ASTNodeTypes.VariableDeclaration,
       id: Number(node.id) || -999,
       name: node.name,
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      type: predefinedType ?? properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
       children: this.convertedChildren(node.children),
     };
   }
