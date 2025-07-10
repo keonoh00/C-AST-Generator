@@ -4,6 +4,49 @@ import { ASTNodes } from "@/types/node";
 
 export class PostProcessor {
   /**
+   * Walk the AST and check current node's children has ArrayDeclaration and the next child of the ArrayDeclaration is ArraySizeAllocation.
+   * If so, merge the ArraySizeAllocation into the ArrayDeclaration.
+   * Merging process is to check if the ArrayDeclaration's length are equal to the length of the ArraySizeAllocation.
+   * If they are equal, remove the ArraySizeAllocation and keep the ArrayDeclaration.
+   * If they are not equal, keep the ArraySizeAllocation's length.
+   */
+  public mergeArraySizeAllocation(nodes: ASTNodes[]): ASTNodes[] {
+    return nodes.map((node) => {
+      if (!node.children) return node;
+
+      const mergedChildren: ASTNodes[] = [];
+
+      for (let i = 0; i < node.children.length; i++) {
+        const current = node.children[i];
+        const next = node.children[i + 1];
+
+        if (current.nodeType === ASTNodeTypes.ArrayDeclaration && next.nodeType === ASTNodeTypes.ArraySizeAllocation) {
+          const arrayDecl = current;
+          const arraySize = next;
+
+          mergedChildren.push({
+            ...arrayDecl,
+            length: arrayDecl.length === arraySize.length ? arrayDecl.length : arraySize.length,
+            children: [...(arrayDecl.children ?? []), ...(arraySize.children ?? [])],
+          });
+
+          i++; // skip next (ArraySizeAllocation)
+        } else {
+          mergedChildren.push({
+            ...current,
+            children: current.children ? this.mergeArraySizeAllocation(current.children) : current.children,
+          });
+        }
+      }
+
+      return {
+        ...node,
+        children: mergedChildren,
+      };
+    });
+  }
+
+  /**
    * Walk the AST and remove any nodes with a missing or invalid nodeType,
    * inlining their children instead.
    */
