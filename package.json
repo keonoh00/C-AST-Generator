@@ -7,9 +7,9 @@
   "scripts": {
     "start": "tsx src/parser/server.js",
     "update": "git fetch && git reset --hard origin/main",
-    "generate:cpg": "python script/joern.py --replace-macro --src-root $npm_config_data --out-root ${npm_config_output:-tmp}",
-    "generate:template": "tsx src/joern/generateAST.ts $npm_config_data ${npm_config_output:-result}",
-    "generate:full": "npm run generate:cpg --data=$npm_config_data --output=\"tmp\" && npm run generate:template --data=tmp --output=$npm_config_output",
+    "generate:cpg": "sh -c 'out=${npm_config_output:-tmp/$(date +%Y%m%d-%H%M%S)} && python script/joern.py --replace-macro --src-root \"$npm_config_data\" --out-root \"$out\"'",
+    "generate:template": "sh -c 'out=${npm_config_output:-tmp/$(date +%Y%m%d-%H%M%S)} && tsx src/joern/generateAST.ts \"$npm_config_data\" \"$out\"'",
+    "generate:full": "sh -c \"ts=tmp/$(date +%Y%m%d-%H%M%S) && final=tmp/$(date +%Y%m%d-%H%M%S)-final && npm_config_output=$ts npm run generate:cpg --data=$npm_config_data && npm_config_output=$final npm run generate:template --data=$ts && rm -rf \\\"$ts\\\" && echo \\\"Final output stored in $final\\\"\"",
     "type-check": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
