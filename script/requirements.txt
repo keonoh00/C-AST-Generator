@@ -1,2 +1,1 @@
-pycparser==2.22
 tqdm==4.67.1
