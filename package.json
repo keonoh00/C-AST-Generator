@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/parser/server.js",
+    "submodule": "git submodule update --init --recursive",
     "update": "git fetch && git pull",
     "generate:cpg": "sh -c 'out=${npm_config_output:-result/cpg/$(date +%Y%m%d-%H%M%S)} && python script/joern.py --replace-macro --src-root \"$npm_config_data\" --out-root \"$out\"'",
     "generate:kast": "sh -c 'out=${npm_config_output:-result/kast/$(date +%Y%m%d-%H%M%S)} && tsx src/joern/generateAST.ts \"$npm_config_data\" \"$out\"'",
