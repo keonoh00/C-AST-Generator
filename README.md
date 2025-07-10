@@ -16,36 +16,61 @@ This tool extracts ASTs from C code, converts them to KAST format, and processes
 
 - Node.js (version 14 or higher)
 - Joern 4.0.361 (installed and configured)
+- Python 3.x (for concurrent processing CPG generation)
 
 ## Usage
 
-1. Install dependencies:
+### 1. Install dependencies
 
 ```bash
 npm install && pip install -r script/requirements.txt
 ```
 
-2. Run the tool:
+### 2. Run the tool
 
-Full pipeline command:
+1. Full pipeline command (CPG + KAST generation):
 
-```bash
-npm run generate:full --data=<input_directory> --output=<output_directory (Optional)>
-```
+   ```bash
+    npm run generate:full --data="<input_directory>" --output="<output_directory (Optional default to tmp/YYYYMMDD-HHMMSS)>"
+   ```
 
-Generating CPG with Joern:
+   Example:
 
-```bash
-npm run generate:cpg --data=<input_directory> --output=<output_directory (Optional)>
-```
+   ```bash
+    npm run generate:full --data="./C/testcases" --output="./result"
+   ```
 
-Generating ASTs and converting to KAST(KSIGN Style AST):
+2. Step-by-step commands (Generating CPGs -> Generating KASTs):
 
-```bash
-npm run generate:template --data=<input_directory> --output=<output_directory (Optional)>
-```
+   2-1. Generating Joern CPGs:
 
-Replace `<input_directory>` with the directory containing C code and `<output_directory>` with the directory where you want to save the generated ASTs. 3. The tool will process the C code, extract ASTs, convert them to KAST format, and save the results in the specified output directory.
+   ```bash
+    # Generating CPGs using Joern
+    # If the format of CPG is not compatible it will be errorred out
+    # Has validation to ensure the CPG roots are valid
+    npm run generate:cpg --data=<input_directory> --output=<output_directory (Optional: default to tmp/YYYYMMDD-HHMMSS)>
+   ```
+
+   Example:
+
+   ```bash
+    npm run generate:cpg --data="./C/testcases" --output="./cpgs"
+   ```
+
+   2-2. Generating KASTs from Joern CPGs:
+
+   ```bash
+    # Generating KASTs(Template) from Joern CPGs
+    # The output will be in KAST format, which is compatible with KSIGN style ASTs
+    # This requires the CPGs to be generated first in the previous step
+    npm run generate:template --data=<input_directory> --output=<output_directory (Optional: default to tmp/YYYYMMDD-HHMMSS)>
+   ```
+
+   Example:
+
+   ```bash
+    npm run generate:template --data="./cpgs" --output="./kasts"
+   ```
 
 ## Development
 
