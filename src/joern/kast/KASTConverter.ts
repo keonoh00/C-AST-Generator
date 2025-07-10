@@ -54,6 +54,7 @@ import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclarat
 
 import { BinaryExpressionOperatorMap } from "./BinaryExpression";
 import { BinaryUnaryTypeWrapper } from "./BinaryUnaryTypeWrapper";
+import { PredefinedIdentifierTypes } from "./Predefined";
 import { STANDARD_LIB_CALLS } from "./StandardLibCall";
 import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 
@@ -440,6 +441,9 @@ export class KASTConverter {
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<
+    const predefinedType = Object.keys(PredefinedIdentifierTypes).includes(node.name)
+      ? PredefinedIdentifierTypes[node.name as keyof typeof PredefinedIdentifierTypes]
+      : undefined;
 
     if (type.includes("*")) {
       const pointerType = type.replace("*", "").trim();
@@ -452,7 +456,7 @@ export class KASTConverter {
             nodeType: ASTNodeTypes.Identifier,
             id: Number(node.id) || -999,
             name: node.name,
-            type: typeFullName,
+            type: predefinedType ?? type,
             size,
             children: this.convertedChildren(node.children),
           },
@@ -464,7 +468,7 @@ export class KASTConverter {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
       name: node.name,
-      type,
+      type: predefinedType ?? type,
       children: this.convertedChildren(node.children),
     };
 
@@ -672,11 +676,15 @@ export class KASTConverter {
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<unknown>".
 
+    const predefinedType = Object.keys(PredefinedIdentifierTypes).includes(name)
+      ? PredefinedIdentifierTypes[name as keyof typeof PredefinedIdentifierTypes]
+      : undefined;
+
     return {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
       name,
-      type: type,
+      type: predefinedType ?? type,
       size,
       children: this.convertedChildren(node.children),
     };
