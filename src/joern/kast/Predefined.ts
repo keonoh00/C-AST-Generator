@@ -7,3 +7,5 @@ export const PredefinedIdentifierTypes = {
   NULL: "void*",
   FILENAME_MAX: "int",
 };
+
+export const IdentifierToLiteralMap: string[] = ["NULL"];

@@ -54,7 +54,7 @@ import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclarat
 
 import { BinaryExpressionOperatorMap } from "./BinaryExpression";
 import { BinaryUnaryTypeWrapper } from "./BinaryUnaryTypeWrapper";
-import { PredefinedIdentifierTypes } from "./Predefined";
+import { IdentifierToLiteralMap, PredefinedIdentifierTypes } from "./Predefined";
 import { STANDARD_LIB_CALLS } from "./StandardLibCall";
 import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 
@@ -433,7 +433,7 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleIdentifier(node: TreeNode): IIdentifier | IPointerDereference | undefined {
+  private handleIdentifier(node: TreeNode): IIdentifier | ILiteral | IPointerDereference | undefined {
     const properties = node.properties as unknown as IdentifierVertexProperties;
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
@@ -461,6 +461,16 @@ export class KASTConverter {
             children: this.convertedChildren(node.children),
           },
         ],
+      };
+    }
+
+    if (IdentifierToLiteralMap.includes(node.name)) {
+      return {
+        nodeType: ASTNodeTypes.Literal,
+        id: Number(node.id) || -999,
+        type: predefinedType ?? type,
+        value: node.name,
+        children: this.convertedChildren(node.children),
       };
     }
 
