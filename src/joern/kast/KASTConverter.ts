@@ -54,6 +54,7 @@ import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclarat
 
 import { BinaryExpressionOperatorMap } from "./BinaryExpression";
 import { BinaryUnaryTypeWrapper } from "./BinaryUnaryTypeWrapper";
+import { IdentifierToLiteralMap, PredefinedIdentifierTypes } from "./Predefined";
 import { STANDARD_LIB_CALLS } from "./StandardLibCall";
 import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 
@@ -432,14 +433,17 @@ export class KASTConverter {
     return undefined;
   }
 
-  private handleIdentifier(node: TreeNode): IIdentifier | IPointerDereference | undefined {
+  private handleIdentifier(node: TreeNode): IIdentifier | ILiteral | IPointerDereference | undefined {
     const properties = node.properties as unknown as IdentifierVertexProperties;
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
-    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : "<not-array>";
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<dynamic>" : "<not-array>";
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<
+    const predefinedType = Object.keys(PredefinedIdentifierTypes).includes(node.name)
+      ? PredefinedIdentifierTypes[node.name as keyof typeof PredefinedIdentifierTypes]
+      : undefined;
 
     if (type.includes("*")) {
       const pointerType = type.replace("*", "").trim();
@@ -452,7 +456,7 @@ export class KASTConverter {
             nodeType: ASTNodeTypes.Identifier,
             id: Number(node.id) || -999,
             name: node.name,
-            type: typeFullName,
+            type: predefinedType ?? type,
             size,
             children: this.convertedChildren(node.children),
           },
@@ -460,11 +464,21 @@ export class KASTConverter {
       };
     }
 
+    if (IdentifierToLiteralMap.includes(node.name)) {
+      return {
+        nodeType: ASTNodeTypes.Literal,
+        id: Number(node.id) || -999,
+        type: predefinedType ?? type,
+        value: node.name,
+        children: this.convertedChildren(node.children),
+      };
+    }
+
     const baseObj: IIdentifier = {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
       name: node.name,
-      type,
+      type: predefinedType ?? type,
       children: this.convertedChildren(node.children),
     };
 
@@ -516,10 +530,13 @@ export class KASTConverter {
       throw new Error(`Literal node ${node.id} has ${node.children.length.toString()} children, expected 0.`);
     }
     const isString = properties.TYPE_FULL_NAME["@value"]["@value"].join("/").includes("char");
+    const predefinedType = Object.keys(PredefinedIdentifierTypes).includes(node.name)
+      ? PredefinedIdentifierTypes[node.name as keyof typeof PredefinedIdentifierTypes]
+      : undefined;
     const baseObj: ILiteral = {
       nodeType: ASTNodeTypes.Literal,
       id: Number(node.id) || -999,
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      type: predefinedType ?? properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
       value: this.formatString(node.code),
     };
 
@@ -532,6 +549,12 @@ export class KASTConverter {
 
   private handleLocal(node: TreeNode): IArrayDeclaration | IPointerDeclaration | IVariableDeclaration {
     const properties = node.properties as unknown as LocalVertexProperties;
+    const predefinedType = Object.keys(PredefinedIdentifierTypes).includes(node.name)
+      ? PredefinedIdentifierTypes[node.name as keyof typeof PredefinedIdentifierTypes]
+      : undefined;
+    const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
+    const storage =
+      node.code.includes(typeFullName) && node.code.trim().startsWith(typeFullName) ? undefined : node.code.split(typeFullName)[0].trim();
 
     if (properties.TYPE_FULL_NAME["@value"]["@value"].length > 0) {
       const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
@@ -549,6 +572,7 @@ export class KASTConverter {
           name: node.name,
           elementType,
           length,
+          storage,
           children: this.convertedChildren(node.children),
         };
       }
@@ -567,6 +591,7 @@ export class KASTConverter {
           name: node.name,
           pointingType: pointsTo,
           level,
+          storage,
           children: this.convertedChildren(node.children),
         };
       }
@@ -576,7 +601,8 @@ export class KASTConverter {
       nodeType: ASTNodeTypes.VariableDeclaration,
       id: Number(node.id) || -999,
       name: node.name,
-      type: properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      type: predefinedType ?? properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      storage,
       children: this.convertedChildren(node.children),
     };
   }
@@ -644,7 +670,7 @@ export class KASTConverter {
     }
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
-    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : undefined;
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<dynamic>" : undefined;
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<
@@ -664,18 +690,23 @@ export class KASTConverter {
     if (properties.TYPE_FULL_NAME["@value"]["@value"].length === 0) {
       throw new Error(`Method reference node ${node.id} has no type.`);
     }
+    const name = properties.METHOD_FULL_NAME["@value"]["@value"].join("/") || node.name || "<unknown>";
     const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
     const isArray = typeFullName.includes("[") && typeFullName.includes("]");
-    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<no-size-defined>" : undefined;
+    const size = isArray ? typeFullName.split("[")[1].split("]")[0] || "<dynamic>" : undefined;
     const type = isArray
       ? typeFullName.split("[")[0] // The type is the part before the first "[".
       : typeFullName; // If no type is found, use "<unknown>".
 
+    const predefinedType = Object.keys(PredefinedIdentifierTypes).includes(name)
+      ? PredefinedIdentifierTypes[name as keyof typeof PredefinedIdentifierTypes]
+      : undefined;
+
     return {
       nodeType: ASTNodeTypes.Identifier,
       id: Number(node.id) || -999,
-      name: node.name,
-      type: type,
+      name,
+      type: predefinedType ?? type,
       size,
       children: this.convertedChildren(node.children),
     };
