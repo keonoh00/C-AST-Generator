@@ -72,6 +72,15 @@ npm install && pip install -r script/requirements.txt
     npm run generate:template --data="./cpgs" --output="./kasts"
    ```
 
+### 3. Output
+
+- Final output will be in the specified output directory.
+- Each source file will have 4 files:
+  - `*_astTree.json`: The AST tree generated from the CPG, which contains the structure of the AST.
+  - `*_templateTree.json`: The KAST tree generated from the CPG.
+  - `*_flatten.json`: The flattened version of the KAST, node and edge separated with black list removed.
+  - `*_text.txt`: The text representation of KAST, which is a human-readable format of the KAST.
+
 ## Development
 
 - Use `npm run lint` to check code style.
