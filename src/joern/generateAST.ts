@@ -126,7 +126,7 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
         ast = extractor.getAstTree(root.export);
         const converted = converter.convertTree(ast);
         kastResult = postProcessor.removeInvalidNodes(converted);
-        kastResult = postProcessor.updateMemberAccessTypeLength(kastResult, root);
+        // kastResult = postProcessor.updateMemberAccessTypeLength(kastResult, root);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         if (progress) {
