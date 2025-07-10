@@ -5,4 +5,5 @@ export interface IArrayDeclaration extends IBaseNode {
   length: number | string;
   name: string;
   nodeType: ASTNodeTypes.ArrayDeclaration;
+  storage?: string;
 }

@@ -552,6 +552,9 @@ export class KASTConverter {
     const predefinedType = Object.keys(PredefinedIdentifierTypes).includes(node.name)
       ? PredefinedIdentifierTypes[node.name as keyof typeof PredefinedIdentifierTypes]
       : undefined;
+    const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/") || "";
+    const storage =
+      node.code.includes(typeFullName) && node.code.trim().startsWith(typeFullName) ? undefined : node.code.split(typeFullName)[0].trim();
 
     if (properties.TYPE_FULL_NAME["@value"]["@value"].length > 0) {
       const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
@@ -569,6 +572,7 @@ export class KASTConverter {
           name: node.name,
           elementType,
           length,
+          storage,
           children: this.convertedChildren(node.children),
         };
       }
@@ -587,6 +591,7 @@ export class KASTConverter {
           name: node.name,
           pointingType: pointsTo,
           level,
+          storage,
           children: this.convertedChildren(node.children),
         };
       }
@@ -597,6 +602,7 @@ export class KASTConverter {
       id: Number(node.id) || -999,
       name: node.name,
       type: predefinedType ?? properties.TYPE_FULL_NAME["@value"]["@value"].join("/"),
+      storage,
       children: this.convertedChildren(node.children),
     };
   }

@@ -5,4 +5,5 @@ export interface IPointerDeclaration extends IBaseNode {
   name: string;
   nodeType: ASTNodeTypes.PointerDeclaration;
   pointingType: string;
+  storage?: string;
 }
