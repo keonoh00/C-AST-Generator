@@ -4,6 +4,23 @@ import { ASTNodes } from "@/types/node";
 
 export class PostProcessor {
   /**
+   * Add code properties to all AST nodes and its children.
+   * It uses the CPGRoot to fetch the code information.
+   */
+  public addCodeProperties(nodes: ASTNodes[], cpg: CPGRoot): ASTNodes[] {
+    return nodes.map((node) => {
+      const vertex = cpg.export["@value"].vertices.find((v) => v.id["@value"] === node.id);
+      const code: string | undefined = vertex?.properties.CODE["@value"]["@value"].join("") ?? undefined;
+
+      return {
+        ...node,
+        code,
+        children: node.children ? this.addCodeProperties(node.children, cpg) : [],
+      };
+    });
+  }
+
+  /**
    * Walk the AST and check current node's children has ArrayDeclaration and the next child of the ArrayDeclaration is ArraySizeAllocation.
    * If so, merge the ArraySizeAllocation into the ArrayDeclaration.
    * Merging process is to check if the ArrayDeclaration's length are equal to the length of the ArraySizeAllocation.
