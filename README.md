@@ -81,6 +81,26 @@ npm install && pip install -r script/requirements.txt
   - `*_flatten.json`: The flattened version of the KAST, node and edge separated with black list removed.
   - `*_text.txt`: The text representation of KAST, which is a human-readable format of the KAST.
 
+### 4. Testing Open Source
+
+1. Initialize git submodules:
+
+   ```bash
+   npm run submodule
+   ```
+
+2. Generating KAST on Mongoose:
+
+   ```bash
+   npm run mongoose
+   ```
+
+3. Generating KAST on Zephyr:
+
+   ```bash
+   npm run zephyr
+   ```
+
 ## Development
 
 - Use `npm run lint` to check code style.
