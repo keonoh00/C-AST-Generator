@@ -65,7 +65,7 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
     ASTNodeTypes.Identifier,
     ASTNodeTypes.Literal,
   ]);
-  const treeToText = new TreeToText(["properties", "line_no", "code"]);
+  const treeToText = new TreeToText(["properties", "line_no"]);
 
   const totalFiles = allFiles.length;
   const chunks = chunkArray(allFiles, chunkSize);
@@ -127,6 +127,7 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
         const converted = converter.convertTree(ast);
         kastResult = postProcessor.removeInvalidNodes(converted);
         kastResult = postProcessor.mergeArraySizeAllocation(kastResult);
+        kastResult = postProcessor.addCodeProperties(kastResult, root);
         // kastResult = postProcessor.updateMemberAccessTypeLength(kastResult, root);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
