@@ -10,7 +10,14 @@ export class PostProcessor {
   public addCodeProperties(nodes: ASTNodes[], cpg: CPGRoot): ASTNodes[] {
     return nodes.map((node) => {
       const vertex = cpg.export["@value"].vertices.find((v) => v.id["@value"] === node.id);
-      const code: string | undefined = vertex?.properties.CODE["@value"]["@value"].join("") ?? undefined;
+      const code: string | undefined =
+        vertex &&
+        "CODE" in vertex.properties &&
+        typeof vertex.properties.CODE === "object" &&
+        typeof vertex.properties.CODE["@value"] === "object" &&
+        Array.isArray(vertex.properties.CODE["@value"]["@value"])
+          ? vertex.properties.CODE["@value"]["@value"].join("")
+          : undefined;
 
       return {
         ...node,
