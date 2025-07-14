@@ -34,10 +34,20 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 }
 
 async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<void> {
+  // ensure output directory exists and set up error logging
   fs.mkdirSync(outputDir, { recursive: true });
+  const errorLogPath = path.join(outputDir, "error.log");
+  const errorLogStream = fs.createWriteStream(errorLogPath, { flags: "a" });
+
+  function logError(context: string) {
+    const timestamp = new Date().toISOString();
+    errorLogStream.write(`${timestamp} - ${context}\n`);
+    console.error(context);
+  }
 
   const allFiles = await listJsonFiles(targetDir);
   if (allFiles.length === 0) {
+    logError("No JSON files found.");
     throw new Error("No JSON files found.");
   }
 
@@ -80,7 +90,9 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
       )
     : null;
 
-  if (progress) progress.start(totalFiles, 0);
+  if (progress) {
+    progress.start(totalFiles, 0);
+  }
 
   let processedCount = 0;
   let successCount = 0;
@@ -88,7 +100,9 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
   for (const fileChunk of chunks) {
     for (const inPath of fileChunk) {
       processedCount++;
-      if (progress) progress.increment();
+      if (progress) {
+        progress.increment();
+      }
 
       let root: CPGRoot;
       try {
@@ -96,12 +110,11 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
         root = JSON.parse(raw) as CPGRoot;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
+        const context = `Read/parse error for ${path.basename(inPath)}: ${msg}`;
+        logError(context);
         if (progress) {
           progress.stop();
-          console.error(`Read/parse error for ${path.basename(inPath)}: ${msg}`);
           progress.start(totalFiles, processedCount);
-        } else {
-          console.error(`Read/parse error for ${path.basename(inPath)}: ${msg}`);
         }
         continue;
       }
@@ -110,12 +123,11 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
         validateCPGRoot([root.export]);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
+        const context = `Validation failed for ${path.basename(inPath)}: ${msg}`;
+        logError(context);
         if (progress) {
           progress.stop();
-          console.error(`Validation failed for ${path.basename(inPath)}: ${msg}`);
           progress.start(totalFiles, processedCount);
-        } else {
-          console.error(`Validation failed for ${path.basename(inPath)}: ${msg}`);
         }
         continue;
       }
@@ -128,15 +140,13 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
         kastResult = postProcessor.removeInvalidNodes(converted);
         kastResult = postProcessor.mergeArraySizeAllocation(kastResult);
         kastResult = postProcessor.addCodeProperties(kastResult, root);
-        // kastResult = postProcessor.updateMemberAccessTypeLength(kastResult, root);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
+        const context = `Processing failed for ${path.basename(inPath)}: ${msg}`;
+        logError(context);
         if (progress) {
           progress.stop();
-          console.error(`Processing failed for ${path.basename(inPath)}: ${msg}`);
           progress.start(totalFiles, processedCount);
-        } else {
-          console.error(`Processing failed for ${path.basename(inPath)}: ${msg}`);
         }
         continue;
       }
@@ -154,12 +164,11 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
         writeSingleJSON(kastResult, templateAstOutPath);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
+        const context = `Write JSON error for ${path.basename(inPath)}: ${msg}`;
+        logError(context);
         if (progress) {
           progress.stop();
-          console.error(`Write JSON error for ${path.basename(inPath)}: ${msg}`);
           progress.start(totalFiles, processedCount);
-        } else {
-          console.error(`Write JSON error for ${path.basename(inPath)}: ${msg}`);
         }
         continue;
       }
@@ -170,12 +179,11 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
         await fs.promises.writeFile(textFile, textLines.join("\n\n"), "utf8");
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
+        const context = `Write text error for ${path.basename(inPath)}: ${msg}`;
+        logError(context);
         if (progress) {
           progress.stop();
-          console.error(`Write text error for ${path.basename(inPath)}: ${msg}`);
           progress.start(totalFiles, processedCount);
-        } else {
-          console.error(`Write text error for ${path.basename(inPath)}: ${msg}`);
         }
         continue;
       }
@@ -186,12 +194,11 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
         writeSingleJSON(flatten, flattenOutPath);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
+        const context = `Write flattened JSON error for ${path.basename(inPath)}: ${msg}`;
+        logError(context);
         if (progress) {
           progress.stop();
-          console.error(`Write flattened JSON error for ${path.basename(inPath)}: ${msg}`);
           progress.start(totalFiles, processedCount);
-        } else {
-          console.error(`Write flattened JSON error for ${path.basename(inPath)}: ${msg}`);
         }
         continue;
       }
@@ -204,6 +211,9 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
     progress.update(totalFiles);
     progress.stop();
   }
+
+  // close the error log stream
+  errorLogStream.end();
 
   console.log(`Processed ${String(processedCount)}/${String(totalFiles)} files; succeeded ${String(successCount)}`);
 }
@@ -219,6 +229,14 @@ function writeSingleJSON(item: ASTGraph[] | ASTNodes[] | TreeNode[], outPath: st
 
 void processCPGFiles().catch((err: unknown) => {
   const msg = err instanceof Error ? err.message : String(err);
-  console.error(`Fatal error in processCPGFiles: ${msg}`);
+  const context = `Fatal error in processCPGFiles: ${msg}`;
+  // Assuming outputDir exists by now, attempt to log
+  const logPath = path.join(outputDir, "error.log");
+  try {
+    fs.appendFileSync(logPath, `${new Date().toISOString()} - ${context}\n`);
+  } catch (err) {
+    void err;
+  }
+  console.error(context);
   process.exit(1);
 });
