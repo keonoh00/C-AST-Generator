@@ -2,57 +2,49 @@ import { CallVertexProperties, TreeNode } from "@/types/joern";
 
 import { BinaryExpressionBooleanMap } from "./BinaryExpression";
 
+/**
+ * Given a TreeNode for a call/operator, pick its result type.
+ * 1) hard-coded boolean map for known binary operators
+ * 2) raw TYPE_FULL_NAME if present
+ * 3) bottom-up inference from children
+ * 4) fallback to "<unknown>"
+ */
 export function BinaryUnaryTypeWrapper(node: TreeNode): string {
-  if (BinaryExpressionBooleanMap[node.name]) {
-    return BinaryExpressionBooleanMap[node.name];
+  // 1) boolean-map override
+  const boolType = BinaryExpressionBooleanMap[node.name];
+  if (boolType) {
+    return boolType;
   }
 
-  const childrenTypes = node.children.map((child) => {
-    const type = inferTypeBottomUp(child);
-    return isAmbiguous(type) ? "int" : type;
-  });
-
-  const uniqueTypes = new Set(childrenTypes);
-
-  if (uniqueTypes.size === 1) {
-    return [...uniqueTypes][0];
+  // 2) trust TYPE_FULL_NAME shape
+  const props = node.properties as unknown as CallVertexProperties;
+  const rawList = props.TYPE_FULL_NAME["@value"]["@value"];
+  if (rawList.length > 0) {
+    return rawList.join("/");
   }
 
+  // 3) infer from children
+  const childrenTypes = node.children.map(inferTypeBottomUp);
+  const unique = new Set(childrenTypes);
+  if (unique.size === 1) {
+    return [...unique][0];
+  }
+
+  // 4) give up
   return "<unknown>";
 }
-// Recursive inference from bottom-up
+
+/**
+ * Recursively infer type by merging its children’s types.
+ */
 export function inferTypeBottomUp(node: TreeNode): string {
-  const currentType = extractRawType(node);
-
-  // If current node has a definite type, use it
-  if (currentType && !isAmbiguous(currentType)) {
-    return currentType;
+  if (node.children.length === 0) {
+    return "unknown";
   }
-
-  // Recursively infer from children
-  const childTypes = node.children.map(inferTypeBottomUp).filter(Boolean);
-
-  if (childTypes.length === 0) return "unknown";
-
-  // Heuristically merge types from children
-  const uniqueTypes = Array.from(new Set(childTypes));
-
-  // Prefer a consistent single type if available
-  if (uniqueTypes.length === 1) {
-    return uniqueTypes[0];
+  const childTypes = node.children.map(inferTypeBottomUp);
+  const unique = Array.from(new Set(childTypes));
+  if (unique.length === 1) {
+    return unique[0];
   }
-
-  // Fallback: represent as a tuple or return union
-  return `(${uniqueTypes.join(" ")})`;
-}
-
-// Extract raw type string from the deeply nested field
-function extractRawType(node: TreeNode): string | undefined {
-  const properties = node.properties as unknown as CallVertexProperties;
-  return properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
-}
-
-// Check if a type is ambiguous (e.g., 'ANY', '(ANY int)', etc.)
-function isAmbiguous(type: string): boolean {
-  return type.includes("ANY") || type === "unknown" || type === "void" || type.trim() === "";
+  return `(${unique.join(" ")})`;
 }
