@@ -128,7 +128,7 @@ export class KASTConverter {
           return this.handleCall(node);
         case "CONTROL_STRUCTURE":
           return this.handleControlStructure(node);
-        case "FIELD_IDENTIFIER": // Handle together
+        case "FIELD_IDENTIFIER":
           return this.handleFieldIdentifier(node);
         case "FILE":
           return this.handleFile(node);
@@ -156,8 +156,22 @@ export class KASTConverter {
           return this.assertNever(node.label);
       }
     } catch (error) {
-      console.error(`Error converting node with id ${node.id} and label ${node.label}:`, error);
-      throw error; // Re-throw the error after logging it.
+      const lines: string[] = [
+        `Error converting node:`,
+        `  • id:      ${node.id}`,
+        `  • label:   ${node.label}`,
+        `  • name:    ${node.name}`,
+        ``,
+        `Original error message:`,
+        `  ${error instanceof Error ? error.message : String(error)}`,
+        ``,
+        `Stack trace:`,
+        error instanceof Error && error.stack ? error.stack : "n/a",
+      ];
+      console.error(lines.join("\n"));
+      throw new Error(
+        `Conversion failed for node id=${node.id} label=${node.label} name=${node.name}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
