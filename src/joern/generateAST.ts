@@ -89,7 +89,7 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
     ASTNodeTypes.Identifier,
     ASTNodeTypes.Literal,
   ]);
-  const treeToText = new TreeToText(["properties", "line_no"]);
+  const treeToText = new TreeToText(["properties", "line_no", "code"]);
 
   const totalFiles = allFiles.length;
   const chunks = chunkArray(allFiles, chunkSize);
