@@ -33,6 +33,20 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
   return chunks;
 }
 
+// Count all files recursively under a directory
+function countFiles(dir: string): number {
+  let count = 0;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      count += countFiles(fullPath);
+    } else {
+      count++;
+    }
+  }
+  return count;
+}
+
 async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<void> {
   // ensure output directory exists and set up error logging
   fs.mkdirSync(outputDir, { recursive: true });
@@ -218,6 +232,17 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
   console.log(`Processed ${String(processedCount)}/${String(totalFiles)} files; succeeded ${String(successCount)}`);
 }
 
+// Verify that the number of generated files equals jsonCount * multiplier
+function verifyGeneratedFiles(outputDir: string, jsonCount: number, multiplier = 4): void {
+  const generatedCount = countFiles(outputDir);
+  const expectedCount = jsonCount * multiplier + 1;
+  if (generatedCount !== expectedCount) {
+    console.error(`File count mismatch: expected ${String(expectedCount)}, but found ${String(generatedCount)}`);
+    process.exit(1);
+  }
+  console.log(`Verified generation of ${String(generatedCount)} files.`);
+}
+
 /**
  * Writes a single item to JSON via writeJSONFiles, returning the written path.
  * Throws on error.
@@ -227,16 +252,21 @@ function writeSingleJSON(item: ASTGraph[] | ASTNodes[] | TreeNode[], outPath: st
   return written;
 }
 
-void processCPGFiles().catch((err: unknown) => {
-  const msg = err instanceof Error ? err.message : String(err);
-  const context = `Fatal error in processCPGFiles: ${msg}`;
-  // Assuming outputDir exists by now, attempt to log
-  const logPath = path.join(outputDir, "error.log");
-  try {
-    fs.appendFileSync(logPath, `${new Date().toISOString()} - ${context}\n`);
-  } catch (err) {
-    void err;
-  }
-  console.error(context);
-  process.exit(1);
-});
+void processCPGFiles()
+  .then(() => {
+    const jsonCount = countFiles(targetDir);
+    verifyGeneratedFiles(outputDir, jsonCount);
+  })
+  .catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    const context = `Fatal error in processCPGFiles: ${msg}`;
+    // Assuming outputDir exists by now, attempt to log
+    const logPath = path.join(outputDir, "error.log");
+    try {
+      fs.appendFileSync(logPath, `${new Date().toISOString()} - ${context}\n`);
+    } catch (err) {
+      void err;
+    }
+    console.error(context);
+    process.exit(1);
+  });
