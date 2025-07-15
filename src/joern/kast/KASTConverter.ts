@@ -8,6 +8,7 @@ import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { ILabel } from "@/types/ControlStructures/Label";
+import { IReturnStatement } from "@/types/ControlStructures/ReturnStatement";
 import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IWhileStatement } from "@/types/ControlStructures/WhileStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
@@ -116,7 +117,6 @@ export class KASTConverter {
         case "MODIFIER":
         case "NAMESPACE":
         case "NAMESPACE_BLOCK":
-        case "RETURN":
         case "TYPE":
         case "TYPE_REF":
         case "UNKNOWN":
@@ -150,6 +150,8 @@ export class KASTConverter {
           return this.handleMethodParamIn(node);
         case "METHOD_REF":
           return this.handleMethodRef(node);
+        case "RETURN":
+          return this.handleReturn(node);
         case "TYPE_DECL":
           return this.handleTypeDecl(node);
         default:
@@ -722,6 +724,14 @@ export class KASTConverter {
       name,
       type: predefinedType ?? type,
       size,
+      children: this.convertedChildren(node.children),
+    };
+  }
+
+  private handleReturn(node: TreeNode): IReturnStatement {
+    return {
+      nodeType: ASTNodeTypes.ReturnStatement,
+      id: Number(node.id) || -999,
       children: this.convertedChildren(node.children),
     };
   }
