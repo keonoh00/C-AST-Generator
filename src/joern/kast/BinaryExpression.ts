@@ -11,6 +11,7 @@ export const BinaryExpressionOperatorMap: Record<string, string> = {
   "<operator>.notEquals": "!=",
   "<operator>.subtraction": "-",
   "<operator>.division": "/",
+  "<operator>.assignmentPlus": "+=",
 };
 
 export const BinaryExpressionBooleanMap: Record<string, string> = {
@@ -21,5 +22,6 @@ export const BinaryExpressionBooleanMap: Record<string, string> = {
   "<operator>.lessThan": "boolean",
   "<operator>.logicalAnd": "boolean",
   "<operator>.logicalOr": "boolean",
+  "<operator>.logicalNot": "boolean",
   "<operator>.notEquals": "boolean",
 };

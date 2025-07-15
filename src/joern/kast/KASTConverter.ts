@@ -94,6 +94,10 @@ export class KASTConverter {
     return convertedNodes;
   }
 
+  public getCallCollection(): string[] {
+    return this.callCollection;
+  }
+
   private assertNever(x: unknown): never {
     throw new Error("Unexpected label: " + JSON.stringify(x));
   }

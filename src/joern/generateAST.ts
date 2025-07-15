@@ -226,6 +226,11 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
     progress.stop();
   }
 
+  const calls = converter.getCallCollection();
+
+  logError(`Processed ${String(processedCount)}/${String(totalFiles)} files; succeeded ${String(successCount)}`);
+  logError(`Total calls collected: ${calls.join(", ")}`);
+
   // close the error log stream
   errorLogStream.end();
 
