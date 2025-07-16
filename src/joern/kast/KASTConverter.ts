@@ -263,8 +263,13 @@ export class KASTConverter {
 
         if (allocChild.length === 1) {
           const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
-          const fullRawType = typeFullName.split("[")[1].split("]")[0];
-          const length = Number(fullRawType) || typeFullName;
+
+          // Safely extract the array size inside brackets, if present
+          const rawSizeMatch = /\[(\d+)\]/.exec(typeFullName);
+          const fullRawType = rawSizeMatch ? rawSizeMatch[1] : undefined;
+
+          // Determine length: numeric if possible, otherwise fallback to the full type name
+          const length: number | string = fullRawType !== undefined ? Number(fullRawType) || fullRawType : typeFullName;
 
           return {
             nodeType: ASTNodeTypes.ArraySizeAllocation,
