@@ -149,15 +149,16 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
       let ast: TreeNode[];
       let kastResult: ASTNodes[];
       try {
-        ast = extractor.getAstTree(root.export);
-        const converted = converter.convertTree(ast);
-        kastResult = postProcessor.removeInvalidNodes(converted);
-        kastResult = postProcessor.mergeArraySizeAllocation(kastResult);
-        kastResult = postProcessor.addCodeProperties(kastResult, root);
+        ast = withContext("getAstTree", () => extractor.getAstTree(root.export));
+        const converted = withContext("convertTree", () => converter.convertTree(ast));
+        kastResult = withContext("removeInvalidNodes", () => postProcessor.removeInvalidNodes(converted));
+        // kastResult = withContext("mergeArraySizeAllocation", () => postProcessor.mergeArraySizeAllocation(kastResult));
+        kastResult = withContext("addCodeProperties", () => postProcessor.addCodeProperties(kastResult, root));
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const context = `Processing failed for ${path.basename(inPath)}: ${msg}`;
         logError(context);
+
         if (progress) {
           progress.stop();
           progress.start(totalFiles, processedCount);
@@ -229,12 +230,13 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
   const calls = converter.getCallCollection();
 
   logError(`Processed ${String(processedCount)}/${String(totalFiles)} files; succeeded ${String(successCount)}`);
-  logError(`Total calls collected: ${calls.join(", ")}`);
+  logError(`Total calls collected: ${String(calls.length)}`);
+  for (const call of calls) {
+    logError(`  • ${call}`);
+  }
 
   // close the error log stream
   errorLogStream.end();
-
-  console.log(`Processed ${String(processedCount)}/${String(totalFiles)} files; succeeded ${String(successCount)}`);
 }
 
 // Verify that the number of generated files equals jsonCount * multiplier
@@ -246,6 +248,16 @@ function verifyGeneratedFiles(outputDir: string, jsonCount: number, multiplier =
     process.exit(1);
   }
   console.log(`Verified generation of ${String(generatedCount)} files.`);
+}
+
+function withContext<T>(fnName: string, fn: () => T): T {
+  try {
+    return fn();
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // re-throw with the function name prefixed
+    throw new Error(`${fnName} failed: ${msg}`);
+  }
 }
 
 /**
