@@ -5,12 +5,18 @@ This tool extracts ASTs from C code, converts them to KAST format, and processes
 
 ## Features
 
-- Extracts ASTs from C code using Joern
-- Converts ASTs to KAST format
-- Processes KASTs for analysis
-- Supports planation of KASTs
-- Validates CPG roots
-- Provides utilities for listing and writing JSON files
+- Generates CPGs (Code Property Graphs) using Joern.
+  - `joern-parse` and `joern-export` commands in parallel for efficient CPG generation.
+  - Keeps the original data directory structure.
+- Converts CPGs to KAST (KSIGN Abstract Syntax Tree) format.
+  - Generates KAST templates from CPGs.
+  - Outputs 4 different files
+  - Includes a post-processing steps:
+    - `addCodeProperties`: Adds code properties to the KAST nodes.
+    - `isolateTranslationUnit`: Keep only the TranslationUnit node and its children from the AST.
+    - `mergeArraySizeAllocation`: Merges array size allocation nodes with their parent nodes. (!!!!! Note: Not implemented yet !!!!!)
+    - `removeInvalidNodes`: Removes nodes that are not valid in the context of KAST.
+    - `updateMemberAccessTypeLength`: Updates the member access type length in the KAST nodes. (!!!!! Note: Not implemented yet !!!!!)
 
 ## Prerequisites
 
