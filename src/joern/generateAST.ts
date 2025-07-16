@@ -154,6 +154,7 @@ async function processCPGFiles(chunkSize = 100, progressBar = true): Promise<voi
         kastResult = withContext("removeInvalidNodes", () => postProcessor.removeInvalidNodes(converted));
         // kastResult = withContext("mergeArraySizeAllocation", () => postProcessor.mergeArraySizeAllocation(kastResult));
         kastResult = withContext("addCodeProperties", () => postProcessor.addCodeProperties(kastResult, root));
+        kastResult = withContext("isolateTranslationUnit", () => postProcessor.isolateTranslationUnit(kastResult));
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         const context = `Processing failed for ${path.basename(inPath)}: ${msg}`;

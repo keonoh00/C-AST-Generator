@@ -28,6 +28,19 @@ export class PostProcessor {
   }
 
   /**
+   * Isolate the TranslationUnit node from the AST.
+   * It returns the first TranslationUnit node found in the AST.
+   * If no TranslationUnit node is found, it throws an error.
+   */
+  public isolateTranslationUnit(nodes: ASTNodes[]): ASTNodes[] {
+    const tu = nodes.filter((node) => node.nodeType === ASTNodeTypes.TranslationUnit);
+    if (tu.length === 0) {
+      throw new Error("No TranslationUnit node found in the provided AST");
+    }
+    return tu;
+  }
+
+  /**
    * Walk the AST and check current node's children has ArrayDeclaration and the next child of the ArrayDeclaration is ArraySizeAllocation.
    * If so, merge the ArraySizeAllocation into the ArrayDeclaration.
    * Merging process is to check if the ArrayDeclaration's length are equal to the length of the ArraySizeAllocation.
