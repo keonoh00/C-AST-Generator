@@ -1,4 +1,15 @@
 export const UnaryExpressionOperatorMap: Record<string, string> = {
   "<operator>.postIncrement": "++",
+  "<operator>.preIncrement": "++",
+  "<operator>.postDecrement": "--",
+  "<operator>.preDecrement": "--",
+  "<operator>.plus": "+",
   "<operator>.minus": "-",
+  "<operator>.logicalNot": "!",
+  "<operator>.not": "~",
+  "<operator>.indirection": "*",
+  "<operator>.new": "new",
+  "<operator>.delete": "delete",
+  "<operator>.alloc": "alloc",
+  "<operator>.arrayInitializer": "{}",
 };
