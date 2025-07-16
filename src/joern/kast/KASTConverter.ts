@@ -231,27 +231,6 @@ export class KASTConverter {
     }
 
     if (Object.keys(UnaryExpressionOperatorMap).includes(node.name)) {
-      if (node.name === "<operator>.minus") {
-        // Special case for unary minus, which is a binary expression with a single child.
-        if (node.children.length !== 1) {
-          throw new Error(`Unary minus node ${node.id} has ${node.children.length.toString()} children, expected 1.`);
-        }
-        if (node.children[0].label !== "LITERAL") {
-          throw new Error(`Unary minus node ${node.id} has a child with label ${node.children[0].label}, expected LITERAL.`);
-        }
-        if (node.children[0].children.length !== 0) {
-          throw new Error(`Unary minus node ${node.id} has a child with ${node.children[0].children.length.toString()} children, expected 0.`);
-        }
-
-        return {
-          nodeType: ASTNodeTypes.Literal,
-          id: Number(node.id) || -999,
-          value: Number("-" + node.children[0].code),
-          type: "int",
-          children: [],
-        };
-      }
-
       return {
         nodeType: ASTNodeTypes.UnaryExpression,
         id: Number(node.id) || -999,
@@ -285,7 +264,7 @@ export class KASTConverter {
         if (allocChild.length === 1) {
           const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
           const fullRawType = typeFullName.split("[")[1].split("]")[0];
-          const length = Number(fullRawType) || fullRawType;
+          const length = Number(fullRawType) || typeFullName;
 
           return {
             nodeType: ASTNodeTypes.ArraySizeAllocation,
