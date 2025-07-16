@@ -8,6 +8,7 @@ import { IForStatement } from "@/types/ControlStructures/ForStatement";
 import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
 import { IIfStatement } from "@/types/ControlStructures/IfStatement";
 import { ILabel } from "@/types/ControlStructures/Label";
+import { IReturnStatement } from "@/types/ControlStructures/ReturnStatement";
 import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
 import { IWhileStatement } from "@/types/ControlStructures/WhileStatement";
 import { IStructType } from "@/types/DataTypes/StructType";
@@ -93,6 +94,10 @@ export class KASTConverter {
     return convertedNodes;
   }
 
+  public getCallCollection(): string[] {
+    return this.callCollection;
+  }
+
   private assertNever(x: unknown): never {
     throw new Error("Unexpected label: " + JSON.stringify(x));
   }
@@ -116,7 +121,6 @@ export class KASTConverter {
         case "MODIFIER":
         case "NAMESPACE":
         case "NAMESPACE_BLOCK":
-        case "RETURN":
         case "TYPE":
         case "TYPE_REF":
         case "UNKNOWN":
@@ -150,6 +154,8 @@ export class KASTConverter {
           return this.handleMethodParamIn(node);
         case "METHOD_REF":
           return this.handleMethodRef(node);
+        case "RETURN":
+          return this.handleReturn(node);
         case "TYPE_DECL":
           return this.handleTypeDecl(node);
         default:
@@ -225,27 +231,6 @@ export class KASTConverter {
     }
 
     if (Object.keys(UnaryExpressionOperatorMap).includes(node.name)) {
-      if (node.name === "<operator>.minus") {
-        // Special case for unary minus, which is a binary expression with a single child.
-        if (node.children.length !== 1) {
-          throw new Error(`Unary minus node ${node.id} has ${node.children.length.toString()} children, expected 1.`);
-        }
-        if (node.children[0].label !== "LITERAL") {
-          throw new Error(`Unary minus node ${node.id} has a child with label ${node.children[0].label}, expected LITERAL.`);
-        }
-        if (node.children[0].children.length !== 0) {
-          throw new Error(`Unary minus node ${node.id} has a child with ${node.children[0].children.length.toString()} children, expected 0.`);
-        }
-
-        return {
-          nodeType: ASTNodeTypes.Literal,
-          id: Number(node.id) || -999,
-          value: Number("-" + node.children[0].code),
-          type: "int",
-          children: [],
-        };
-      }
-
       return {
         nodeType: ASTNodeTypes.UnaryExpression,
         id: Number(node.id) || -999,
@@ -278,8 +263,13 @@ export class KASTConverter {
 
         if (allocChild.length === 1) {
           const typeFullName = properties.TYPE_FULL_NAME["@value"]["@value"].join("/");
-          const fullRawType = typeFullName.split("[")[1].split("]")[0];
-          const length = Number(fullRawType) || fullRawType;
+
+          // Safely extract the array size inside brackets, if present
+          const rawSizeMatch = /\[(\d+)\]/.exec(typeFullName);
+          const fullRawType = rawSizeMatch ? rawSizeMatch[1] : undefined;
+
+          // Determine length: numeric if possible, otherwise fallback to the full type name
+          const length: number | string = fullRawType !== undefined ? Number(fullRawType) || fullRawType : typeFullName;
 
           return {
             nodeType: ASTNodeTypes.ArraySizeAllocation,
@@ -722,6 +712,14 @@ export class KASTConverter {
       name,
       type: predefinedType ?? type,
       size,
+      children: this.convertedChildren(node.children),
+    };
+  }
+
+  private handleReturn(node: TreeNode): IReturnStatement {
+    return {
+      nodeType: ASTNodeTypes.ReturnStatement,
+      id: Number(node.id) || -999,
       children: this.convertedChildren(node.children),
     };
   }
