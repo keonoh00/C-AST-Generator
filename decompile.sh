@@ -1,37 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# decompile.sh - automate Ghidra headless decompilation
-# Usage: sudo decompile.sh <project-root> <binary-directory> [<output-dir>]
+# decompile.sh - automate Ghidra headless decompilation (Bash decides output dir)
+# Usage: ./decompile.sh <binary-directory>
 # Example:
-#   sudo decompile.sh ./ghidra/data/compiled/SARD_Juliet ./ghidra/data/compiled/SARD_Juliet /home/keonoh/C-AST-Generator/data/decompiled/SARD_Juliet
+#   ./decompile.sh ./data/tmp/compiled
 
-if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 <project-root> <binary-dir> [<output-dir>]" >&2
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 <binary-dir>" >&2
   exit 1
 fi
 
-PROJECT_ROOT="$1"
-BINARY_DIR="$2"
-OUTPUT_DIR="${3:-$PROJECT_ROOT/decompiled}"
+BINARY_DIR="$1"
+PROJECT_NAME="$(basename "$BINARY_DIR")"
+OUTPUT_DIR="$BINARY_DIR/decompiled"
 
 # Ensure output directory exists
 mkdir -p "$OUTPUT_DIR"
 
+# Resolve script path (relative to this file, else fallback to ./script)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -d "$SCRIPT_DIR/script" ]]; then
+  SCRIPT_PATH="$SCRIPT_DIR/script"
+else
+  SCRIPT_PATH="script"
+fi
+
 echo "→ Decompiling binaries from '$BINARY_DIR' into '$OUTPUT_DIR'"
 
-# Run Ghidra headless
-ghidraHeadless "$PROJECT_ROOT" "MyProject" \
+ghidraHeadless "$BINARY_DIR" "$PROJECT_NAME" \
   -import "$BINARY_DIR" \
   -recursive \
   -overwrite \
-  -log "$PROJECT_ROOT/ghidra_headless.log" \
-  -scriptPath script \
-  -postScript ghidra.py
-
-# Move or copy decompiled files if script writes elsewhere
-if [[ -d "$PROJECT_ROOT/decompiled" ]]; then
-  mv "$PROJECT_ROOT/decompiled"/* "$OUTPUT_DIR" || true
-fi
+  -log "$BINARY_DIR/ghidra_headless.log" \
+  -scriptPath "$SCRIPT_PATH" \
+  -postScript ghidra.py "$OUTPUT_DIR"
 
 echo "✔ Decompilation complete. Files are in '$OUTPUT_DIR'"
