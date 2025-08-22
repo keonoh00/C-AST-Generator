@@ -12,7 +12,7 @@ from ghidra.util.task import ConsoleTaskMonitor
 import os
 
 # Determine output directory (absolute path)
-output_dir = "/home/keonoh/C-AST-Generator/data/decompiled"
+output_dir = "/tmp/decompiled"
 # Create if missing
 if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
