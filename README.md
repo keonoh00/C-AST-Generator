@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # C-AST-Generator
 
 A tool to generate C Abstract Syntax Trees (ASTs) using Joern.
@@ -175,6 +174,3 @@ npm install && pip install -r script/requirements.txt
   - `listJson.ts`: JSON 파일 목록을 리스트로 반환하는 유틸리티 함수.
   - `readJson.ts`: JSON 파일을 읽어오는 유틸리티 함수.
   - `writeJson.ts`: JSON 파일을 쓰는 유틸리티 함수.
-=======
-# SSAT
->>>>>>> 3ca5dc2 (first commit)
