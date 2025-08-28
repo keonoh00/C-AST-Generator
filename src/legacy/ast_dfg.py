@@ -7,11 +7,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import torch
+from ASTExtractorV1_11h import ASTExtractorV1_1
+from DFGExtractorV1_12j import DFGExtractorV1_12
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-
-from ASTExtractorV1 import ASTExtractorV1
-from DFGExtractorV1_11 import DFGExtractorV1_11
 
 RANDOM_SEED = 1337
 random.seed(RANDOM_SEED)
@@ -150,9 +149,9 @@ class FuncGraph:
     def __init__(self, ast_path: Path, label: int, sink_mode: str = "k1"):
         with open(ast_path, "r", encoding="utf-8") as f:
             ast_json = json.load(f)
-        ast_ext = ASTExtractorV1(ast_json)
+        ast_ext = ASTExtractorV1_1(ast_json)
         ast_result = ast_ext.run()
-        dfg_ext = DFGExtractorV1_11(ast_json, ast_result, sink_mode=sink_mode)
+        dfg_ext = DFGExtractorV1_12(ast_json, ast_result, sink_mode=sink_mode)
         dfg_result = dfg_ext.run()
         self.ast_result = ast_result
         self.dfg_result = dfg_result
@@ -164,7 +163,16 @@ class FuncGraph:
 # ----------------------------
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--bad", type=str, default="data/CWE121_CWE129_fgets_01_bad.json")
+
+    # p.add_argument("--bad", type=str, default="data/CWE121_CWE129_fgets_01_bad.json")
+    # p.add_argument("--bad", type=str, default="data/CWE121_CWE129_fgets_01_goodG2B.json")
+
+    # p.add_argument("--bad", type=str, default="data/CWE121_type_overrun_memmove_01_bad.json")
+    # p.add_argument("--bad", type=str, default="data/CWE121_type_overrun_memmove_01_good.json")
+
+    # p.add_argument("--bad", type=str, default="data/CWE121_CWE131_loop_01_bad.json")
+    p.add_argument("--bad", type=str, default="data/CWE121_CWE131_loop_01_goodG2B.json")
+
     args = p.parse_args()
 
     graph = FuncGraph(Path(args.bad), label=1)
