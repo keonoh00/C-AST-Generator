@@ -5,18 +5,18 @@ import json
 import os
 from typing import Dict, List, Optional
 
-from src.cpg.types import DfgOptions, Edge, Graph, Node, TypedCPG
+from src.cpg.types import DFGOptions, Edge, Graph, Node, TypedCPG
 
 
-class DfgJsonBuilder:
+class DFGExtractor:
     """
     Builds node-link JSON DFGs from a TypedCPG.
     - No external graph library
     - Whole-program or per-method
     """
 
-    def __init__(self, options: Optional[DfgOptions] = None) -> None:
-        self.options = options or DfgOptions()
+    def __init__(self, options: Optional[DFGOptions] = None) -> None:
+        self.options = options or DFGOptions()
 
     # ---------- Whole program ----------
 
@@ -30,13 +30,13 @@ class DfgJsonBuilder:
                 continue
             if self.options.intraprocedural_only:
                 m_src = (
-                    typed.nodes.get(e.src).method_full_name
-                    if e.src in typed.nodes
+                    typed.nodes[e.src].method_full_name
+                    if (e.src in typed.nodes and typed.nodes[e.src] is not None)
                     else None
                 )
                 m_dst = (
-                    typed.nodes.get(e.dst).method_full_name
-                    if e.dst in typed.nodes
+                    typed.nodes[e.dst].method_full_name
+                    if (e.dst in typed.nodes and typed.nodes[e.dst] is not None)
                     else None
                 )
                 if m_src and m_dst and m_src != m_dst:
@@ -66,13 +66,13 @@ class DfgJsonBuilder:
             if e.label not in self.options.labels:
                 continue
             m_src = (
-                typed.nodes.get(e.src).method_full_name
-                if e.src in typed.nodes
+                typed.nodes[e.src].method_full_name
+                if (e.src in typed.nodes and typed.nodes[e.src] is not None)
                 else None
             )
             m_dst = (
-                typed.nodes.get(e.dst).method_full_name
-                if e.dst in typed.nodes
+                typed.nodes[e.dst].method_full_name
+                if (e.dst in typed.nodes and typed.nodes[e.dst] is not None)
                 else None
             )
             if self.options.intraprocedural_only and m_src and m_dst and m_src != m_dst:
