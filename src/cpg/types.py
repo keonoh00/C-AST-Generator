@@ -1,7 +1,7 @@
 # cpg/types.py
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, List, Mapping, Optional, Set, Tuple, TypedDict
 
@@ -89,11 +89,11 @@ class Graph(TypedDict, total=False):
 
 
 @dataclass(frozen=True)
-class DfgOptions:
+class DFGOptions:
     """Controls what edges/nodes are kept in the DFG JSON."""
 
-    labels: Set[EdgeLabel] = frozenset(
-        {
+    labels: Set[EdgeLabel] = field(
+        default_factory=lambda: {
             EdgeLabel.REACHING_DEF,
             EdgeLabel.DATA_FLOW,
             EdgeLabel.DDG_EDGE,

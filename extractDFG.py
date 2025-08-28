@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import os
 from multiprocessing import Pool
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from rich.console import Console
 from rich.progress import (
@@ -17,13 +17,15 @@ from rich.progress import (
 )
 
 from src.cpg.verification import Verifier
-from src.dfg.extractor import DfgJsonBuilder, DfgOptions, Graph
+from src.dfg.extractor import DFGExtractor, DFGOptions, Graph
 
 console = Console()
 
 
-def arg_parser():
-    parser = argparse.ArgumentParser()
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Extract DFGs from typed CPG GraphSON JSONs"
+    )
     parser.add_argument(
         "--cpg",
         type=str,
@@ -39,16 +41,16 @@ def arg_parser():
     return parser.parse_args()
 
 
-def _build_default_builder() -> DfgJsonBuilder:
+def _build_default_extractor() -> DFGExtractor:
     # Defaults:
     # - labels: {REACHING_DEF, DATA_FLOW, DDG_EDGE}
     # - intraprocedural_only: False
     # - include_isolated: False
     # - keep_fields: ("code", "line", "methodFullName")
-    return DfgJsonBuilder(DfgOptions())
+    return DFGExtractor(DFGOptions())
 
 
-def _derive_out_path(cpg_path: str, save_root: str, base_root: str) -> str:
+def derive_output_path(cpg_path: str, save_root: str, base_root: str) -> str:
     if os.path.isdir(base_root):
         rel = os.path.relpath(cpg_path, base_root)
         rel_dir, base = os.path.split(rel)
@@ -58,46 +60,45 @@ def _derive_out_path(cpg_path: str, save_root: str, base_root: str) -> str:
         return save_root
 
 
-def worker_job(args: Tuple[str, str, str]) -> Dict[str, object]:
+def process_cpg_file(args: Tuple[str, str, str]) -> Dict[str, Any]:
     """
-    Worker-safe function (no printing).
+    Pure worker function to type-check a CPG and emit its DFG.
     Args:
       - cpg_path: path to GraphSON CPG
       - save_root: base output path (dir in batch, file in single)
       - base_root: `--cpg` root for batch or same file in single
-    Returns a dict with keys:
-      - cpg_path, out_path, ok (bool), issues (list[str])
+    Returns a dict with keys: cpg_path, out_path, ok (bool), issues (list[str])
     """
     cpg_path, save_root, base_root = args
     verifier = Verifier()
-    typed, report = verifier.verify_and_type(cpg_path)
+    typed_cpg, verification = verifier.verify_and_type(cpg_path)
 
-    out_path = _derive_out_path(cpg_path, save_root, base_root)
+    out_path = derive_output_path(cpg_path, save_root, base_root)
 
-    if not report.ok:
+    if not verification.ok:
         return {
             "cpg_path": cpg_path,
             "out_path": out_path,
             "ok": False,
-            "issues": [f"{i.severity}: {i.message}" for i in report.issues],
+            "issues": [f"{i.severity}: {i.message}" for i in verification.issues],
         }
 
-    builder = _build_default_builder()
-    whole: Graph = builder.build_whole(typed)
+    extractor = _build_default_extractor()
+    whole_program_dfg: Graph = extractor.build_whole(typed_cpg)
 
     # Ensure parent dirs exist atomically here (works for both modes)
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
-    builder.write_json(whole, out_path)
+    extractor.write_json(whole_program_dfg, out_path)
 
     return {
         "cpg_path": cpg_path,
         "out_path": out_path,
         "ok": True,
-        "issues": [f"{i.severity}: {i.message}" for i in report.issues],
+        "issues": [f"{i.severity}: {i.message}" for i in verification.issues],
     }
 
 
-def run_dir(cpg_dir: str, save_root: str) -> None:
+def process_directory(cpg_dir: str, save_root: str) -> None:
     json_files: List[str] = []
     for root, _dirs, files in os.walk(cpg_dir):
         for file in files:
@@ -123,46 +124,50 @@ def run_dir(cpg_dir: str, save_root: str) -> None:
         transient=False,
     )
     with progress:
-        task = progress.add_task("extract", total=len(json_files))
-        results: List[Dict[str, object]] = []
+        progress_task = progress.add_task("extract", total=len(json_files))
+        results: List[Dict[str, Any]] = []
 
         # Use unordered to update the bar as soon as items finish
-        with Pool(os.cpu_count() or 4) as p:
-            for res in p.imap_unordered(
-                worker_job, [(fp, save_root, cpg_dir) for fp in json_files]
+        with Pool(os.cpu_count() or 4) as pool:
+            for result in pool.imap_unordered(
+                process_cpg_file, [(fp, save_root, cpg_dir) for fp in json_files]
             ):
-                results.append(res)
-                progress.advance(task)
+                results.append(result)
+                progress.advance(progress_task)
 
-    ok_count = sum(1 for r in results if r["ok"])
-    fail_count = len(results) - ok_count
-    console.log(f"[green]Completed[/] {ok_count}  [red]Failed[/] {fail_count}")
+    success_count = sum(1 for item in results if item["ok"])  # type: ignore[index]
+    fail_count = len(results) - success_count
+    console.log(f"[green]Completed[/] {success_count}  [red]Failed[/] {fail_count}")
 
     # Print details for failures and any verification issues
     if fail_count:
         console.rule("[red]Failures")
-        for r in results:
-            if not r["ok"]:
-                console.log(f"[red]FAILED[/] {r['cpg_path']}")
-                for msg in r.get("issues", []):
-                    console.log(f"  • {msg}")
+        for item in results:
+            if not item["ok"]:  # type: ignore[index]
+                console.log(f"[red]FAILED[/] {item['cpg_path']}")
+                issues_list: List[str] = item.get("issues", [])
+                for message in issues_list:
+                    console.log(f"  • {message}")
 
     # Optionally show warnings/info from successful runs
-    any_warns = False
-    for r in results:
-        if r["ok"]:
-            issues: List[str] = r.get("issues", [])  # type: ignore[assignment]
-            warn_msgs = [m for m in issues if m.startswith("WARN")]
-            if warn_msgs:
-                if not any_warns:
+    any_warnings = False
+    for item in results:
+        if item["ok"]:  # type: ignore[index]
+            issues_any: Any = item.get("issues", [])
+            issues: List[str] = issues_any if isinstance(issues_any, list) else []
+            warning_messages = [
+                msg for msg in issues if isinstance(msg, str) and msg.startswith("WARN")
+            ]
+            if warning_messages:
+                if not any_warnings:
                     console.rule("[yellow]Warnings")
-                    any_warns = True
-                console.log(f"[yellow]{r['cpg_path']}[/]")
-                for m in warn_msgs:
-                    console.log(f"  • {m}")
+                    any_warnings = True
+                console.log(f"[yellow]{item['cpg_path']}[/]")
+                for message in warning_messages:
+                    console.log(f"  • {message}")
 
 
-def run_file(cpg_file: str, save_path: str) -> None:
+def process_single_file(cpg_file: str, save_path: str) -> None:
     console.log(f"[bold]Processing[/] {cpg_file}")
     progress = Progress(
         TextColumn("[bold blue]DFG[/]"),
@@ -175,24 +180,31 @@ def run_file(cpg_file: str, save_path: str) -> None:
         transient=True,
     )
     with progress:
-        task = progress.add_task("extract", total=1)
-        res = worker_job((cpg_file, save_path, cpg_file))
-        progress.advance(task)
+        progress_task = progress.add_task("extract", total=1)
+        result = process_cpg_file((cpg_file, save_path, cpg_file))
+        progress.advance(progress_task)
 
-    if res["ok"]:
-        console.log(f"[green]Saved[/] {res['out_path']}")
-        # Show any warnings
-        warn_msgs = [m for m in res.get("issues", []) if m.startswith("WARN")]  # type: ignore[arg-type]
-        for m in warn_msgs:
-            console.log(f"[yellow]• {m}[/]")
+    if result["ok"]:  # type: ignore[index]
+        console.log(f"[green]Saved[/] {result['out_path']}")
+
+        issues_list_any: List[Any] = result.get("issues", [])
+        warning_messages = [
+            msg
+            for msg in issues_list_any
+            if isinstance(msg, str) and msg.startswith("WARN")
+        ]
+        for message in warning_messages:
+            console.log(f"[yellow]• {message}[/]")
     else:
-        console.log(f"[red]FAILED[/] {res['cpg_path']}")
-        for m in res.get("issues", []):  # type: ignore[arg-type]
-            console.log(f"  • {m}")
+        console.log(f"[red]FAILED[/] {result['cpg_path']}")
+        issues_any: Any = result.get("issues", [])
+        issues_list_str: List[str] = issues_any if isinstance(issues_any, list) else []
+        for message in issues_list_str:
+            console.log(f"  • {message}")
 
 
 def main():
-    args = arg_parser()
+    args = parse_args()
     cpg_path = args.cpg
     save_target = args.save
 
@@ -200,13 +212,13 @@ def main():
         raise FileNotFoundError(f"Path {cpg_path} does not exist")
 
     if os.path.isdir(cpg_path):
-        run_dir(cpg_path, save_target)
+        process_directory(cpg_path, save_target)
     else:
         # Ensure parent exists for single-file output
         parent = os.path.dirname(save_target)
         if parent:
             os.makedirs(parent, exist_ok=True)
-        run_file(cpg_path, save_target)
+        process_single_file(cpg_path, save_target)
 
 
 if __name__ == "__main__":
