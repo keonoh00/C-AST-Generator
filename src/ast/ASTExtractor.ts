@@ -1,4 +1,4 @@
-import { EdgeGeneric, NodeInfo, RootGraphSON, TreeNode } from "@/types/cpg";
+import { EdgeGeneric, ICPGRootExport, NodeInfo, TreeNode } from "@/types/cpg";
 
 interface EdgeInfo {
   edge: EdgeGeneric;
@@ -11,7 +11,7 @@ export class ASTExtractor {
     if (typeof cpg !== "object" || cpg === null || !("@value" in (cpg as Record<string, unknown>))) {
       return [];
     }
-    const data = cpg as RootGraphSON;
+    const data = cpg as ICPGRootExport;
     const inner = data["@value"];
     if (typeof inner !== "object" || !Array.isArray(inner.edges) || !Array.isArray(inner.vertices)) {
       return [];
