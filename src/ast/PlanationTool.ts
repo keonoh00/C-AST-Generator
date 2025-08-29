@@ -1,4 +1,4 @@
-import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+import { ASTNodeTypes } from "@/types/ast/BaseNode/BaseNode";
 import { ASTNodes } from "@/types/node";
 
 export interface ASTGraph {

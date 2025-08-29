@@ -1,4 +1,6 @@
-import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+import type { IIdentifier } from "@/types/ast/Expressions/Identifier";
+
+import { ASTNodeTypes } from "@/types/ast/BaseNode/BaseNode";
 import { CPGRoot, EdgeGeneric, FieldIdentifierVertexProperties, MemberVertexProperties, VertexGeneric } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
 
@@ -102,7 +104,8 @@ export class PostProcessor {
         if (!node.children) {
           return [];
         }
-        return node.children.filter((child) => child.nodeType === ASTNodeTypes.Identifier);
+        // Narrow to identifiers so we can safely read 'type'
+        return node.children.filter((child): child is IIdentifier => child.nodeType === ASTNodeTypes.Identifier);
       })
       .filter((child) => child.type === "<unknown>");
     const memberAccessChildrenIdentifierIds = memberAccessChildrenIdentifierNodes.map((child) => child.id);
@@ -232,14 +235,16 @@ export class PostProcessor {
       return undefined;
     }
     const membersId = typeDeclIncomingASTEdges.map((edge) => edge.inV["@value"]);
-    const members = membersId.map((id) => this.getNodeById(id, cpg)).filter((node) => node !== undefined);
+    const members = membersId.map((id) => this.getNodeById(id, cpg)).filter((node): node is VertexGeneric => node !== undefined);
 
     const memberAccessCpgNode = this.getNodeById(memberAccessId, cpg);
     if (!memberAccessCpgNode) {
       throw new Error(`MemberAccess node ${memberAccessId.toString()} not found in CPG.`);
     }
-    const canonicalName = (memberAccessCpgNode.properties as FieldIdentifierVertexProperties).CANONICAL_NAME["@value"];
-    const matchingMember = members.find((member) => (member.properties as MemberVertexProperties).NAME["@value"] === canonicalName);
+    const canonicalName = (memberAccessCpgNode.properties as FieldIdentifierVertexProperties).CANONICAL_NAME["@value"]["@value"].join("");
+    const matchingMember = members.find(
+      (member) => (member.properties as MemberVertexProperties).NAME["@value"]["@value"].join("") === canonicalName
+    );
     return matchingMember;
   }
 
