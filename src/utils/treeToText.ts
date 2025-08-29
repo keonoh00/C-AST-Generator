@@ -1,4 +1,4 @@
-import { TreeNode } from "@/types/joern";
+import { TreeNode } from "@/types/cpg";
 import { ASTNodes } from "@/types/node";
 
 export class TreeToText {

@@ -1,6 +1,5 @@
-import { CallVertexProperties, TreeNode } from "@/types/joern";
-
-import { BinaryExpressionBooleanMap } from "./BinaryExpression";
+import { BinaryExpressionBooleanMap } from "@/ast/config/BinaryExpression";
+import { CallVertexProperties, TreeNode } from "@/types/cpg";
 
 /**
  * Given a TreeNode for a call/operator, pick its result type.

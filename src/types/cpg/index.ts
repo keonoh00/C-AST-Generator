@@ -1,3 +1,18 @@
+export * from "./edge";
+export * from "./vertex";
+
+import { EdgeGeneric } from "./edge";
+import { VertexGeneric } from "./vertex";
+
+export interface CPGGraphData {
+  edges: EdgeGeneric[];
+  vertices: VertexGeneric[];
+}
+
+export interface CPGRoot {
+  export: ICPGRootExport;
+}
+
 export type EdgeLabel =
   | "ALIAS_OF"
   | "ARGUMENT"
@@ -27,13 +42,17 @@ export interface GraphSON<T> {
 
 export type GraphSONValue = boolean | GraphSONValue[] | null | number | string | { [key: string]: GraphSONValue };
 
+export interface ICPGRootExport {
+  "@type": string;
+  "@value": CPGGraphData;
+}
+
 export interface NodeInfo {
   code: string;
   id: string;
   label: VertexLabel;
   line_no: number | string;
   name: string;
-  // Keep flexible as some labels may be absent in VertexByLabelMap
   properties: Record<string, unknown>;
 }
 
