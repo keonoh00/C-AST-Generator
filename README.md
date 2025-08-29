@@ -1,4 +1,4 @@
-# Software Static Analysis Tool (SSAT)
+# Static Software Analysis Tool (SSAT)
 
 A tool to generate C Abstract Syntax Trees (ASTs) using Joern.
 This tool extracts ASTs from C code, converts them to KAST format, and processes them for further analysis.
