@@ -1,8 +1,8 @@
-import { BinaryExpressionOperatorMap } from "@/joern/kast/BinaryExpression";
-import { BinaryUnaryTypeWrapper } from "@/joern/kast/BinaryUnaryTypeWrapper";
-import { IdentifierToLiteralMap, PredefinedIdentifierTypes } from "@/joern/kast/Predefined";
-import { STANDARD_LIB_CALLS } from "@/joern/kast/StandardLibCall";
-import { UnaryExpressionOperatorMap } from "@/joern/kast/UnaryExpression";
+import { BinaryExpressionOperatorMap } from "@/ast/BinaryExpression";
+import { BinaryUnaryTypeWrapper } from "@/ast/BinaryUnaryTypeWrapper";
+import { IdentifierToLiteralMap, PredefinedIdentifierTypes } from "@/ast/Predefined";
+import { STANDARD_LIB_CALLS } from "@/ast/StandardLibCall";
+import { UnaryExpressionOperatorMap } from "@/ast/UnaryExpression";
 import { ASTNodeTypes } from "@/types/ast/BaseNode/BaseNode";
 import { ICompoundStatement } from "@/types/ast/Block/CompoundStatement";
 import { IBreakStatement } from "@/types/ast/ControlStructures/BreakStatement";
