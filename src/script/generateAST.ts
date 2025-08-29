@@ -10,9 +10,8 @@ import { validateCPGRoot } from "@/cpg/validate/zod";
 import { ASTNodeTypes } from "@/types/ast/BaseNode/BaseNode";
 import { CPGRoot, TreeNode } from "@/types/joern";
 import { ASTGraph, ASTNodes } from "@/types/node";
-import { listJsonFiles } from "@/utils/listJson";
+import { listJsonFiles, writeJSONFiles } from "@/utils/json";
 import { TreeToText } from "@/utils/treeToText";
-import { writeJSONFiles } from "@/utils/writeJson";
 
 // Read command-line arguments: first is input directory, second is output directory
 const args: string[] = process.argv.slice(2);
