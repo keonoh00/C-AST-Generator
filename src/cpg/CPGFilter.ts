@@ -1,31 +1,11 @@
-import type {
-  CPGGraphData,
-  CPGRoot,
-  EdgeGeneric,
-  EdgeLabel,
-  GraphSON,
-  GraphSONValue,
-  NodeInfo,
-  VertexGeneric,
-  VertexProperty,
-} from "@/types/cpg";
+import type { CPGGraphData, CPGRoot, EdgeGeneric, EdgeLabel, GraphSON, GraphSONValue, NodeInfo, VertexGeneric, VertexProperty } from "@/types/cpg";
 
-export class CPGProcessor {
+export class CPGFilter {
   private readonly cpg: CPGGraphData;
 
   constructor(cpg: CPGRoot) {
     this.cpg = cpg.export["@value"];
     this.validateCPG();
-  }
-
-  private filterEdgesByLabel(label: EdgeLabel[]): EdgeGeneric[] {
-    return this.cpg.edges.filter((edge) => label.includes(edge.label));
-  }
-
-  private filterVertexByEdges(edges: EdgeGeneric[]): VertexGeneric[] {
-    const outIds = new Set(edges.map((e) => e.outV["@value"]));
-    const inIds = new Set(edges.map((e) => e.inV["@value"]));
-    return this.cpg.vertices.filter((v) => outIds.has(v.id["@value"]) || inIds.has(v.id["@value"]));
   }
 
   public filterAST(): { edges: EdgeGeneric[]; vertices: NodeInfo[] } {
@@ -48,6 +28,16 @@ export class CPGProcessor {
       edges: dfgEdges,
       vertices: dfgVerticesWithProperties,
     };
+  }
+
+  private filterEdgesByLabel(label: EdgeLabel[]): EdgeGeneric[] {
+    return this.cpg.edges.filter((edge) => label.includes(edge.label));
+  }
+
+  private filterVertexByEdges(edges: EdgeGeneric[]): VertexGeneric[] {
+    const outIds = new Set(edges.map((e) => e.outV["@value"]));
+    const inIds = new Set(edges.map((e) => e.inV["@value"]));
+    return this.cpg.vertices.filter((v) => outIds.has(v.id["@value"]) || inIds.has(v.id["@value"]));
   }
 
   private decorateVertexWithProperties(node: VertexGeneric): NodeInfo {
@@ -85,10 +75,7 @@ export class CPGProcessor {
     };
   }
 
-  private getProp(
-    node: VertexGeneric,
-    key: "NAME" | "CODE" | "LINE_NUMBER"
-  ): GraphSON<GraphSONValue> | VertexProperty<GraphSONValue> | undefined {
+  private getProp(node: VertexGeneric, key: "NAME" | "CODE" | "LINE_NUMBER"): GraphSON<GraphSONValue> | VertexProperty<GraphSONValue> | undefined {
     const props = node.properties as unknown as Record<string, unknown>;
     const val = props[key];
     if (this.isGraphSON(val)) return val;
@@ -96,9 +83,6 @@ export class CPGProcessor {
     return undefined;
   }
 
-  /**
-   * Type guard: checks if x is an object with a "@value" key.
-   */
   private isGraphSON(x: unknown): x is GraphSON<GraphSONValue> {
     if (typeof x !== "object" || x === null) return false;
     const obj = x as Record<string, unknown>;
@@ -112,17 +96,7 @@ export class CPGProcessor {
     return obj["@type"] === "g:VertexProperty" && "@value" in obj && "id" in obj;
   }
 
-  /**
-   * Type guard: checks if x is an array of unknowns,
-   * and at least one element is a ValueWrapper or primitive.
-   */
-  private isValueWrapperArray(x: unknown): x is unknown[] {
-    return Array.isArray(x);
-  }
-
-  private unwrapValue(
-    x: GraphSON<GraphSONValue> | VertexProperty<GraphSONValue> | string | number | undefined
-  ): number | string | undefined {
+  private unwrapValue(x: GraphSON<GraphSONValue> | VertexProperty<GraphSONValue> | string | number | undefined): number | string | undefined {
     if (x == null) return undefined;
     if (typeof x === "string" || typeof x === "number") return x;
 
