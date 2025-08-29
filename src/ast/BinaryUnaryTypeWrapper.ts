@@ -1,4 +1,4 @@
-import { CallVertexProperties, TreeNode } from "@/types/joern";
+import { CallVertexProperties, TreeNode } from "@/types/cpg";
 
 import { BinaryExpressionBooleanMap } from "./BinaryExpression";
 

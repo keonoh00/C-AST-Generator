@@ -1,7 +1,7 @@
 import type { IIdentifier } from "@/types/ast/Expressions/Identifier";
 
 import { ASTNodeTypes } from "@/types/ast/BaseNode/BaseNode";
-import { CPGRoot, EdgeGeneric, FieldIdentifierVertexProperties, MemberVertexProperties, VertexGeneric } from "@/types/joern";
+import { CPGRoot, EdgeGeneric, FieldIdentifierVertexProperties, MemberVertexProperties, VertexGeneric } from "@/types/cpg";
 import { ASTNodes } from "@/types/node";
 
 export class PostProcessor {

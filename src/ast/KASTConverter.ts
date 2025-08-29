@@ -55,7 +55,7 @@ import {
   MethodVertexProperties,
   TreeNode,
   TypeDeclVertexProperties,
-} from "@/types/joern";
+} from "@/types/cpg";
 import { ASTNodes } from "@/types/node";
 
 type CallOperatorsReturnTypes =

@@ -1,4 +1,4 @@
-import { EdgeGeneric, NodeInfo, RootGraphSON, TreeNode } from "@/types/joern";
+import { EdgeGeneric, NodeInfo, RootGraphSON, TreeNode } from "@/types/cpg";
 
 interface EdgeInfo {
   edge: EdgeGeneric;
