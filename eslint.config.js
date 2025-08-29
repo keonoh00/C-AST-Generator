@@ -22,7 +22,13 @@ export default tseslint.config(
   perfectionist.configs["recommended-natural"],
   {
     rules: {
+      // Keep most auto-sorting disabled, but enable import sorting
       "perfectionist/sort-objects": "off",
+      "perfectionist/sort-modules": "off",
+      "perfectionist/sort-classes": "off",
+      "perfectionist/sort-interfaces": "off",
+      "perfectionist/sort-union-types": "off",
+      "@typescript-eslint/adjacent-overload-signatures": "off",
     },
   }
 );
