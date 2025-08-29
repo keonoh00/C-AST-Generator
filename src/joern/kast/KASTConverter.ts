@@ -1,33 +1,47 @@
-import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
-import { ICompoundStatement } from "@/types/Block/CompoundStatement";
-import { IBreakStatement } from "@/types/ControlStructures/BreakStatement";
-import { ICaseLabel } from "@/types/ControlStructures/CaseLabel";
-import { IDefaultLabel } from "@/types/ControlStructures/DefaultLabel";
-import { IDoWhileStatement } from "@/types/ControlStructures/DoWhileStatement";
-import { IForStatement } from "@/types/ControlStructures/ForStatement";
-import { IGotoStatement } from "@/types/ControlStructures/GotoStatement";
-import { IIfStatement } from "@/types/ControlStructures/IfStatement";
-import { ILabel } from "@/types/ControlStructures/Label";
-import { IReturnStatement } from "@/types/ControlStructures/ReturnStatement";
-import { ISwitchStatement } from "@/types/ControlStructures/SwitchStatement";
-import { IWhileStatement } from "@/types/ControlStructures/WhileStatement";
-import { IStructType } from "@/types/DataTypes/StructType";
-import { ITypeDefinition } from "@/types/DataTypes/TypeDefinition";
-import { IUnionType } from "@/types/DataTypes/UnionType";
-import { IAddressOfExpression } from "@/types/Expressions/AddressOfExpression";
-import { IArraySizeAllocation } from "@/types/Expressions/ArraySizeAllocation";
-import { IArraySubscriptExpression } from "@/types/Expressions/ArraySubscriptExpression";
-import { IAssignmentExpression } from "@/types/Expressions/AssignmentExpression";
-import { IBinaryExpression } from "@/types/Expressions/BinaryExpression";
-import { ICastExpression } from "@/types/Expressions/CastExpression";
-import { IIdentifier } from "@/types/Expressions/Identifier";
-import { ILiteral } from "@/types/Expressions/Literal";
-import { IMemberAccess } from "@/types/Expressions/MemberAccess";
-import { IPointerDereference } from "@/types/Expressions/PointerDereference";
-import { ISizeOfExpression } from "@/types/Expressions/SizeOfExpression";
-import { IStandardLibCall } from "@/types/Expressions/StandardLibCall";
-import { IUnaryExpression } from "@/types/Expressions/UnaryExpression";
-import { IUserDefinedCall } from "@/types/Expressions/UserDefinedCall";
+import { BinaryExpressionOperatorMap } from "@/joern/kast/BinaryExpression";
+import { BinaryUnaryTypeWrapper } from "@/joern/kast/BinaryUnaryTypeWrapper";
+import { IdentifierToLiteralMap, PredefinedIdentifierTypes } from "@/joern/kast/Predefined";
+import { STANDARD_LIB_CALLS } from "@/joern/kast/StandardLibCall";
+import { UnaryExpressionOperatorMap } from "@/joern/kast/UnaryExpression";
+import { ASTNodeTypes } from "@/types/ast/BaseNode/BaseNode";
+import { ICompoundStatement } from "@/types/ast/Block/CompoundStatement";
+import { IBreakStatement } from "@/types/ast/ControlStructures/BreakStatement";
+import { ICaseLabel } from "@/types/ast/ControlStructures/CaseLabel";
+import { IDefaultLabel } from "@/types/ast/ControlStructures/DefaultLabel";
+import { IDoWhileStatement } from "@/types/ast/ControlStructures/DoWhileStatement";
+import { IForStatement } from "@/types/ast/ControlStructures/ForStatement";
+import { IGotoStatement } from "@/types/ast/ControlStructures/GotoStatement";
+import { IIfStatement } from "@/types/ast/ControlStructures/IfStatement";
+import { ILabel } from "@/types/ast/ControlStructures/Label";
+import { IReturnStatement } from "@/types/ast/ControlStructures/ReturnStatement";
+import { ISwitchStatement } from "@/types/ast/ControlStructures/SwitchStatement";
+import { IWhileStatement } from "@/types/ast/ControlStructures/WhileStatement";
+import { IStructType } from "@/types/ast/DataTypes/StructType";
+import { ITypeDefinition } from "@/types/ast/DataTypes/TypeDefinition";
+import { IUnionType } from "@/types/ast/DataTypes/UnionType";
+import { IAddressOfExpression } from "@/types/ast/Expressions/AddressOfExpression";
+import { IArraySizeAllocation } from "@/types/ast/Expressions/ArraySizeAllocation";
+import { IArraySubscriptExpression } from "@/types/ast/Expressions/ArraySubscriptExpression";
+import { IAssignmentExpression } from "@/types/ast/Expressions/AssignmentExpression";
+import { IBinaryExpression } from "@/types/ast/Expressions/BinaryExpression";
+import { ICastExpression } from "@/types/ast/Expressions/CastExpression";
+import { IIdentifier } from "@/types/ast/Expressions/Identifier";
+import { ILiteral } from "@/types/ast/Expressions/Literal";
+import { IMemberAccess } from "@/types/ast/Expressions/MemberAccess";
+import { IPointerDereference } from "@/types/ast/Expressions/PointerDereference";
+import { ISizeOfExpression } from "@/types/ast/Expressions/SizeOfExpression";
+import { IStandardLibCall } from "@/types/ast/Expressions/StandardLibCall";
+import { IUnaryExpression } from "@/types/ast/Expressions/UnaryExpression";
+import { IUserDefinedCall } from "@/types/ast/Expressions/UserDefinedCall";
+import { IIncludeDirective } from "@/types/ast/PreprocessorDirectives/IncludeDirective";
+import { IArrayDeclaration } from "@/types/ast/ProgramStructures/ArrayDeclaration";
+import { IFunctionDeclaration } from "@/types/ast/ProgramStructures/FunctionDeclaration";
+import { IFunctionDefinition } from "@/types/ast/ProgramStructures/FunctionDefinition";
+import { IParameterDeclaration } from "@/types/ast/ProgramStructures/ParameterDeclaration";
+import { IParameterList } from "@/types/ast/ProgramStructures/ParameterList";
+import { IPointerDeclaration } from "@/types/ast/ProgramStructures/PointerDeclaration";
+import { ITranslationUnit } from "@/types/ast/ProgramStructures/TranslationUnit";
+import { IVariableDeclaration } from "@/types/ast/ProgramStructures/VariableDeclaration";
 import {
   CallVertexProperties,
   ControlStructureVertexProperties,
@@ -43,21 +57,6 @@ import {
   TypeDeclVertexProperties,
 } from "@/types/joern";
 import { ASTNodes } from "@/types/node";
-import { IIncludeDirective } from "@/types/PreprocessorDirectives/IncludeDirective";
-import { IArrayDeclaration } from "@/types/ProgramStructures/ArrayDeclaration";
-import { IFunctionDeclaration } from "@/types/ProgramStructures/FunctionDeclaration";
-import { IFunctionDefinition } from "@/types/ProgramStructures/FunctionDefinition";
-import { IParameterDeclaration } from "@/types/ProgramStructures/ParameterDeclaration";
-import { IParameterList } from "@/types/ProgramStructures/ParameterList";
-import { IPointerDeclaration } from "@/types/ProgramStructures/PointerDeclaration";
-import { ITranslationUnit } from "@/types/ProgramStructures/TranslationUnit";
-import { IVariableDeclaration } from "@/types/ProgramStructures/VariableDeclaration";
-
-import { BinaryExpressionOperatorMap } from "./BinaryExpression";
-import { BinaryUnaryTypeWrapper } from "./BinaryUnaryTypeWrapper";
-import { IdentifierToLiteralMap, PredefinedIdentifierTypes } from "./Predefined";
-import { STANDARD_LIB_CALLS } from "./StandardLibCall";
-import { UnaryExpressionOperatorMap } from "./UnaryExpression";
 
 type CallOperatorsReturnTypes =
   | IAddressOfExpression

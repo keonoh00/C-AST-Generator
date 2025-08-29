@@ -8,7 +8,7 @@ import { PostProcessor } from "@/joern/kast/PostProcessor";
 import { PlanationTool } from "@/joern/planation/PlanationTool";
 import { TreeToText } from "@/joern/utils/TreeToText";
 import { validateCPGRoot } from "@/joern/validate/zod";
-import { ASTNodeTypes } from "@/types/BaseNode/BaseNode";
+import { ASTNodeTypes } from "@/types/ast/BaseNode/BaseNode";
 import { CPGRoot, TreeNode } from "@/types/joern";
 import { ASTGraph, ASTNodes } from "@/types/node";
 import { listJsonFiles } from "@/utils/listJson";

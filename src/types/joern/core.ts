@@ -1,4 +1,3 @@
-// core.ts
 export type EdgeLabel =
   | "ALIAS_OF"
   | "ARGUMENT"
@@ -34,7 +33,8 @@ export interface NodeInfo {
   label: VertexLabel;
   line_no: number | string;
   name: string;
-  properties: VertexProperty<GraphSONValue>[];
+  // Keep flexible as some labels may be absent in VertexByLabelMap
+  properties: Record<string, unknown>;
 }
 
 export interface TreeNode extends NodeInfo {

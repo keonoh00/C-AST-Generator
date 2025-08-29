@@ -1,4 +1,4 @@
-import { ASTNodes } from "../node";
+import { ASTNodes } from "@/types/node";
 
 export enum ASTNodeTypes {
   AddressOfExpression = "AddressOfExpression",
