@@ -5,7 +5,6 @@ export class CPGFilter {
 
   constructor(cpg: CPGRoot) {
     this.cpg = cpg.export["@value"];
-    this.validateCPG();
   }
 
   public filterAST(): { edges: EdgeGeneric[]; vertices: NodeInfo[] } {
@@ -116,12 +115,5 @@ export class CPGFilter {
       return undefined;
     }
     return undefined;
-  }
-
-  private validateCPG(): void {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (typeof this.cpg !== "object" || this.cpg === null || !("@value" in this.cpg)) {
-      throw new Error("Invalid CPG");
-    }
   }
 }
